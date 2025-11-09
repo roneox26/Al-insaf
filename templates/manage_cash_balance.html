@@ -30,7 +30,12 @@
           <input type="hidden" name="action" value="add">
           <div class="mb-3">
             <label class="form-label">Investor Name</label>
-            <input type="text" name="investor_name" class="form-control" required>
+            <input type="text" name="investor_name" class="form-control" list="investorList" required>
+            <datalist id="investorList">
+              {% for inv in investors %}
+              <option value="{{ inv.name }}">{{ inv.investor_id }}</option>
+              {% endfor %}
+            </datalist>
           </div>
           <div class="mb-3">
             <label class="form-label">Amount (৳)</label>
@@ -52,7 +57,12 @@
           <input type="hidden" name="action" value="withdraw">
           <div class="mb-3">
             <label class="form-label">Investor Name</label>
-            <input type="text" name="investor_name" class="form-control" required>
+            <select name="investor_name" class="form-control" required id="withdrawInvestor">
+              <option value="">নির্বাচন করুন</option>
+              {% for inv in investors %}
+              <option value="{{ inv.name }}" data-balance="{{ inv.current_balance }}">{{ inv.investor_id }} - {{ inv.name }} (Balance: ৳{{ "{:,.2f}".format(inv.current_balance) }})</option>
+              {% endfor %}
+            </select>
           </div>
           <div class="mb-3">
             <label class="form-label">Amount (৳)</label>
@@ -94,6 +104,7 @@
         <table class="table table-bordered table-sm">
           <thead>
             <tr>
+              <th>ID</th>
               <th>Investor</th>
               <th>Amount</th>
               <th>Date</th>
@@ -102,6 +113,7 @@
           <tbody>
             {% for inv in investments %}
             <tr>
+              <td><strong>{{ inv.investor.investor_id }}</strong></td>
               <td>{{ inv.investor_name }}</td>
               <td class="text-success">৳{{ "{:,.2f}".format(inv.amount) }}</td>
               <td>{{ inv.date.strftime('%Y-%m-%d') }}</td>
@@ -109,7 +121,7 @@
             {% endfor %}
             {% if not investments %}
             <tr>
-              <td colspan="3" class="text-center">No investments</td>
+              <td colspan="4" class="text-center">No investments</td>
             </tr>
             {% endif %}
           </tbody>
@@ -123,6 +135,7 @@
         <table class="table table-bordered table-sm">
           <thead>
             <tr>
+              <th>ID</th>
               <th>Investor</th>
               <th>Amount</th>
               <th>Date</th>
@@ -131,6 +144,7 @@
           <tbody>
             {% for wd in withdrawals %}
             <tr>
+              <td><strong>{{ wd.investor.investor_id if wd.investor else '-' }}</strong></td>
               <td>{{ wd.investor_name }}</td>
               <td class="text-danger">৳{{ "{:,.2f}".format(wd.amount) }}</td>
               <td>{{ wd.date.strftime('%Y-%m-%d') }}</td>
@@ -138,7 +152,7 @@
             {% endfor %}
             {% if not withdrawals %}
             <tr>
-              <td colspan="3" class="text-center">No withdrawals</td>
+              <td colspan="4" class="text-center">No withdrawals</td>
             </tr>
             {% endif %}
           </tbody>
@@ -148,5 +162,21 @@
   </div>
 
   <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-4">⬅️ Back to Dashboard</a>
+  <a href="{{ url_for('manage_investors') }}" class="btn btn-info mt-4">👥 View All Investors</a>
+
+  <script>
+    const withdrawInvestor = document.getElementById('withdrawInvestor');
+    const withdrawAmount = document.querySelector('input[name="amount"]');
+    
+    if (withdrawInvestor) {
+      withdrawInvestor.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const balance = parseFloat(selectedOption.dataset.balance) || 0;
+        if (withdrawAmount) {
+          withdrawAmount.max = balance;
+        }
+      });
+    }
+  </script>
 </body>
 </html>

@@ -9,3 +9,4 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(100), unique=True)
     password = db.Column(db.String(200))
     role = db.Column(db.String(20))  # "admin" or "staff"
+    is_office_staff = db.Column(db.Boolean, default=False)

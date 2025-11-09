@@ -24,12 +24,17 @@
   <form method="POST">
     <div class="mb-3">
       <label class="form-label">গ্রাহক নির্বাচন করুন</label>
-      <select name="customer_id" class="form-control" required>
+      <select name="customer_id" id="customerSelect" class="form-control" required>
         <option value="">নির্বাচন করুন</option>
         {% for customer in customers %}
-        <option value="{{ customer.id }}">{{ customer.name }} - {{ customer.phone }}</option>
+        <option value="{{ customer.id }}" data-granter="{{ customer.granter }}">{{ customer.name }} - {{ customer.phone }}</option>
         {% endfor %}
       </select>
+    </div>
+    
+    <div class="mb-3">
+      <label class="form-label">জামিনদার</label>
+      <input type="text" name="granter" id="granterInput" class="form-control" readonly>
     </div>
     
     <div class="row">
@@ -123,6 +128,16 @@
     loanDateInput.addEventListener('change', calculateDueDate);
     installmentCountInput.addEventListener('input', calculateDueDate);
     installmentTypeInput.addEventListener('change', calculateDueDate);
+
+    // Auto-fill granter when customer is selected
+    const customerSelect = document.getElementById('customerSelect');
+    const granterInput = document.getElementById('granterInput');
+    
+    customerSelect.addEventListener('change', function() {
+      const selectedOption = this.options[this.selectedIndex];
+      const granter = selectedOption.dataset.granter || '';
+      granterInput.value = granter;
+    });
 
     // Set today's date as default
     const today = new Date();

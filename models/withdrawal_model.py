@@ -4,7 +4,8 @@ from datetime import datetime
 class Withdrawal(db.Model):
     __tablename__ = 'withdrawals'
     id = db.Column(db.Integer, primary_key=True)
-    customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'))
+    investor_id = db.Column(db.Integer, db.ForeignKey('investors.id', ondelete='SET NULL'))
+    customer_id = db.Column(db.Integer, db.ForeignKey('customers.id', ondelete='SET NULL'))
     investor_name = db.Column(db.String(100))
     amount = db.Column(db.Float, nullable=False)
     date = db.Column(db.DateTime, default=datetime.utcnow)

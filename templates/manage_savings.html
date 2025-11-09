@@ -15,17 +15,20 @@
     {% endif %}
   {% endwith %}
 
-  <h2 class="mb-4">💵 Manage Savings</h2>
-  <div class="d-flex justify-content-between mb-3">
+  <h2 class="mb-4">💵 Savings Collections History</h2>
+  <div class="d-flex justify-content-between mb-3 no-print">
     <a href="{{ url_for('collection') }}" class="btn btn-success">➕ Add New Saving</a>
-    <h4>Total Savings: ৳{{ "{:,.2f}".format(total) }}</h4>
+    <h4>Total: ৳{{ "{:,.2f}".format(total) }}</h4>
+  </div>
+  <div class="print-only" style="display:none;">
+    <h4 class="text-center">Total Collected: ৳{{ "{:,.2f}".format(total) }}</h4>
   </div>
 
-  <form method="GET" class="row g-3 mb-3">
-    <div class="col-md-4">
-      <input type="text" name="customer" class="form-control" placeholder="Search by customer name" value="{{ request.args.get('customer', '') }}">
+  <form method="GET" class="row g-3 mb-3 no-print">
+    <div class="col-md-3">
+      <input type="text" name="customer" class="form-control" placeholder="Search customer" value="{{ request.args.get('customer', '') }}">
     </div>
-    <div class="col-md-4">
+    <div class="col-md-2">
       <select name="staff_id" class="form-control">
         <option value="">All Staff</option>
         {% for staff in staffs %}
@@ -34,13 +37,20 @@
       </select>
     </div>
     <div class="col-md-2">
-      <button type="submit" class="btn btn-primary">Filter</button>
+      <input type="date" name="from_date" class="form-control" placeholder="From" value="{{ from_date }}">
+    </div>
+    <div class="col-md-2">
+      <input type="date" name="to_date" class="form-control" placeholder="To" value="{{ to_date }}">
+    </div>
+    <div class="col-md-3">
+      <button type="submit" class="btn btn-primary w-100">Filter</button>
     </div>
   </form>
 
   <table class="table table-bordered">
     <thead>
       <tr>
+        <th>Member No</th>
         <th>Customer</th>
         <th>Amount</th>
         <th>Date</th>
@@ -50,6 +60,7 @@
     <tbody>
       {% for saving in savings %}
       <tr>
+        <td><strong>{{ saving.customer.member_no or '-' }}</strong></td>
         <td>{{ saving.customer.name }}</td>
         <td>৳{{ "{:,.2f}".format(saving.amount) }}</td>
         <td>{{ saving.collection_date.strftime('%Y-%m-%d %H:%M') }}</td>
@@ -59,6 +70,48 @@
     </tbody>
   </table>
 
-  <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-3">⬅️ Back</a>
+  <div class="no-print mt-3">
+    <button onclick="window.print()" class="btn btn-primary">🖨️ Print</button>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">⬅️ Back</a>
+  </div>
+
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+      .alert { display: none !important; }
+      body { 
+        font-size: 11px; 
+        margin: 10mm;
+      }
+      .container { 
+        max-width: 100% !important;
+        padding: 0 !important;
+      }
+      h2 { 
+        font-size: 18px; 
+        text-align: center;
+        margin-bottom: 15px;
+      }
+      h4 { 
+        font-size: 14px; 
+        margin: 10px 0;
+      }
+      table { 
+        font-size: 10px;
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th { 
+        background-color: #f0f0f0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      th, td { 
+        padding: 5px !important;
+        border: 1px solid #000 !important;
+      }
+    }
+  </style>
 </body>
 </html>
