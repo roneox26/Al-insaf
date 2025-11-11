@@ -1,0 +1,24 @@
+═══════════════════════════════════════════════════════════
+   PythonAnywhere Update Commands
+═══════════════════════════════════════════════════════════
+
+Copy and paste these commands in PythonAnywhere Bash Console:
+
+cd ~/Al-insaf
+git pull origin main
+
+═══════════════════════════════════════════════════════════
+
+Then:
+1. Go to Web tab
+2. Click the green "Reload codebyrone.pythonanywhere.com" button
+3. Wait 10 seconds
+4. Visit: https://codebyrone.pythonanywhere.com
+
+═══════════════════════════════════════════════════════════
+
+Login with:
+Email: admin@example.com
+Password: admin123
+
+═══════════════════════════════════════════════════════════

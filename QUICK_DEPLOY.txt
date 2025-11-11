@@ -1,0 +1,88 @@
+═══════════════════════════════════════════════════════════
+   🚀 PythonAnywhere - Quick Deploy Commands
+═══════════════════════════════════════════════════════════
+
+📋 STEP 1: Account তৈরি করো
+→ https://www.pythonanywhere.com
+→ "Create a Beginner account" (Free)
+
+═══════════════════════════════════════════════════════════
+
+📋 STEP 2: Bash Console এ এই commands run করো:
+
+cd ~
+git clone https://github.com/roneox26/Al-insaf.git
+cd Al-insaf
+mkvirtualenv --python=/usr/bin/python3.10 alinsaf
+pip install -r requirements.txt
+python create_db.py
+
+═══════════════════════════════════════════════════════════
+
+📋 STEP 3: Web App তৈরি করো
+→ Web tab > "Add a new web app"
+→ Manual configuration > Python 3.10
+
+═══════════════════════════════════════════════════════════
+
+📋 STEP 4: WSGI File Edit করো
+→ Web tab > "WSGI configuration file" ক্লিক করো
+→ সব delete করে এটা paste করো:
+
+import sys
+import os
+
+project_home = '/home/yourusername/Al-insaf'
+if project_home not in sys.path:
+    sys.path = [project_home] + sys.path
+
+from app import app as application
+
+⚠️ 'yourusername' replace করো!
+
+═══════════════════════════════════════════════════════════
+
+📋 STEP 5: Virtual Environment Path
+→ Web tab > Virtualenv section
+→ Path: /home/yourusername/.virtualenvs/alinsaf
+
+═══════════════════════════════════════════════════════════
+
+📋 STEP 6: Static Files (Optional)
+→ Web tab > Static files
+→ URL: /static/
+→ Directory: /home/yourusername/Al-insaf/static
+
+═══════════════════════════════════════════════════════════
+
+📋 STEP 7: Reload!
+→ Web tab > সবুজ "Reload" button ক্লিক করো
+→ Visit: yourusername.pythonanywhere.com
+
+═══════════════════════════════════════════════════════════
+
+🔑 DEFAULT LOGIN:
+Admin: admin@example.com / admin123
+
+═══════════════════════════════════════════════════════════
+
+🔧 TROUBLESHOOTING:
+
+Error দেখলে:
+→ Web tab > Error log দেখো
+
+Database issue:
+cd ~/Al-insaf
+python create_db.py
+
+Code update:
+cd ~/Al-insaf
+git pull
+# Web tab এ Reload করো
+
+═══════════════════════════════════════════════════════════
+
+✅ DONE! Your site is live at:
+   https://yourusername.pythonanywhere.com
+
+═══════════════════════════════════════════════════════════

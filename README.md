@@ -126,6 +126,93 @@ python create_db.py
 3. Repository select করো
 4. Automatic deploy হবে!
 
+### PythonAnywhere এ Deploy (Free - সবচেয়ে সহজ)
+
+#### ১. Account তৈরি করো
+- [PythonAnywhere.com](https://www.pythonanywhere.com) এ যাও
+- "Pricing & signup" > "Create a Beginner account" (Free)
+- Email verify করো
+
+#### ২. Code Upload করো
+
+**Option A: GitHub থেকে (Recommended)**
+```bash
+# PythonAnywhere Bash Console এ:
+cd ~
+git clone https://github.com/roneox26/Al-insaf.git
+cd Al-insaf
+```
+
+**Option B: Manual Upload**
+- Files tab > Upload files
+- সব ফাইল upload করো
+
+#### ৩. Virtual Environment তৈরি করো
+```bash
+# Bash Console এ:
+mkvirtualenv --python=/usr/bin/python3.10 myenv
+pip install -r requirements.txt
+```
+
+#### ৪. Database তৈরি করো
+```bash
+python create_db.py
+```
+
+#### ৫. Web App Setup করো
+- "Web" tab এ যাও
+- "Add a new web app" ক্লিক করো
+- "Manual configuration" > Python 3.10 select করো
+- "Next" ক্লিক করো
+
+#### ৬. WSGI Configuration
+- Web tab এ "WSGI configuration file" link এ ক্লিক করো
+- সব কিছু delete করে এটা paste করো:
+
+```python
+import sys
+import os
+
+# আপনার username দিয়ে replace করো
+project_home = '/home/yourusername/Al-insaf'
+if project_home not in sys.path:
+    sys.path = [project_home] + sys.path
+
+from app import app as application
+```
+
+#### ৭. Virtual Environment Set করো
+- Web tab এ "Virtualenv" section এ যাও
+- Path দাও: `/home/yourusername/.virtualenvs/myenv`
+
+#### ৮. Static Files Setup (Optional)
+- Web tab এ "Static files" section এ:
+- URL: `/static/`
+- Directory: `/home/yourusername/Al-insaf/static`
+
+#### ৯. Reload করো
+- Web tab এ সবুজ "Reload" button ক্লিক করো
+- আপনার site: `yourusername.pythonanywhere.com`
+
+#### 🔧 Troubleshooting
+
+**Error দেখলে:**
+- Web tab > "Log files" > "Error log" দেখো
+- Bash console এ: `python app.py` run করে error check করো
+
+**Database issue হলে:**
+```bash
+cd ~/Al-insaf
+python create_db.py
+```
+
+**Code update করতে:**
+```bash
+cd ~/Al-insaf
+git pull
+# Web tab এ Reload button ক্লিক করো
+```
+
 ## 📁 Project Structure
 
 ```
