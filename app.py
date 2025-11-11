@@ -1376,9 +1376,10 @@ def logout():
     flash('Logged out successfully.', 'info')
     return redirect(url_for('login'))
 
-# Initialize database
-try:
-    with app.app_context():
+# Initialize database on first request
+@app.before_first_request
+def init_db():
+    try:
         db.create_all()
         
         if not User.query.filter_by(email='admin@example.com').first():
@@ -1397,8 +1398,8 @@ try:
             initial_balance = CashBalance(balance=0)
             db.session.add(initial_balance)
             db.session.commit()
-except Exception as e:
-    print(f"DB init error: {e}")
+    except Exception as e:
+        print(f"DB init error: {e}")
 
 if __name__ == '__main__':
     app.run(debug=True)
