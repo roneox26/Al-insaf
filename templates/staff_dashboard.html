@@ -26,10 +26,13 @@
         </div>
       </div>
       <div class="col-md-4">
-        <div class="card shadow p-3">
-          <h5>Total Remaining Loans</h5>
-          <h3>৳{{ "{:,.2f}".format(total_remaining) }}</h3>
-        </div>
+        <a href="{{ url_for('due_report') }}" class="text-decoration-none">
+          <div class="card shadow p-3 bg-danger text-white">
+            <h5>⚠️ বকেয়া লোন</h5>
+            <h3>৳{{ "{:,.2f}".format(total_remaining) }}</h3>
+            <small>বকেয়া গ্রাহক: {{ due_customers }}</small>
+          </div>
+        </a>
       </div>
       <div class="col-md-4">
         <div class="card shadow p-3">
@@ -69,6 +72,7 @@
         <div class="card shadow p-3">
           <h5>📋 অন্যান্য</h5>
           <a href="{{ url_for('loan_customers') }}" class="btn btn-warning mt-2">লোন কাস্টমার লিস্ট</a>
+          <a href="{{ url_for('due_report') }}" class="btn btn-danger mt-2">⚠️ বকেয়া রিপোর্ট</a>
         </div>
       </div>
     </div>

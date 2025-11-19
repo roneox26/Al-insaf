@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>নোট ম্যানেজমেন্ট - Al-Insaf NGO</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { font-family: 'Noto Sans Bengali', sans-serif; background: #f8f9fa; }
+        .navbar { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .note-card { border-left: 4px solid; margin-bottom: 15px; transition: transform 0.2s; }
+        .note-card:hover { transform: translateY(-5px); box-shadow: 0 5px 20px rgba(0,0,0,0.15); }
+        .note-high { border-left-color: #dc3545; }
+        .note-normal { border-left-color: #ffc107; }
+        .note-low { border-left-color: #28a745; }
+        .priority-badge { font-size: 0.75rem; padding: 3px 8px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+                <i class="fas fa-arrow-left"></i> Dashboard
+            </a>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h2 class="mb-4"><i class="fas fa-sticky-note"></i> নোট ম্যানেজমেন্ট</h2>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-plus"></i> নতুন নোট যোগ করুন</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">শিরোনাম</label>
+                            <input type="text" name="title" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">অগ্রাধিকার</label>
+                            <select name="priority" class="form-control">
+                                <option value="low">🟢 কম</option>
+                                <option value="normal" selected>🟡 সাধারণ</option>
+                                <option value="high">🔴 উচ্চ</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">বিষয়বস্তু</label>
+                        <textarea name="content" class="form-control" rows="4" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> নোট সংরক্ষণ করুন
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="row">
+            {% for note in notes %}
+            <div class="col-md-6">
+                <div class="card note-card note-{{ note.priority }}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title mb-0">{{ note.title }}</h5>
+                            <span class="badge priority-badge 
+                                {% if note.priority == 'high' %}bg-danger
+                                {% elif note.priority == 'normal' %}bg-warning text-dark
+                                {% else %}bg-success{% endif %}">
+                                {% if note.priority == 'high' %}🔴 উচ্চ
+                                {% elif note.priority == 'normal' %}🟡 সাধারণ
+                                {% else %}🟢 কম{% endif %}
+                            </span>
+                        </div>
+                        <p class="card-text">{{ note.content }}</p>
+                        <div class="text-muted small mb-2">
+                            <i class="fas fa-clock"></i> {{ note.created_date.strftime('%d-%m-%Y %I:%M %p') }}
+                        </div>
+                        <div class="btn-group btn-group-sm">
+                            <a href="{{ url_for('edit_note', id=note.id) }}" class="btn btn-outline-primary">
+                                <i class="fas fa-edit"></i> এডিট
+                            </a>
+                            <a href="{{ url_for('delete_note', id=note.id) }}" 
+                               class="btn btn-outline-danger"
+                               onclick="return confirm('নিশ্চিত করুন?')">
+                                <i class="fas fa-trash"></i> ডিলিট
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            
+            {% if not notes %}
+            <div class="col-12">
+                <div class="alert alert-info text-center">
+                    <i class="fas fa-info-circle fa-3x mb-3"></i>
+                    <p>কোনো নোট নেই। উপরে ফর্ম থেকে নতুন নোট যোগ করুন।</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

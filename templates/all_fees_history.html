@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>সব ফি হিস্ট্রি</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="container mt-5">
+  <h2 class="mb-4">💰 সব ফি হিস্ট্রি / All Fees History</h2>
+
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card shadow p-3 bg-primary text-white">
+        <h6>🎫 ভর্তি ফি</h6>
+        <h4>৳{{ "{:,.2f}".format(admission_total) }}</h4>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow p-3 bg-success text-white">
+        <h6>❤️ কল্যাণ ফি</h6>
+        <h4>৳{{ "{:,.2f}".format(welfare_total) }}</h4>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow p-3 bg-info text-white">
+        <h6>📝 আবেদন ফি</h6>
+        <h4>৳{{ "{:,.2f}".format(application_total) }}</h4>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow p-3 bg-warning text-dark">
+        <h6>💰 মোট ফি</h6>
+        <h4>৳{{ "{:,.2f}".format(total) }}</h4>
+      </div>
+    </div>
+  </div>
+
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>ফি টাইপ</th>
+        <th>গ্রাহক</th>
+        <th>টাকা</th>
+        <th>তারিখ</th>
+        <th>কালেক্টর</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for fee in fees %}
+      <tr>
+        <td>
+          {% if fee.fee_type == 'admission' %}
+          <span class="badge bg-primary">ভর্তি ফি</span>
+          {% elif fee.fee_type == 'welfare' %}
+          <span class="badge bg-success">কল্যাণ ফি</span>
+          {% elif fee.fee_type == 'application' %}
+          <span class="badge bg-info">আবেদন ফি</span>
+          {% endif %}
+        </td>
+        <td>{{ fee.customer.name if fee.customer else 'N/A' }}</td>
+        <td>৳{{ "{:,.2f}".format(fee.amount) }}</td>
+        <td>{{ fee.collection_date.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td>{{ fee.collector.name if fee.collector else 'N/A' }}</td>
+      </tr>
+      {% endfor %}
+      {% if not fees %}
+      <tr>
+        <td colspan="5" class="text-center">কোনো ফি নেই</td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-3">⬅️ Back</a>
+</body>
+</html>

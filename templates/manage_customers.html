@@ -19,10 +19,12 @@
   {% if current_user.role == 'staff' %}
   <a href="{{ url_for('add_customer') }}" class="btn btn-success mb-3">➕ Add New Customer</a>
   {% endif %}
+  <a href="{{ url_for('all_customers_print') }}" class="btn btn-primary mb-3" target="_blank">🖨️ Print All Customers</a>
 
   <table class="table table-bordered">
     <thead>
       <tr>
+        <th>সদস্য নং</th>
         <th>Name</th>
         <th>Phone</th>
         <th>Address</th>
@@ -37,6 +39,7 @@
     <tbody>
       {% for customer in customers %}
       <tr>
+        <td>{{ customer.member_no }}</td>
         <td>{{ customer.name }}</td>
         <td>{{ customer.phone }}</td>
         <td>{{ customer.address }}</td>
@@ -48,6 +51,9 @@
         <td>
           <a href="{{ url_for('customer_details', id=customer.id) }}" class="btn btn-sm btn-info">📋 Details</a>
           <a href="{{ url_for('edit_customer', id=customer.id) }}" class="btn btn-sm btn-warning">✏️ Edit</a>
+          {% if current_user.role == 'admin' %}
+          <a href="{{ url_for('delete_customer', id=customer.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this customer?')">🗑️ Delete</a>
+          {% endif %}
         </td>
       </tr>
       {% endfor %}

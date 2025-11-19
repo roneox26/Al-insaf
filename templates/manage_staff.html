@@ -17,24 +17,31 @@
 
   <h2 class="mb-4">👨💼 Manage Staff</h2>
   <a href="{{ url_for('add_staff') }}" class="btn btn-success mb-3">➕ Add New Staff</a>
+  <a href="{{ url_for('all_staff_report_print') }}" class="btn btn-primary mb-3" target="_blank">🖨️ Print All Staff Report</a>
 
   <table class="table table-bordered">
     <thead>
       <tr>
         <th>Name</th>
         <th>Email</th>
+        <th>Total Collection</th>
+        <th>Collection %</th>
         <th>Actions</th>
       </tr>
     </thead>
     <tbody>
-      {% for staff in staffs %}
+      {% for data in staff_data %}
       <tr>
-        <td>{{ staff.name }}</td>
-        <td>{{ staff.email }}</td>
+        <td>{{ data.staff.name }}</td>
+        <td>{{ data.staff.email }}</td>
+        <td>৳{{ "{:,.2f}".format(data.total_collection) }}</td>
         <td>
-          <a href="{{ url_for('edit_staff', id=staff.id) }}" class="btn btn-sm btn-warning">✏️ Edit</a>
-          <a href="{{ url_for('staff_collection_report', id=staff.id) }}" class="btn btn-sm btn-info" target="_blank">📊 Print Report</a>
-          <a href="{{ url_for('delete_staff', id=staff.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">🗑️ Delete</a>
+          <span class="badge bg-success" style="font-size: 14px;">{{ "%.1f"|format(data.percentage) }}%</span>
+        </td>
+        <td>
+          <a href="{{ url_for('edit_staff', id=data.staff.id) }}" class="btn btn-sm btn-warning">✏️ Edit</a>
+          <a href="{{ url_for('staff_collection_report', id=data.staff.id) }}" class="btn btn-sm btn-info" target="_blank">📊 Print Report</a>
+          <a href="{{ url_for('delete_staff', id=data.staff.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">🗑️ Delete</a>
         </td>
       </tr>
       {% endfor %}

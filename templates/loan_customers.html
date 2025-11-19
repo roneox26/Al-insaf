@@ -7,41 +7,126 @@
 </head>
 
 <body class="container mt-5">
-  <h2 class="mb-4">💰 Loan Customers</h2>
+  <h2 class="mb-4 no-print">💰 Loan Customers</h2>
+  <h2 class="d-none print-only" style="text-align: center; margin-bottom: 5px;">আল-ইনসাফ এনজিও</h2>
+  <h3 class="d-none print-only" style="text-align: center; margin: 0;">লোন গ্রাহক তালিকা</h3>
+  <p class="d-none print-only" style="text-align: center; margin: 5px 0 15px 0;">তারিখ: {{ now.strftime('%d-%m-%Y') }}</p>
+  <button onclick="window.print()" class="btn btn-primary mb-3 no-print">🖨️ Print</button>
 
   <table class="table table-bordered table-hover">
     <thead class="table-dark">
       <tr>
+        <th>সদস্য নং</th>
         <th>Name</th>
         <th>Phone</th>
         <th>Total Loan</th>
         <th>Remaining</th>
         <th>Savings</th>
         <th>Staff</th>
-        <th>Action</th>
+        <th class="no-print">Action</th>
       </tr>
     </thead>
     <tbody>
       {% for customer in customers %}
       <tr>
+        <td><strong>{{ customer.member_no }}</strong></td>
         <td>{{ customer.name }}</td>
         <td>{{ customer.phone }}</td>
         <td>৳{{ "{:,.2f}".format(customer.total_loan) }}</td>
         <td><span class="text-danger">৳{{ "{:,.2f}".format(customer.remaining_loan) }}</span></td>
         <td><span class="text-success">৳{{ "{:,.2f}".format(customer.savings_balance) }}</span></td>
         <td>{{ customer.staff.name if customer.staff else 'N/A' }}</td>
-        <td>
+        <td class="no-print">
           <a href="{{ url_for('customer_details', id=customer.id) }}" class="btn btn-sm btn-info">📋 Details</a>
         </td>
       </tr>
       {% endfor %}
     </tbody>
+    <tfoot class="print-only">
+      <tr style="font-weight: bold; background-color: #f0f0f0;">
+        <td colspan="3" style="text-align: center;">সর্বমোট</td>
+        <td style="text-align: right;">৳{{ "{:,.2f}".format(customers|sum(attribute='total_loan')) }}</td>
+        <td style="text-align: right;">৳{{ "{:,.2f}".format(customers|sum(attribute='remaining_loan')) }}</td>
+        <td style="text-align: right;">৳{{ "{:,.2f}".format(customers|sum(attribute='savings_balance')) }}</td>
+        <td></td>
+      </tr>
+    </tfoot>
   </table>
+  
+  <div class="d-none print-only" style="margin-top: 20px; font-weight: bold;">
+    <p>মোট গ্রাহক সংখ্যা: {{ customers|length }}</p>
+    <p>মোট লোন: ৳{{ "{:,.2f}".format(customers|sum(attribute='total_loan')) }}</p>
+    <p>মোট বাকি লোন: ৳{{ "{:,.2f}".format(customers|sum(attribute='remaining_loan')) }}</p>
+  </div>
 
   {% if not customers %}
   <div class="alert alert-info">No loan customers found.</div>
   {% endif %}
 
-  <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-3">⬅️ Back</a>
+  <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-3 no-print">⬅️ Back</a>
+
+  <style>
+    .print-only { display: none; }
+    
+    @media print {
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+      
+      body { 
+        font-size: 12px; 
+        margin: 20px; 
+        font-family: Arial, sans-serif;
+      }
+      
+      table { 
+        font-size: 11px; 
+        border: 2px solid #000; 
+        width: 100%;
+        margin-top: 10px;
+      }
+      
+      th { 
+        padding: 8px !important; 
+        background-color: #e0e0e0 !important; 
+        border: 1px solid #000; 
+        font-weight: bold;
+        text-align: center;
+      }
+      
+      td { 
+        padding: 6px !important; 
+        border: 1px solid #000; 
+      }
+      
+      td:first-child {
+        text-align: center;
+        font-weight: bold;
+      }
+      
+      td:nth-child(4), td:nth-child(5), td:nth-child(6) {
+        text-align: right;
+      }
+      
+      .text-danger { 
+        color: #000 !important; 
+        font-weight: bold; 
+      }
+      
+      .text-success { 
+        color: #000 !important; 
+        font-weight: bold; 
+      }
+      
+      tbody tr:nth-child(even) {
+        background-color: #f5f5f5;
+      }
+      
+      tfoot td {
+        padding: 8px !important;
+        font-weight: bold;
+        background-color: #e0e0e0 !important;
+      }
+    }
+  </style>
 </body>
 </html>

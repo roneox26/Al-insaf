@@ -16,6 +16,8 @@
   {% endwith %}
 
   <h2 class="mb-4">💰 All Collections</h2>
+  <h3 class="d-none d-print-block text-center" style="margin: 0;">আল-ইনসাফ এনজিও</h3>
+  <p class="d-none d-print-block text-center" style="margin: 5px 0 15px 0;">সকল কালেকশন রিপোর্ট | তারিখ: {{ now.strftime('%d-%m-%Y') }}</p>
 
   <div class="no-print mb-3">
     <form method="GET" class="row g-3">
@@ -36,25 +38,25 @@
 
   <div class="row mb-3 summary-cards">
     <div class="col-4">
-      <div class="card bg-success text-white">
+      <div class="card bg-success text-white" style="border: 2px solid #28a745;">
         <div class="card-body p-2">
-          <small>Loan Collections</small>
+          <small>💰 Loan Collections</small>
           <h5 class="mb-0">৳{{ "{:,.2f}".format(total_loan) }}</h5>
         </div>
       </div>
     </div>
     <div class="col-4">
-      <div class="card bg-info text-white">
+      <div class="card bg-info text-white" style="border: 2px solid #17a2b8;">
         <div class="card-body p-2">
-          <small>Saving Collections</small>
+          <small>🏦 Saving Collections</small>
           <h5 class="mb-0">৳{{ "{:,.2f}".format(total_saving) }}</h5>
         </div>
       </div>
     </div>
     <div class="col-4">
-      <div class="card bg-primary text-white">
+      <div class="card bg-primary text-white" style="border: 2px solid #0d6efd;">
         <div class="card-body p-2">
-          <small>Grand Total</small>
+          <small>📊 Grand Total</small>
           <h5 class="mb-0">৳{{ "{:,.2f}".format(total_loan + total_saving) }}</h5>
         </div>
       </div>
@@ -66,8 +68,8 @@
       <tr>
         <th>Member No</th>
         <th>Customer</th>
-        <th>Type</th>
-        <th>Amount</th>
+        <th>Loan Amount</th>
+        <th>Saving Amount</th>
         <th>Date</th>
         <th>Staff</th>
       </tr>
@@ -79,12 +81,18 @@
         <td>{{ col.customer.name }}</td>
         <td>
           {% if col.type == 'Loan' %}
-          <span class="badge bg-success">💰 Loan</span>
+          <span class="text-success">৳{{ "{:,.2f}".format(col.amount) }}</span>
           {% else %}
-          <span class="badge bg-info">🏦 Saving</span>
+          -
           {% endif %}
         </td>
-        <td>৳{{ "{:,.2f}".format(col.amount) }}</td>
+        <td>
+          {% if col.type == 'Saving' %}
+          <span class="text-info">৳{{ "{:,.2f}".format(col.amount) }}</span>
+          {% else %}
+          -
+          {% endif %}
+        </td>
         <td>{{ col.date.strftime('%Y-%m-%d %H:%M') }}</td>
         <td>{{ col.staff.name if col.staff else 'N/A' }}</td>
       </tr>
@@ -105,15 +113,27 @@
   <style>
     @media print {
       .no-print { display: none; }
-      body { font-size: 10px; }
-      h2 { font-size: 16px; margin-bottom: 10px; }
-      .summary-cards { margin-bottom: 10px; }
-      .summary-cards .card-body { padding: 5px !important; }
-      .summary-cards small { font-size: 8px; }
-      .summary-cards h5 { font-size: 12px; }
-      table { font-size: 9px; }
-      th, td { padding: 3px !important; }
-      .badge { font-size: 8px; padding: 2px 5px; }
+      body { font-size: 11px; font-family: Arial, sans-serif; margin: 15px; }
+      h2 { display: none; }
+      .summary-cards { margin-bottom: 15px; display: flex; gap: 10px; }
+      .summary-cards .col-4 { flex: 1; }
+      .summary-cards .card { 
+        border: 2px solid #000 !important; 
+        background-color: #f8f9fa !important;
+        color: #000 !important;
+      }
+      .summary-cards .card-body { padding: 10px !important; text-align: center; }
+      .summary-cards small { font-size: 11px; display: block; font-weight: bold; }
+      .summary-cards h5 { font-size: 16px; margin: 5px 0 0 0; font-weight: bold; }
+      table { font-size: 10px; border: 2px solid #000; width: 100%; }
+      th { padding: 6px !important; background-color: #d0d0d0 !important; font-weight: bold; border: 1px solid #000; text-align: center; }
+      td { padding: 5px !important; border: 1px solid #000; }
+      td:first-child { text-align: center; font-weight: bold; }
+      .text-success { color: #000 !important; font-weight: bold; }
+      .text-info { color: #000 !important; font-weight: bold; }
+    }
+    @media screen {
+      .summary-cards .card { margin-bottom: 0; }
     }
   </style>
 </body>

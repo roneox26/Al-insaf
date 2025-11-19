@@ -3,11 +3,17 @@
 <head>
   <title>Admin Dashboard</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="bg-light">
   <nav class="navbar navbar-dark bg-dark px-3">
     <span class="navbar-brand">Admin Panel</span>
-    <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+    <div>
+      <a href="{{ url_for('admin_settings') }}" class="btn btn-warning btn-sm me-2">
+        <i class="fas fa-cog"></i> Settings
+      </a>
+      <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+    </div>
   </nav>
 
   <div class="container mt-4">
@@ -43,10 +49,13 @@
         </div>
       </div>
       <div class="col-md-3">
-        <div class="card shadow p-3">
-          <h5>Remaining Loans</h5>
-          <h3>৳{{ "{:,.2f}".format(pending_loans) }}</h3>
-        </div>
+        <a href="{{ url_for('due_report') }}" class="text-decoration-none">
+          <div class="card shadow p-3 bg-danger text-white">
+            <h5>⚠️ বকেয়া লোন</h5>
+            <h3>৳{{ "{:,.2f}".format(pending_loans) }}</h3>
+            <small>বকেয়া গ্রাহক: {{ due_customers }}</small>
+          </div>
+        </a>
       </div>
     </div>
     <div class="row mt-3">
@@ -63,22 +72,57 @@
         </div>
       </div>
       <div class="col-md-3">
-        <div class="card shadow p-3 bg-info text-white">
-          <div class="d-flex justify-content-between align-items-center">
-            <h5>জমা (ফি)</h5>
-            <select class="form-select form-select-sm text-dark" style="width: auto;" onchange="window.location.href='{{ url_for('dashboard') }}?period={{ period }}&fee_period=' + this.value">
-              <option value="all" {% if fee_period == 'all' %}selected{% endif %}>সব</option>
-              <option value="monthly" {% if fee_period == 'monthly' %}selected{% endif %}>মাসিক</option>
-              <option value="yearly" {% if fee_period == 'yearly' %}selected{% endif %}>বার্ষিক</option>
-            </select>
+        <a href="{{ url_for('manage_notes') }}" class="text-decoration-none">
+          <div class="card shadow p-3 bg-info text-white">
+            <h5>📝 নোট</h5>
+            <h3>{{ notes_count }}</h3>
+            <small>ক্লিক করে দেখুন</small>
           </div>
-          <h3>৳{{ "{:,.2f}".format(total_fees) }}</h3>
-          <small>আবেদন+কল্যাণ+ভর্তি ফি</small>
-        </div>
+        </a>
+      </div>
+    </div>
+    
+    <h4 class="mt-4">💰 জমা (ফি) - তিন ভাগে</h4>
+    <div class="row mt-3">
+      <div class="col-md-3">
+        <a href="{{ url_for('fee_history', fee_type='admission') }}" class="text-decoration-none">
+          <div class="card shadow p-3 bg-primary text-white">
+            <h5>🎫 ভর্তি ফি</h5>
+            <h3>৳{{ "{:,.2f}".format(admission_fee_total) }}</h3>
+            <small>ক্লিক করে History দেখুন</small>
+          </div>
+        </a>
+      </div>
+      <div class="col-md-3">
+        <a href="{{ url_for('fee_history', fee_type='welfare') }}" class="text-decoration-none">
+          <div class="card shadow p-3 bg-success text-white">
+            <h5>❤️ কল্যাণ ফি</h5>
+            <h3>৳{{ "{:,.2f}".format(welfare_fee_total) }}</h3>
+            <small>ক্লিক করে History দেখুন</small>
+          </div>
+        </a>
+      </div>
+      <div class="col-md-3">
+        <a href="{{ url_for('fee_history', fee_type='application') }}" class="text-decoration-none">
+          <div class="card shadow p-3 bg-info text-white">
+            <h5>📝 আবেদন ফি</h5>
+            <h3>৳{{ "{:,.2f}".format(application_fee_total) }}</h3>
+            <small>ক্লিক করে History দেখুন</small>
+          </div>
+        </a>
+      </div>
+      <div class="col-md-3">
+        <a href="{{ url_for('all_fees_history') }}" class="text-decoration-none">
+          <div class="card shadow p-3 bg-warning text-dark">
+            <h5>💰 মোট ফি</h5>
+            <h3>৳{{ "{:,.2f}".format(admission_fee_total + welfare_fee_total + application_fee_total) }}</h3>
+            <small>ক্লিক করে সব ফি দেখুন</small>
+          </div>
+        </a>
       </div>
     </div>
 
-    <h4 class="mt-5">Management</h4>
+    <h4 class="mt-4">Management</h4>
     <div class="row mt-3">
       <div class="col-md-6">
         <a href="{{ url_for('manage_staff') }}" class="btn btn-primary btn-lg w-100 mb-3">
@@ -164,15 +208,27 @@
         </a>
       </div>
       <div class="col-md-3">
+        <a href="{{ url_for('due_report') }}" class="btn btn-danger btn-lg w-100 mb-3">
+          ⚠️ বকেয়া রিপোর্ট
+        </a>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
         <a href="{{ url_for('profit_loss') }}" class="btn btn-warning btn-lg w-100 mb-3">
           📊 Profit & Loss
         </a>
       </div>
     </div>
     <div class="row">
-      <div class="col-md-12">
+      <div class="col-md-6">
         <a href="{{ url_for('view_messages') }}" class="btn btn-dark btn-lg w-100 mb-3">
           📩 Send Messages to Staff
+        </a>
+      </div>
+      <div class="col-md-6">
+        <a href="{{ url_for('admin_settings') }}" class="btn btn-warning btn-lg w-100 mb-3">
+          ⚙️ Admin Settings
         </a>
       </div>
     </div>

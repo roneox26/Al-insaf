@@ -16,6 +16,7 @@
   {% endwith %}
 
   <h2 class="mb-4">💸 Manage Expenses</h2>
+  <a href="{{ url_for('expenses_print') }}?from_date={{ from_date }}&to_date={{ to_date }}" class="btn btn-primary mb-3" target="_blank">🖨️ Print Expenses Report</a>
 
   <div class="alert alert-info">
     <strong>💵 Current Cash Balance:</strong> ৳{{ "{:,.2f}".format(cash_balance) }}
@@ -51,7 +52,7 @@
   <div class="card shadow p-4 mb-4">
     <h4>➕ Add New Expense</h4>
     <form method="POST" class="row g-3">
-      <div class="col-md-3">
+      <div class="col-md-2">
         <label class="form-label">Category</label>
         <select name="category" class="form-control" required>
           <option value="">-- Select --</option>
@@ -61,13 +62,17 @@
           <option value="Other">📦 Other</option>
         </select>
       </div>
-      <div class="col-md-3">
+      <div class="col-md-2">
         <label class="form-label">Amount (৳)</label>
         <input type="number" step="0.01" name="amount" class="form-control" required min="0.01" max="{{ cash_balance }}">
       </div>
-      <div class="col-md-4">
+      <div class="col-md-3">
         <label class="form-label">Description</label>
         <input type="text" name="description" class="form-control" placeholder="Optional">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Date</label>
+        <input type="date" name="expense_date" class="form-control" value="{{ now.strftime('%Y-%m-%d') }}" required>
       </div>
       <div class="col-md-2">
         <label class="form-label">&nbsp;</label>
@@ -78,6 +83,21 @@
 
   <div class="card shadow p-4">
     <h4>📋 Expense History</h4>
+    <form method="GET" class="row g-3 mb-3">
+      <div class="col-md-4">
+        <label class="form-label">From Date</label>
+        <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">To Date</label>
+        <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">&nbsp;</label>
+        <button type="submit" class="btn btn-primary w-100">🔍 Filter</button>
+        <a href="{{ url_for('manage_expenses') }}" class="btn btn-secondary w-100 mt-2">🔄 Reset</a>
+      </div>
+    </form>
     <table class="table table-bordered">
       <thead>
         <tr>

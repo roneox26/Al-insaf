@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ব্যয় রিপোর্ট - Al-Insaf</title>
+    <style>
+        @page { size: A4; margin: 15mm; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Noto Sans Bengali', Arial, sans-serif; font-size: 11pt; line-height: 1.4; }
+        .header { text-align: center; margin-bottom: 20px; border-bottom: 3px solid #333; padding-bottom: 10px; }
+        .header h1 { font-size: 24pt; color: #2c3e50; margin-bottom: 5px; }
+        .header h2 { font-size: 18pt; color: #e74c3c; margin-bottom: 5px; }
+        .header p { font-size: 10pt; color: #7f8c8d; }
+        .summary { background: #f8f9fa; padding: 15px; margin: 20px 0; border-left: 5px solid #e74c3c; display: flex; justify-content: space-around; }
+        .summary-item { text-align: center; }
+        .summary-item .label { font-size: 10pt; color: #7f8c8d; margin-bottom: 5px; }
+        .summary-item .value { font-size: 16pt; font-weight: bold; color: #2c3e50; }
+        .summary-item.danger .value { color: #e74c3c; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 10pt; }
+        thead { background: #2c3e50; color: white; }
+        th, td { padding: 8px; text-align: left; border: 1px solid #ddd; }
+        th { font-weight: bold; font-size: 10pt; }
+        tbody tr:nth-child(even) { background: #f8f9fa; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 3px; font-size: 9pt; font-weight: bold; }
+        .badge-salary { background: #3498db; color: white; }
+        .badge-office { background: #27ae60; color: white; }
+        .badge-transport { background: #f39c12; color: white; }
+        .badge-other { background: #95a5a6; color: white; }
+        tfoot { background: #ecf0f1; font-weight: bold; font-size: 11pt; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #333; display: flex; justify-content: space-between; font-size: 9pt; }
+        .signature { text-align: center; margin-top: 10px; }
+        .signature-line { border-top: 1px solid #333; width: 200px; margin: 40px auto 5px; }
+        @media print {
+            body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+            .no-print { display: none !important; }
+        }
+        .print-btn { position: fixed; top: 20px; right: 20px; padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12pt; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .print-btn:hover { background: #2980b9; }
+    </style>
+</head>
+<body>
+    <button class="print-btn no-print" onclick="window.print()">🖨️ প্রিন্ট করুন</button>
+
+    <div class="header">
+        <h1>🏦 Al-Insaf</h1>
+        <h2>💸 ব্যয় রিপোর্ট</h2>
+        <p>
+            {% if from_date and to_date %}
+                তারিখ: {{ from_date }} থেকে {{ to_date }}
+            {% elif from_date %}
+                তারিখ: {{ from_date }} থেকে বর্তমান
+            {% elif to_date %}
+                তারিখ: শুরু থেকে {{ to_date }}
+            {% else %}
+                সকল ব্যয়
+            {% endif %}
+            | প্রিন্ট: {{ now.strftime('%d-%m-%Y %I:%M %p') }}
+        </p>
+    </div>
+
+    <div class="summary">
+        <div class="summary-item">
+            <div class="label">👨💼 বেতন</div>
+            <div class="value">৳{{ "{:,.2f}".format(by_category['Salary']) }}</div>
+        </div>
+        <div class="summary-item">
+            <div class="label">🏢 অফিস খরচ</div>
+            <div class="value">৳{{ "{:,.2f}".format(by_category['Office']) }}</div>
+        </div>
+        <div class="summary-item">
+            <div class="label">🚗 যাতায়াত</div>
+            <div class="value">৳{{ "{:,.2f}".format(by_category['Transport']) }}</div>
+        </div>
+        <div class="summary-item">
+            <div class="label">📦 অন্যান্য</div>
+            <div class="value">৳{{ "{:,.2f}".format(by_category['Other']) }}</div>
+        </div>
+        <div class="summary-item danger">
+            <div class="label">মোট ব্যয়</div>
+            <div class="value">৳{{ "{:,.2f}".format(total_expenses) }}</div>
+        </div>
+    </div>
+
+    {% if expenses %}
+    <table>
+        <thead>
+            <tr>
+                <th class="text-center">ক্রমিক</th>
+                <th>ক্যাটাগরি</th>
+                <th class="text-right">পরিমাণ</th>
+                <th>বিবরণ</th>
+                <th class="text-center">তারিখ</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for exp in expenses %}
+            <tr>
+                <td class="text-center">{{ loop.index }}</td>
+                <td>
+                    {% if exp.category == 'Salary' %}
+                        <span class="badge badge-salary">👨💼 বেতন</span>
+                    {% elif exp.category == 'Office' %}
+                        <span class="badge badge-office">🏢 অফিস</span>
+                    {% elif exp.category == 'Transport' %}
+                        <span class="badge badge-transport">🚗 যাতায়াত</span>
+                    {% else %}
+                        <span class="badge badge-other">📦 অন্যান্য</span>
+                    {% endif %}
+                </td>
+                <td class="text-right"><strong>৳{{ "{:,.2f}".format(exp.amount) }}</strong></td>
+                <td>{{ exp.description or '-' }}</td>
+                <td class="text-center">{{ exp.date.strftime('%d-%m-%Y') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="2" class="text-right">সর্বমোট:</td>
+                <td class="text-right">৳{{ "{:,.2f}".format(total_expenses) }}</td>
+                <td colspan="2"></td>
+            </tr>
+        </tfoot>
+    </table>
+    {% else %}
+    <div style="text-align: center; padding: 40px; color: #27ae60; font-size: 14pt;">
+        <p>✅ কোনো ব্যয় নেই!</p>
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        <div>
+            <div class="signature">
+                <div class="signature-line"></div>
+                <p>প্রস্তুতকারী</p>
+            </div>
+        </div>
+        <div>
+            <div class="signature">
+                <div class="signature-line"></div>
+                <p>যাচাইকারী</p>
+            </div>
+        </div>
+        <div>
+            <div class="signature">
+                <div class="signature-line"></div>
+                <p>অনুমোদনকারী</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

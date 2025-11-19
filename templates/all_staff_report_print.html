@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8">
+  <title>সকল স্টাফ রিপোর্ট</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h2 { text-align: center; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+    th { background-color: #f0f0f0; font-weight: bold; }
+    .summary { margin-top: 20px; font-weight: bold; }
+    @media print {
+      .no-print { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <button onclick="window.print()" class="no-print" style="margin-bottom: 20px; padding: 10px 20px; cursor: pointer;">🖨️ Print</button>
+  
+  <h2>আল-ইনসাফ</h2>
+  <h3 style="text-align: center;">সকল স্টাফ রিপোর্ট</h3>
+  <p style="text-align: center;">তারিখ: {{ now.strftime('%d-%m-%Y') }}</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ক্রমিক</th>
+        <th>স্টাফ নাম</th>
+        <th>ইমেইল</th>
+        <th>মোট গ্রাহক</th>
+        <th>লোন কালেকশন</th>
+        <th>সেভিংস কালেকশন</th>
+        <th>মোট কালেকশন</th>
+        <th>কালেকশন %</th>
+        <th>বাকি লোন</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% set total_all = staff_data|sum(attribute='total_collection') %}
+      {% for data in staff_data %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ data.staff.name }}</td>
+        <td>{{ data.staff.email }}</td>
+        <td>{{ data.customers }}</td>
+        <td>৳{{ "%.2f"|format(data.total_loan) }}</td>
+        <td>৳{{ "%.2f"|format(data.total_saving) }}</td>
+        <td>৳{{ "%.2f"|format(data.total_collection) }}</td>
+        <td><strong>{{ "%.1f"|format((data.total_collection / total_all * 100) if total_all > 0 else 0) }}%</strong></td>
+        <td>৳{{ "%.2f"|format(data.remaining_loan) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr style="font-weight: bold; background-color: #f0f0f0;">
+        <td colspan="3">সর্বমোট</td>
+        <td>{{ staff_data|sum(attribute='customers') }}</td>
+        <td>৳{{ "%.2f"|format(staff_data|sum(attribute='total_loan')) }}</td>
+        <td>৳{{ "%.2f"|format(staff_data|sum(attribute='total_saving')) }}</td>
+        <td>৳{{ "%.2f"|format(staff_data|sum(attribute='total_collection')) }}</td>
+        <td>100%</td>
+        <td>৳{{ "%.2f"|format(staff_data|sum(attribute='remaining_loan')) }}</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <div class="summary">
+    <p>মোট স্টাফ সংখ্যা: {{ staff_data|length }}</p>
+    <p>মোট গ্রাহক: {{ staff_data|sum(attribute='customers') }}</p>
+    <p>মোট কালেকশন: ৳{{ "%.2f"|format(staff_data|sum(attribute='total_collection')) }}</p>
+  </div>
+</body>
+</html>

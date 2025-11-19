@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8">
+  <title>সকল সদস্য তালিকা</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h2 { text-align: center; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; }
+    th, td { border: 1px solid #000; padding: 6px; text-align: left; }
+    th { background-color: #f0f0f0; font-weight: bold; }
+    .summary { margin-top: 20px; font-weight: bold; }
+    @media print {
+      .no-print { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <button onclick="window.print()" class="no-print" style="margin-bottom: 20px; padding: 10px 20px; cursor: pointer;">🖨️ Print</button>
+  
+  <h2>আল-ইনসাফ এনজিও</h2>
+  <h3 style="text-align: center;">সকল সদস্য তালিকা</h3>
+  <p style="text-align: center;">তারিখ: {{ now.strftime('%d-%m-%Y') }}</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>সদস্য নং</th>
+        <th>নাম</th>
+        <th>ফোন</th>
+        <th>ঠিকানা</th>
+        <th>মোট লোন</th>
+        <th>বাকি লোন</th>
+        <th>সেভিংস</th>
+        <th>স্টাফ</th>
+        <th>যোগদান</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for customer in customers %}
+      <tr>
+        <td>{{ customer.member_no }}</td>
+        <td>{{ customer.name }}</td>
+        <td>{{ customer.phone }}</td>
+        <td>{{ customer.address }}</td>
+        <td>৳{{ "%.2f"|format(customer.total_loan) }}</td>
+        <td>৳{{ "%.2f"|format(customer.remaining_loan) }}</td>
+        <td>৳{{ "%.2f"|format(customer.savings_balance) }}</td>
+        <td>{{ customer.staff.name if customer.staff else 'N/A' }}</td>
+        <td>{{ customer.created_date.strftime('%d-%m-%Y') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr style="font-weight: bold; background-color: #f0f0f0;">
+        <td colspan="4">সর্বমোট</td>
+        <td>৳{{ "%.2f"|format(customers|sum(attribute='total_loan')) }}</td>
+        <td>৳{{ "%.2f"|format(customers|sum(attribute='remaining_loan')) }}</td>
+        <td>৳{{ "%.2f"|format(customers|sum(attribute='savings_balance')) }}</td>
+        <td colspan="2"></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <div class="summary">
+    <p>মোট সদস্য সংখ্যা: {{ customers|length }}</p>
+    <p>মোট লোন: ৳{{ "%.2f"|format(customers|sum(attribute='total_loan')) }}</p>
+    <p>মোট বাকি লোন: ৳{{ "%.2f"|format(customers|sum(attribute='remaining_loan')) }}</p>
+    <p>মোট সেভিংস: ৳{{ "%.2f"|format(customers|sum(attribute='savings_balance')) }}</p>
+  </div>
+</body>
+</html>
