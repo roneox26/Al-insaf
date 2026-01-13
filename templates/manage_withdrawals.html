@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
@@ -116,16 +116,19 @@
                     <table class="table table-striped table-bordered">
                         <thead class="table-dark">
                             <tr>
+                                <th>ক্রমিক</th>
                                 <th>তারিখ</th>
                                 <th>ধরন</th>
                                 <th>সদস্য/বিনিয়োগকারী</th>
                                 <th>টাকা (৳)</th>
                                 <th>নোট</th>
+                                <th>অ্যাকশন</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for withdrawal in withdrawals %}
                             <tr>
+                                <td>{{ loop.index }}</td>
                                 <td>{{ withdrawal.date.strftime('%d-%m-%Y %I:%M %p') }}</td>
                                 <td>
                                     {% if withdrawal.withdrawal_type == 'savings' %}
@@ -143,6 +146,11 @@
                                 </td>
                                 <td>৳{{ "%.2f"|format(withdrawal.amount) }}</td>
                                 <td>{{ withdrawal.note or '-' }}</td>
+                                <td>
+                                    {% if withdrawal.customer %}
+                                    <a href="{{ url_for('withdrawal_invoice', id=withdrawal.id) }}" class="btn btn-sm btn-info" target="_blank">রসিদ</a>
+                                    {% endif %}
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>

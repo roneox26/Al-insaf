@@ -1,10 +1,10 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="bn">
 <head>
   <meta charset="utf-8">
   <title>সকল সদস্য তালিকা</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
+    body { font-family: Arial, sans-serif; margin: 20px; position: relative; }
     h2 { text-align: center; margin-bottom: 20px; }
     table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; }
     th, td { border: 1px solid #000; padding: 6px; text-align: left; }
@@ -12,19 +12,51 @@
     .summary { margin-top: 20px; font-weight: bold; }
     @media print {
       .no-print { display: none; }
+      table { page-break-inside: auto; }
+      thead { display: table-header-group; }
+      tbody { display: table-row-group; }
+      tr { page-break-inside: avoid; page-break-after: auto; }
+      body::before {
+        content: "আল-ইনসাফ";
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-45deg);
+        font-size: 80pt;
+        font-weight: bold;
+        color: #000;
+        opacity: 0.08;
+        z-index: 1;
+      }
+      body::after {
+        content: "";
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-45deg);
+        width: 700px;
+        height: 700px;
+        background-image: url('/static/images/watermark.png');
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        opacity: 0.25;
+        z-index: 1;
+      }
     }
   </style>
 </head>
 <body>
   <button onclick="window.print()" class="no-print" style="margin-bottom: 20px; padding: 10px 20px; cursor: pointer;">🖨️ Print</button>
   
-  <h2>আল-ইনসাফ এনজিও</h2>
+  <h3 style="text-align: center;">আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h3>
   <h3 style="text-align: center;">সকল সদস্য তালিকা</h3>
   <p style="text-align: center;">তারিখ: {{ now.strftime('%d-%m-%Y') }}</p>
 
   <table>
     <thead>
       <tr>
+        <th>ক্রমিক</th>
         <th>সদস্য নং</th>
         <th>নাম</th>
         <th>ফোন</th>
@@ -39,6 +71,7 @@
     <tbody>
       {% for customer in customers %}
       <tr>
+        <td>{{ loop.index }}</td>
         <td>{{ customer.member_no }}</td>
         <td>{{ customer.name }}</td>
         <td>{{ customer.phone }}</td>
@@ -53,7 +86,7 @@
     </tbody>
     <tfoot>
       <tr style="font-weight: bold; background-color: #f0f0f0;">
-        <td colspan="4">সর্বমোট</td>
+        <td colspan="5">সর্বমোট</td>
         <td>৳{{ "%.2f"|format(customers|sum(attribute='total_loan')) }}</td>
         <td>৳{{ "%.2f"|format(customers|sum(attribute='remaining_loan')) }}</td>
         <td>৳{{ "%.2f"|format(customers|sum(attribute='savings_balance')) }}</td>

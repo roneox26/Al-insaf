@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>সদস্য আবেদন ফরম</title>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        @page { size: A4; margin: 12mm; }
+        @media print {
+            .no-print { display: none !important; }
+            body { margin: 0; padding: 12mm; }
+        }
+        body { 
+            font-family: 'Kalpurush', 'Nikosh', Arial, sans-serif; 
+            margin: 0; padding: 20px; font-size: 13px; line-height: 1.7;
+            width: 210mm; min-height: 297mm; background: white;
+        }
+        .header { text-align: center; margin-bottom: 10px; border-bottom: 3px double #000; padding-bottom: 8px; position: relative; }
+        .header h2 { margin: 2px; font-size: 24px; font-weight: bold; color: #1a1a1a; }
+        .header p { margin: 1px; font-size: 11px; color: #333; }
+        .header h3 { 
+            margin: 8px auto; font-size: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; padding: 8px 25px; display: inline-block; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .photo-box { 
+            position: absolute; right: 10px; top: 5px; width: 95px; height: 115px;
+            border: 2px solid #000; display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+            font-size: 11px; color: #666; font-weight: bold;
+        }
+        .form-section { margin: 8px 0; }
+        .form-section p { margin: 4px 0; text-align: justify; line-height: 1.8; }
+        .form-row { 
+            margin: 5px 0; line-height: 2.3; border-bottom: 1px dotted #ccc;
+            padding: 3px 0; display: flex; align-items: center;
+        }
+        .form-row strong { color: #0066cc; font-weight: 600; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        table td { 
+            border: 1.5px solid #333; padding: 10px 6px; font-size: 12px;
+            text-align: center; min-height: 35px; background: #fafafa;
+        }
+        table td:first-child { text-align: left; padding-left: 10px; font-weight: 600; background: #f0f0f0; }
+        table tr:hover td { background: #e8f4f8; }
+        .signature-section { 
+            margin-top: 35px; display: flex; justify-content: space-between;
+            font-size: 12px; padding-top: 15px; border-top: 1px solid #ddd;
+        }
+        .signature-box { text-align: center; min-width: 140px; }
+        .signature-line { border-top: 1.5px solid #000; margin-top: 45px; padding-top: 5px; font-weight: 500; }
+        .no-print { 
+            position: fixed; top: 10px; right: 10px; z-index: 1000;
+            background: white; padding: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border-radius: 10px; border: 2px solid #007bff;
+        }
+        .customer-select {
+            margin-bottom: 12px; padding: 10px; background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-radius: 8px; border: 2px solid #007bff;
+        }
+        .customer-select label { font-weight: bold; margin-bottom: 5px; display: block; color: #0d47a1; }
+        .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; 
+               font-size: 14px; font-weight: 500; transition: all 0.3s; }
+        .btn-primary { background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,123,255,0.4); }
+        .btn-secondary { background: #6c757d; color: white; text-decoration: none; display: inline-block; }
+        .info-highlight { background: #fff3cd; padding: 2px 6px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <div class="customer-select">
+            <label>সদস্য নির্বাচন করুন:</label>
+            <select id="customerSelect" style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #007bff;">
+                <option value="">-- সদস্য নির্বাচন করুন --</option>
+                {% for c in customers %}
+                <option value="{{ c.id }}" {% if customer and customer.id == c.id %}selected{% endif %}>
+                    {{ c.member_no }} - {{ c.name }} - {{ c.phone }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <button onclick="window.print()" class="btn btn-primary">🖨️ প্রিন্ট করুন</button>
+        <a href="{{ url_for('application_forms') }}" class="btn btn-secondary">← ফিরে যান</a>
+    </div>
+
+    <div class="header">
+        <div class="photo-box">ছবি</div>
+        <h2>আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h2>
+        <p>ঠিকানাঃ গ্রাম/পোষ্টঃ নেহালপুর, থানাঃ মনিরামপুর, জেলাঃ যশোর।</p>
+        <p>রেজিস্ট্রেশন নং: ৭৮ জে | ফোন: ০১৭১৫-০০০০০০</p>
+        <h3>সদস্য আবেদন ফরম</h3>
+        <p style="text-align: right; margin: 5px 10px 0 0; font-weight: 500;">তারিখ: <span id="currentDate" class="info-highlight"></span></p>
+    </div>
+
+    <div class="form-section">
+        <p><strong>বরাবর,</strong><br>
+        সভাপতি/সম্পাদক<br>
+        আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ<br>
+        <strong>বিষয়:</strong> সদস্য পদ পাওয়ার জন্য আবেদন।</p>
+        
+        <p><strong>জনাব,</strong></p>
+        <p style="text-indent: 50px; text-align: justify;">
+            বিনীত নিবেদন এই যে, আমি আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ এর সকল নিয়ম-কানুন মেনে সদস্য হওয়ার জন্য আবেদন করিতেছি। আমি আপনার সংগঠনের সকল নিয়ম-কানুন মেনে চলার অঙ্গীকার করিতেছি এবং এই সংগঠনের স্থায়ী ক্ষতিকর কোন কাজ করিব না বা এ ব্যাপারে কাউকে কোন সাহায্য করব না।
+        </p>
+    </div>
+
+    <div class="form-section" style="background: #f8f9fa; padding: 10px; border-radius: 5px; border-left: 4px solid #007bff;">
+        <h4 style="margin: 5px 0 10px 0; color: #0066cc;">ব্যক্তিগত তথ্যাবলী:</h4>
+        <div class="form-row"><strong>১.</strong> আবেদনকারীর নাম: <strong id="name">{{ customer.name if customer else '___________________________' }}</strong> | পিতা/স্বামী: <strong id="father">{{ customer.father_husband if customer else '___________________________' }}</strong></div>
+        <div class="form-row"><strong>২.</strong> মাতার নাম: ___________________________ | ধর্ম: ইসলাম/হিন্দু | জাতীয়তা: বাংলাদেশী</div>
+        <div class="form-row"><strong>৩.</strong> জন্ম তারিখ: ____/____/________ | পেশা: <strong id="profession">{{ customer.profession if customer else 'ব্যবসা/কৃষি/চাকুরীজীবি/অন্যান্য' }}</strong></div>
+        <div class="form-row"><strong>৪.</strong> জাতীয় পরিচয়পত্র/জন্ম নিবন্ধন নং: <strong id="nid">{{ customer.nid_no if customer else '___________________________' }}</strong> | লিঙ্গ: পুরুষ/মহিলা</div>
+        <div class="form-row"><strong>৫.</strong> বর্তমান ঠিকানা - গ্রাম: <strong id="village">{{ customer.village if customer else '________' }}</strong> | পোস্ট: <strong id="post">{{ customer.post if customer else '________' }}</strong> | থানা: <strong id="thana">{{ customer.thana if customer else '________' }}</strong> | জেলা: <strong id="district">{{ customer.district if customer else 'যশোর' }}</strong></div>
+        <div class="form-row"><strong>৬.</strong> স্থায়ী ঠিকানা - গ্রাম: __________ | পোস্ট: __________ | থানা: __________ | জেলা: যশোর</div>
+        <div class="form-row"><strong>৭.</strong> শিক্ষাগত যোগ্যতা: __________ | বৈবাহিক অবস্থা: বিবাহিত/অবিবাহিত | সন্তান সংখ্যা: ছেলে __টি, মেয়ে __টি</div>
+        <div class="form-row"><strong>৮.</strong> সদস্য হওয়ার তারিখ: <span id="joinDate" class="info-highlight"></span> | সদস্য নং: <strong id="memberNo">{{ customer.member_no if customer else '________' }}</strong> | ফোন: <strong id="phone">{{ customer.phone if customer else '___________________________' }}</strong></div>
+    </div>
+
+    <h4 style="margin: 15px 0 8px 0; color: #0066cc; text-align: center;">ঋণ গ্রহণের বিবরণ:</h4>
+    <table>
+        <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <td style="font-weight: bold; color: white; background: transparent;">বিবরণ</td>
+            <td style="color: white; background: transparent;">১ম দফা</td>
+            <td style="color: white; background: transparent;">২য় দফা</td>
+            <td style="color: white; background: transparent;">৩য় দফা</td>
+            <td style="color: white; background: transparent;">৪র্থ দফা</td>
+        </tr>
+        <tr><td>ঋণের ধরন</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        <tr><td>ঋণ গ্রহণের তারিখ</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        <tr><td>ঋণের পরিমাণ (টাকা)</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        <tr><td>ঋণের উদ্দেশ্য</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        <tr><td>পরিশোধের মেয়াদ</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+    </table>
+
+    <div class="form-section" style="background: #fff9e6; padding: 10px; border-radius: 5px; border-left: 4px solid #ffc107;">
+        <h4 style="margin: 5px 0 10px 0; color: #f57c00;">অতিরিক্ত তথ্য:</h4>
+        <div class="form-row"><strong>৯.</strong> ব্যবসা প্রতিষ্ঠানের নাম ও ঠিকানা: _______________________________________________</div>
+        <div class="form-row"><strong>১০.</strong> সম্পদের বিবরণ - স্থাবর সম্পদ: __________ | অস্থাবর সম্পদ: __________ | অন্যান্য: __________ | মোট মূল্য: __________</div>
+        <div class="form-row"><strong>১১.</strong> ঋণের উদ্দেশ্য: _______________________________________________</div>
+        <div class="form-row"><strong>১২.</strong> ক) আবেদনকৃত ঋণের পরিমাণ: __________ টাকা | খ) ঋণের দফা: __________ | গ) মেয়াদ: __________ দিন/মাস</div>
+        <div class="form-row"><strong>১৩.</strong> ঋণ পরিশোধ পদ্ধতি: প্রতিদিন/সাপ্তাহিক/পাক্ষিক/মাসিক/একাকালীন</div>
+        <div class="form-row"><strong>১৪.</strong> সার্ভিস চার্জের হার: ____% | আদায় পদ্ধতি: প্রতিদিন/সাপ্তাহিক/পাক্ষিক/মাসিক/একাকালীন</div>
+        <div class="form-row"><strong>১৫.</strong> ব্যাংক হিসাব নং: ___________________________ | ব্যাংকের নাম: ___________________________</div>
+    </div>
+
+    <div class="signature-section" style="margin-top: 40px;">
+        <div class="signature-box">
+            <div style="font-weight: 600; color: #333;">পারিবারিক গ্যারান্টি</div>
+            <div class="signature-line">স্বাক্ষর ও সীল</div>
+        </div>
+        <div class="signature-box">
+            <div style="font-weight: 600; color: #333;">আবেদনকারীর স্বাক্ষর</div>
+            <div class="signature-line">স্বাক্ষর ও তারিখ</div>
+        </div>
+    </div>
+
+    <div class="signature-section" style="margin-top: 25px; border-top: 2px solid #007bff; padding-top: 20px;">
+        <div class="signature-box">
+            <div style="font-weight: 600; color: #0066cc;">ফিল্ড অফিসার</div>
+            <div class="signature-line">স্বাক্ষর ও সীল</div>
+        </div>
+        <div class="signature-box">
+            <div style="font-weight: 600; color: #0066cc;">ম্যানেজার</div>
+            <div class="signature-line">স্বাক্ষর ও সীল</div>
+        </div>
+        <div class="signature-box">
+            <div style="font-weight: 600; color: #0066cc;">অনুমোদনকারী</div>
+            <div class="signature-line">স্বাক্ষর ও সীল</div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        const today = new Date();
+        const dateStr = today.getDate() + '/' + (today.getMonth() + 1) + '/' + today.getFullYear();
+        document.getElementById('currentDate').textContent = dateStr;
+        document.getElementById('joinDate').textContent = dateStr;
+
+        $(document).ready(function() {
+            $('#customerSelect').select2({ placeholder: '-- সদস্য নির্বাচন করুন --' });
+            $('#customerSelect').on('change', function() {
+                const customerId = $(this).val();
+                if (customerId) window.location.href = '{{ url_for("loan_application_form") }}?customer_id=' + customerId;
+            });
+        });
+    </script>
+</body>
+</html>

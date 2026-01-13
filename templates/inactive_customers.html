@@ -1,0 +1,75 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Inactive Customers</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="container mt-5">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <h2 class="mb-4">🚫 Inactive Customers</h2>
+  <a href="{{ url_for('manage_customers') }}" class="btn btn-primary mb-3">✅ Active Customers</a>
+
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>ক্রমিক</th>
+        <th>সদস্য নং</th>
+        <th>Name</th>
+        <th>Phone</th>
+        <th>Address</th>
+        <th>Total Loan</th>
+        <th>Remaining</th>
+        <th>Savings</th>
+        <th>Assigned Staff</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for customer in customers %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ customer.member_no }}</td>
+        <td>{{ customer.name }}</td>
+        <td>{{ customer.phone }}</td>
+        <td>{{ customer.address }}</td>
+        <td>৳{{ "%.2f"|format(customer.total_loan) }}</td>
+        <td><span class="text-danger">৳{{ "%.2f"|format(customer.remaining_loan) }}</span></td>
+        <td><span class="text-success">৳{{ "%.2f"|format(customer.savings_balance) }}</span></td>
+        <td>{{ customer.staff.name if customer.staff else 'N/A' }}</td>
+        <td>
+          <a href="{{ url_for('customer_details', id=customer.id) }}" class="btn btn-sm btn-info">📋 Details</a>
+          <button class="btn btn-sm btn-success" onclick="activateCustomer({{ customer.id }}, '{{ customer.name }}')">✅ Activate</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if not customers %}
+  <div class="alert alert-info">কোন Inactive Customer নেই।</div>
+  {% endif %}
+
+  <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-3">⬅️ Back</a>
+
+  <script>
+  function activateCustomer(customerId, customerName) {
+    if (confirm('গ্রাহক "' + customerName + '" কে Activate করতে চান?')) {
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/customer/activate/' + customerId;
+      document.body.appendChild(form);
+      form.submit();
+    }
+  }
+  </script>
+</body>
+</html>

@@ -1,11 +1,11 @@
-# Al-Insaf NGO Management System
+# Al-Insaf ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ - NGO Management System
 
 🏦 একটি সম্পূর্ণ NGO ম্যানেজমেন্ট সিস্টেম যেখানে লোন, সেভিংস, কালেকশন ম্যানেজ করা যায়।
 
 ## ✨ Features
 
 ### 👥 User Management
-- ✅ 3 ধরনের User: Admin, Office Staff, Field Staff
+- ✅ 4 ধরনের User: Admin, Office Staff, Field Staff, Monitor Staff
 - ✅ Role-based Access Control
 - ✅ Staff Management
 
@@ -81,6 +81,13 @@ http://localhost:5000
 - View only assigned customers
 - Collect from own customers
 - Add customers under own supervision
+
+### Monitor Staff (মনিটর স্টাফ)
+- View all customers (read-only)
+- View loan customers
+- View daily reports
+- Cannot collect money
+- Only monitoring access
 
 ## 📝 Default Login Credentials
 

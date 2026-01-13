@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ব্যয় রিপোর্ট - Al-Insaf</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/print-watermark.css') }}">
     <style>
         @page { size: A4; margin: 15mm; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -35,7 +36,38 @@
         .signature-line { border-top: 1px solid #333; width: 200px; margin: 40px auto 5px; }
         @media print {
             body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+            body::before {
+                content: "আল-ইনসাফ";
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-45deg);
+                font-size: 80pt;
+                font-weight: bold;
+                color: #000;
+                opacity: 0.08;
+                z-index: 1;
+            }
+            body::after {
+                content: "";
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-45deg);
+                width: 700px;
+                height: 700px;
+                background-image: url('/static/images/watermark.png');
+                background-size: contain;
+                background-repeat: no-repeat;
+                background-position: center;
+                opacity: 0.25;
+                z-index: 1;
+            }
             .no-print { display: none !important; }
+            table { page-break-inside: auto; }
+            thead { display: table-header-group; }
+            tbody { display: table-row-group; }
+            tr { page-break-inside: avoid; page-break-after: auto; }
         }
         .print-btn { position: fixed; top: 20px; right: 20px; padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12pt; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         .print-btn:hover { background: #2980b9; }
@@ -45,15 +77,14 @@
     <button class="print-btn no-print" onclick="window.print()">🖨️ প্রিন্ট করুন</button>
 
     <div class="header">
-        <h1>🏦 Al-Insaf</h1>
+        <h2>আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h2>
         <h2>💸 ব্যয় রিপোর্ট</h2>
         <p>
-            {% if from_date and to_date %}
-                তারিখ: {{ from_date }} থেকে {{ to_date }}
-            {% elif from_date %}
-                তারিখ: {{ from_date }} থেকে বর্তমান
-            {% elif to_date %}
-                তারিখ: শুরু থেকে {{ to_date }}
+            {% if filter_type == 'month' and month and year %}
+                {% set month_names = ['', 'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'] %}
+                মাস: {{ month_names[month] }} {{ year }}
+            {% elif filter_type == 'year' and year %}
+                বছর: {{ year }}
             {% else %}
                 সকল ব্যয়
             {% endif %}

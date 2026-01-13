@@ -1,0 +1,33 @@
+@media print {
+  body::before {
+    content: "আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ";
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    font-size: 60pt;
+    font-weight: bold;
+    color: #000;
+    opacity: 0.08;
+    z-index: 1;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  
+  body::after {
+    content: "";
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    width: 700px;
+    height: 700px;
+    background-image: url('/static/images/watermark.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.25;
+    z-index: 1;
+    pointer-events: none;
+  }
+}

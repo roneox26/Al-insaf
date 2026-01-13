@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -16,31 +16,93 @@
   {% endwith %}
 
   <h2 class="mb-4">💰 Manage Loans</h2>
-  <a href="{{ url_for('add_loan') }}" class="btn btn-success mb-3">➕ Add New Loan</a>
+  <div class="mb-3">
+    <a href="{{ url_for('add_loan') }}" class="btn btn-success">➕ Add New Loan</a>
+    <a href="{{ url_for('loans_print') }}?filter_type={{ filter_type }}&month={{ month }}&year={{ year }}" class="btn btn-primary" target="_blank">🖨️ Print Report</a>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-md-3">
+      <div class="card shadow p-3">
+        <h6>💵 Total Loan Amount</h6>
+        <h4>৳{{ "{:,.2f}".format(total_amount) }}</h4>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow p-3">
+        <h6>📈 Total Interest</h6>
+        <h4>৳{{ "{:,.2f}".format(total_interest) }}</h4>
+      </div>
+    </div>
+  </div>
 
   <form method="GET" class="row g-3 mb-3">
-    <div class="col-md-4">
-      <input type="text" name="customer" class="form-control" placeholder="Search by customer name" value="{{ request.args.get('customer', '') }}">
+    <div class="col-md-3">
+      <label class="form-label">Filter Type</label>
+      <select name="filter_type" id="filterType" class="form-control" onchange="toggleFilters()">
+        <option value="all" {% if filter_type == 'all' %}selected{% endif %}>All</option>
+        <option value="month" {% if filter_type == 'month' %}selected{% endif %}>Month</option>
+        <option value="year" {% if filter_type == 'year' %}selected{% endif %}>Year</option>
+      </select>
     </div>
-    <div class="col-md-4">
-      <select name="staff_id" class="form-control">
-        <option value="">All Staff</option>
-        {% for staff in staffs %}
-        <option value="{{ staff.id }}" {% if request.args.get('staff_id')|int == staff.id %}selected{% endif %}>{{ staff.name }}</option>
+    <div class="col-md-3" id="monthFilter" style="display: {% if filter_type == 'month' %}block{% else %}none{% endif %};">
+      <label class="form-label">Month</label>
+      <select name="month" class="form-control">
+        <option value="1" {% if month == 1 %}selected{% endif %}>জানুয়ারি</option>
+        <option value="2" {% if month == 2 %}selected{% endif %}>ফেব্রুয়ারি</option>
+        <option value="3" {% if month == 3 %}selected{% endif %}>মার্চ</option>
+        <option value="4" {% if month == 4 %}selected{% endif %}>এপ্রিল</option>
+        <option value="5" {% if month == 5 %}selected{% endif %}>মে</option>
+        <option value="6" {% if month == 6 %}selected{% endif %}>জুন</option>
+        <option value="7" {% if month == 7 %}selected{% endif %}>জুলাই</option>
+        <option value="8" {% if month == 8 %}selected{% endif %}>আগস্ট</option>
+        <option value="9" {% if month == 9 %}selected{% endif %}>সেপ্টেম্বর</option>
+        <option value="10" {% if month == 10 %}selected{% endif %}>অক্টোবর</option>
+        <option value="11" {% if month == 11 %}selected{% endif %}>নভেম্বর</option>
+        <option value="12" {% if month == 12 %}selected{% endif %}>ডিসেম্বর</option>
+      </select>
+    </div>
+    <div class="col-md-3" id="yearFilter" style="display: {% if filter_type in ['month', 'year'] %}block{% else %}none{% endif %};">
+      <label class="form-label">Year</label>
+      <select name="year" class="form-control">
+        {% for y in range(2020, 2031) %}
+        <option value="{{ y }}" {% if year == y %}selected{% endif %}>{{ y }}</option>
         {% endfor %}
       </select>
     </div>
-    <div class="col-md-2">
-      <button type="submit" class="btn btn-primary">Filter</button>
+    <div class="col-md-3">
+      <label class="form-label">&nbsp;</label>
+      <button type="submit" class="btn btn-primary w-100">🔍 Filter</button>
+      <a href="{{ url_for('manage_loans') }}" class="btn btn-secondary w-100 mt-2">🔄 Reset</a>
     </div>
   </form>
+  <script>
+    function toggleFilters() {
+      const filterType = document.getElementById('filterType').value;
+      const monthFilter = document.getElementById('monthFilter');
+      const yearFilter = document.getElementById('yearFilter');
+      
+      if (filterType === 'month') {
+        monthFilter.style.display = 'block';
+        yearFilter.style.display = 'block';
+      } else if (filterType === 'year') {
+        monthFilter.style.display = 'none';
+        yearFilter.style.display = 'block';
+      } else {
+        monthFilter.style.display = 'none';
+        yearFilter.style.display = 'none';
+      }
+    }
+  </script>
 
   <table class="table table-bordered">
     <thead>
       <tr>
+        <th>ক্রমিক</th>
         <th>Customer</th>
         <th>Amount</th>
         <th>Interest</th>
+        <th>Loan Date</th>
         <th>Due Date</th>
         <th>Status</th>
         <th>Staff</th>
@@ -50,9 +112,11 @@
     <tbody>
       {% for loan in loans %}
       <tr>
+        <td>{{ loop.index }}</td>
         <td>{{ loan.customer_name }}</td>
         <td>৳{{ "{:,.2f}".format(loan.amount) }}</td>
         <td>{{ loan.interest }}%</td>
+        <td>{{ loan.loan_date.strftime('%Y-%m-%d') }}</td>
         <td>{{ loan.due_date.strftime('%Y-%m-%d') }}</td>
         <td>
           {% if loan.status == 'Paid' %}
@@ -62,7 +126,9 @@
           {% endif %}
         </td>
         <td>{{ loan.staff.name if loan.staff else 'N/A' }}</td>
-        <td>-</td>
+        <td>
+          <a href="{{ url_for('edit_loan', id=loan.id) }}" class="btn btn-sm btn-warning">✏️ Edit</a>
+        </td>
       </tr>
       {% endfor %}
     </tbody>

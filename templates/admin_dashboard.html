@@ -1,237 +1,336 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
-  <title>Admin Dashboard</title>
+  <title>Admin Dashboard - Al-Insaf NGO</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { 
+      background: #06D001; 
+      min-height: 100vh; 
+      position: relative;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px;
+      height: 600px;
+      background-image: url('{{ url_for('static', filename='images/logo.jpg') }}');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      opacity: 0.05;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .navbar { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%) !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .stat-card { border-radius: 15px; transition: all 0.3s; border: none; background: white; }
+    .stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+    .stat-icon { font-size: 2.5rem; opacity: 0.8; }
+    .action-card { border-radius: 15px; background: white; border: none; height: 100%; }
+    .action-card:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+    .btn-action { border-radius: 10px; font-weight: 500; padding: 12px 20px; transition: all 0.3s; }
+    .btn-action:hover { transform: scale(1.05); }
+    .section-title { color: white; font-weight: 700; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+    .welcome-card { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border-radius: 15px; }
+  </style>
 </head>
-<body class="bg-light">
-  <nav class="navbar navbar-dark bg-dark px-3">
-    <span class="navbar-brand">Admin Panel</span>
-    <div>
-      <a href="{{ url_for('admin_settings') }}" class="btn btn-warning btn-sm me-2">
+<body>
+  <nav class="navbar navbar-dark px-4" style="position: relative; z-index: 1;">
+    <span class="navbar-brand fs-4">
+      <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Logo" style="width: 40px; height: 40px; object-fit: contain; margin-right: 10px; border-radius: 50%; background: white; padding: 2px;">
+      <i class="fas fa-user-shield"></i> Admin Panel
+    </span>
+    <div class="d-flex align-items-center gap-3">
+      {% include 'bd_time_display.html' %}
+      {% include 'theme_toggle.html' %}
+      <a href="{{ url_for('admin_settings') }}" class="btn btn-warning btn-sm">
         <i class="fas fa-cog"></i> Settings
       </a>
-      <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+      <a href="{{ url_for('logout') }}" class="btn btn-danger btn-sm"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </div>
   </nav>
 
-  <div class="container mt-4">
-    <h2>Welcome, {{ name }} (Admin)</h2>
+  <div class="container mt-4 pb-5" style="position: relative; z-index: 1;">
+    <div class="welcome-card shadow-lg p-4 mb-4">
+      <h2><i class="fas fa-user-shield"></i> Welcome, {{ name }}</h2>
+      <p class="mb-0"><i class="fas fa-crown"></i> Administrator | Full System Access</p>
+    </div>
 
-    <div class="row mt-4">
-      <div class="col-md-3">
+    <div class="row g-4 mb-4">
+      <div class="col-md-2">
         <a href="{{ url_for('manage_cash_balance') }}" class="text-decoration-none">
-          <div class="card shadow p-3 bg-success text-white">
-            <h5>💵 Cash Balance</h5>
-            <h2>৳{{ "{:,.2f}".format(cash_balance) }}</h2>
-            <small>ক্লিক করে ম্যানেজ করুন</small>
+          <div class="stat-card shadow p-4 text-center bg-success text-white">
+            <div class="stat-icon"><i class="fas fa-wallet"></i></div>
+            <h3 class="mt-2">৳{{ "{:,.0f}".format(cash_balance) }}</h3>
+            <p class="mb-0">Cash Balance</p>
           </div>
         </a>
       </div>
-      <div class="col-md-3">
-        <div class="card shadow p-3">
-          <h5>Total Customers</h5>
-          <h3>{{ total_customers }}</h3>
+      <div class="col-md-2">
+        <div class="stat-card shadow p-4 text-center bg-primary text-white">
+          <div class="stat-icon"><i class="fas fa-users"></i></div>
+          <h3 class="mt-2">{{ total_customers }}</h3>
+          <p class="mb-0">Total Customers</p>
         </div>
       </div>
-      <div class="col-md-3">
-        <div class="card shadow p-3">
-          <div class="d-flex justify-content-between align-items-center">
-            <h5>Total Loans Given</h5>
-            <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href='{{ url_for('dashboard') }}?period=' + this.value + '&fee_period={{ fee_period }}'">
-              <option value="all" {% if period == 'all' %}selected{% endif %}>সব</option>
-              <option value="monthly" {% if period == 'monthly' %}selected{% endif %}>মাসিক</option>
-              <option value="yearly" {% if period == 'yearly' %}selected{% endif %}>বার্ষিক</option>
-            </select>
-          </div>
-          <h3>৳{{ "{:,.2f}".format(total_loans) }}</h3>
-        </div>
-      </div>
-      <div class="col-md-3">
+      <div class="col-md-2">
         <a href="{{ url_for('due_report') }}" class="text-decoration-none">
-          <div class="card shadow p-3 bg-danger text-white">
-            <h5>⚠️ বকেয়া লোন</h5>
-            <h3>৳{{ "{:,.2f}".format(pending_loans) }}</h3>
-            <small>বকেয়া গ্রাহক: {{ due_customers }}</small>
+          <div class="stat-card shadow p-4 text-center bg-danger text-white">
+            <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <h3 class="mt-2">৳{{ "{:,.0f}".format(pending_loans) }}</h3>
+            <p class="mb-0">বকেয়া লোন</p>
           </div>
         </a>
       </div>
-    </div>
-    <div class="row mt-3">
-      <div class="col-md-3">
-        <div class="card shadow p-3">
-          <h5>Total Savings</h5>
-          <h3>৳{{ "{:,.2f}".format(total_savings) }}</h3>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card shadow p-3">
-          <h5>Staff Count</h5>
-          <h3>{{ staff_count }}</h3>
-        </div>
-      </div>
-      <div class="col-md-3">
+      <div class="col-md-2">
         <a href="{{ url_for('manage_notes') }}" class="text-decoration-none">
-          <div class="card shadow p-3 bg-info text-white">
-            <h5>📝 নোট</h5>
-            <h3>{{ notes_count }}</h3>
-            <small>ক্লিক করে দেখুন</small>
+          <div class="stat-card shadow p-4 text-center bg-warning text-dark">
+            <div class="stat-icon"><i class="fas fa-sticky-note"></i></div>
+            <h3 class="mt-2">{{ notes_count }}</h3>
+            <p class="mb-0">নোট</p>
           </div>
         </a>
       </div>
-    </div>
-    
-    <h4 class="mt-4">💰 জমা (ফি) - তিন ভাগে</h4>
-    <div class="row mt-3">
-      <div class="col-md-3">
-        <a href="{{ url_for('fee_history', fee_type='admission') }}" class="text-decoration-none">
-          <div class="card shadow p-3 bg-primary text-white">
-            <h5>🎫 ভর্তি ফি</h5>
-            <h3>৳{{ "{:,.2f}".format(admission_fee_total) }}</h3>
-            <small>ক্লিক করে History দেখুন</small>
-          </div>
-        </a>
+      <div class="col-md-2">
+        <div class="stat-card shadow p-4 text-center bg-info text-white">
+          <div class="stat-icon"><i class="fas fa-piggy-bank"></i></div>
+          <h3 class="mt-2">৳{{ "{:,.0f}".format(total_savings) }}</h3>
+          <p class="mb-0">Total Savings</p>
+        </div>
       </div>
-      <div class="col-md-3">
-        <a href="{{ url_for('fee_history', fee_type='welfare') }}" class="text-decoration-none">
-          <div class="card shadow p-3 bg-success text-white">
-            <h5>❤️ কল্যাণ ফি</h5>
-            <h3>৳{{ "{:,.2f}".format(welfare_fee_total) }}</h3>
-            <small>ক্লিক করে History দেখুন</small>
-          </div>
-        </a>
-      </div>
-      <div class="col-md-3">
-        <a href="{{ url_for('fee_history', fee_type='application') }}" class="text-decoration-none">
-          <div class="card shadow p-3 bg-info text-white">
-            <h5>📝 আবেদন ফি</h5>
-            <h3>৳{{ "{:,.2f}".format(application_fee_total) }}</h3>
-            <small>ক্লিক করে History দেখুন</small>
-          </div>
-        </a>
-      </div>
-      <div class="col-md-3">
-        <a href="{{ url_for('all_fees_history') }}" class="text-decoration-none">
-          <div class="card shadow p-3 bg-warning text-dark">
-            <h5>💰 মোট ফি</h5>
-            <h3>৳{{ "{:,.2f}".format(admission_fee_total + welfare_fee_total + application_fee_total) }}</h3>
-            <small>ক্লিক করে সব ফি দেখুন</small>
-          </div>
-        </a>
+      <div class="col-md-2">
+        <div class="stat-card shadow p-4 text-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+          <div class="stat-icon"><i class="fas fa-user-tie"></i></div>
+          <h3 class="mt-2">{{ staff_count }}</h3>
+          <p class="mb-0">Staff Count</p>
+        </div>
       </div>
     </div>
 
-    <h4 class="mt-4">Management</h4>
-    <div class="row mt-3">
-      <div class="col-md-6">
-        <a href="{{ url_for('manage_staff') }}" class="btn btn-primary btn-lg w-100 mb-3">
-          👨💼 Manage Staff ({{ staff_count }})
-        </a>
+    <h4 class="section-title mb-3"><i class="fas fa-users-cog"></i> Staff & Customer Management</h4>
+    <div class="row g-4 mb-4">
+      <div class="col-md-3">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-primary mb-3"><i class="fas fa-user-tie fa-3x"></i></div>
+          <h5>Manage Staff</h5>
+          <a href="{{ url_for('manage_staff') }}" class="btn btn-primary btn-action w-100 mt-2"><i class="fas fa-list"></i> View All ({{ staff_count }})</a>
+        </div>
       </div>
-      <div class="col-md-6">
-        <a href="{{ url_for('manage_customers') }}" class="btn btn-info btn-lg w-100 mb-3">
-          👥 Manage Customers ({{ total_customers }})
-        </a>
+      <div class="col-md-3">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-info mb-3"><i class="fas fa-users fa-3x"></i></div>
+          <h5>Manage Customers</h5>
+          <a href="{{ url_for('manage_customers') }}" class="btn btn-info btn-action w-100 mt-2"><i class="fas fa-list"></i> View All ({{ total_customers }})</a>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-warning mb-3"><i class="fas fa-hand-holding-usd fa-3x"></i></div>
+          <h5>Loan Customers</h5>
+          <a href="{{ url_for('loan_customers') }}" class="btn btn-warning btn-action w-100 mt-2"><i class="fas fa-list-alt"></i> View List</a>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-secondary mb-3"><i class="fas fa-user-slash fa-3x"></i></div>
+          <h5>Inactive Customers</h5>
+          <a href="{{ url_for('inactive_customers') }}" class="btn btn-secondary btn-action w-100 mt-2"><i class="fas fa-eye"></i> View List</a>
+        </div>
       </div>
     </div>
 
-    <div class="row">
-      <div class="col-md-6">
-        <a href="{{ url_for('manage_loans') }}" class="btn btn-success btn-lg w-100 mb-3">
-          💰 Manage Loans
-        </a>
+    <h4 class="section-title mb-3"><i class="fas fa-money-check-alt"></i> Loan & Savings Management</h4>
+    <div class="row g-4 mb-4">
+      <div class="col-md-4">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-success mb-3"><i class="fas fa-hand-holding-usd fa-3x"></i></div>
+          <h5>Manage Loans</h5>
+          <a href="{{ url_for('manage_loans') }}" class="btn btn-success btn-action w-100 mt-2 btn-lg"><i class="fas fa-coins"></i> View All</a>
+        </div>
       </div>
-      <div class="col-md-6">
-        <a href="{{ url_for('loan_customers') }}" class="btn btn-warning btn-lg w-100 mb-3">
-          👥 Loan Customers
-        </a>
+      <div class="col-md-4">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-primary mb-3"><i class="fas fa-history fa-3x"></i></div>
+          <h5>Loan Collections</h5>
+          <a href="{{ url_for('loan_collections_history') }}" class="btn btn-primary btn-action w-100 mt-2"><i class="fas fa-list"></i> History</a>
+        </div>
       </div>
-    </div>
-    <div class="row">
-      <div class="col-md-6">
-        <a href="{{ url_for('loan_collections_history') }}" class="btn btn-info btn-lg w-100 mb-3">
-          💰 Loan Collections History
-        </a>
-      </div>
-      <div class="col-md-6">
-        <a href="{{ url_for('manage_customers') }}" class="btn btn-secondary btn-lg w-100 mb-3">
-          👥 All Customers
-        </a>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-md-6">
-        <a href="{{ url_for('manage_savings') }}" class="btn btn-warning btn-lg w-100 mb-3">
-          💵 Savings Collections History
-        </a>
-      </div>
-      <div class="col-md-6">
-        <a href="{{ url_for('manage_collections') }}" class="btn btn-secondary btn-lg w-100 mb-3">
-          📊 All Collections
-        </a>
+      <div class="col-md-4">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-info mb-3"><i class="fas fa-piggy-bank fa-3x"></i></div>
+          <h5>Savings Collections</h5>
+          <a href="{{ url_for('manage_savings') }}" class="btn btn-info btn-action w-100 mt-2"><i class="fas fa-list"></i> History</a>
+        </div>
       </div>
     </div>
 
-    <div class="row">
-      <div class="col-md-4">
-        <a href="{{ url_for('manage_expenses') }}" class="btn btn-danger btn-lg w-100 mb-3">
-          💸 Manage Expenses
-        </a>
-      </div>
-      <div class="col-md-4">
-        <a href="{{ url_for('manage_withdrawals') }}" class="btn btn-warning btn-lg w-100 mb-3">
-          💵 সঞ্চয় ফেরত / Withdrawal
-        </a>
-      </div>
-      <div class="col-md-4">
-        <a href="{{ url_for('profit_loss') }}" class="btn btn-success btn-lg w-100 mb-3">
-          📊 Profit & Loss
-        </a>
-      </div>
-    </div>
-    <h4 class="mt-4">📊 রিপোর্ট</h4>
-    <div class="row">
-      <div class="col-md-3">
-        <a href="{{ url_for('daily_report') }}" class="btn btn-primary btn-lg w-100 mb-3">
-          📅 দৈনিক রিপোর্ট
-        </a>
-      </div>
-      <div class="col-md-3">
-        <a href="{{ url_for('monthly_report') }}" class="btn btn-success btn-lg w-100 mb-3">
-          📆 মাসিক রিপোর্ট
-        </a>
-      </div>
-      <div class="col-md-3">
-        <a href="{{ url_for('withdrawal_report') }}" class="btn btn-info btn-lg w-100 mb-3">
-          💵 Withdrawal রিপোর্ট
-        </a>
-      </div>
-      <div class="col-md-3">
-        <a href="{{ url_for('due_report') }}" class="btn btn-danger btn-lg w-100 mb-3">
-          ⚠️ বকেয়া রিপোর্ট
-        </a>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-md-12">
-        <a href="{{ url_for('profit_loss') }}" class="btn btn-warning btn-lg w-100 mb-3">
-          📊 Profit & Loss
-        </a>
-      </div>
-    </div>
-    <div class="row">
+    <div class="row g-4 mb-4">
       <div class="col-md-6">
-        <a href="{{ url_for('view_messages') }}" class="btn btn-dark btn-lg w-100 mb-3">
-          📩 Send Messages to Staff
-        </a>
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-secondary mb-3"><i class="fas fa-list-ul fa-3x"></i></div>
+          <h5>All Collections</h5>
+          <a href="{{ url_for('manage_collections') }}" class="btn btn-secondary btn-action w-100 mt-2"><i class="fas fa-eye"></i> View All</a>
+        </div>
       </div>
       <div class="col-md-6">
-        <a href="{{ url_for('admin_settings') }}" class="btn btn-warning btn-lg w-100 mb-3">
-          ⚙️ Admin Settings
-        </a>
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-danger mb-3"><i class="fas fa-exclamation-circle fa-3x"></i></div>
+          <h5>Due Report</h5>
+          <a href="{{ url_for('due_report') }}" class="btn btn-danger btn-action w-100 mt-2"><i class="fas fa-file-invoice"></i> View Report</a>
+        </div>
+      </div>
+    </div>
+
+    <h4 class="section-title mb-3"><i class="fas fa-receipt"></i> Fee Management</h4>
+    <div class="row g-4 mb-4">
+      <div class="col-md-3">
+        <div class="action-card shadow p-4 text-center">
+          <div class="mb-3" style="color: #667eea;"><i class="fas fa-ticket-alt fa-3x"></i></div>
+          <h5>ভর্তি ফি</h5>
+          <h4 class="text-primary">৳{{ "{:,.0f}".format(admission_fee_total) }}</h4>
+          <a href="{{ url_for('fee_history', fee_type='admission') }}" class="btn btn-action w-100 mt-2" style="background: #667eea; color: white;"><i class="fas fa-history"></i> History</a>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-success mb-3"><i class="fas fa-heart fa-3x"></i></div>
+          <h5>কল্যাণ ফি</h5>
+          <h4 class="text-success">৳{{ "{:,.0f}".format(welfare_fee_total) }}</h4>
+          <a href="{{ url_for('fee_history', fee_type='welfare') }}" class="btn btn-success btn-action w-100 mt-2"><i class="fas fa-history"></i> History</a>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-info mb-3"><i class="fas fa-file-alt fa-3x"></i></div>
+          <h5>আবেদন ফি</h5>
+          <h4 class="text-info">৳{{ "{:,.0f}".format(application_fee_total) }}</h4>
+          <a href="{{ url_for('fee_history', fee_type='application') }}" class="btn btn-info btn-action w-100 mt-2"><i class="fas fa-history"></i> History</a>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-warning mb-3"><i class="fas fa-money-bill-wave fa-3x"></i></div>
+          <h5>সব ফি</h5>
+          <h4 class="text-warning">৳{{ "{:,.0f}".format(admission_fee_total + welfare_fee_total + application_fee_total) }}</h4>
+          <a href="{{ url_for('all_fees_history') }}" class="btn btn-warning btn-action w-100 mt-2"><i class="fas fa-list"></i> View All</a>
+        </div>
+      </div>
+    </div>
+
+    <h4 class="section-title mb-3"><i class="fas fa-wallet"></i> Financial Management</h4>
+    <div class="row g-4 mb-4">
+      <div class="col-md-4">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-success mb-3"><i class="fas fa-wallet fa-3x"></i></div>
+          <h5>Cash Balance</h5>
+          <h4 class="text-success">৳{{ "{:,.0f}".format(cash_balance) }}</h4>
+          <a href="{{ url_for('manage_cash_balance') }}" class="btn btn-success btn-action w-100 mt-2 btn-lg"><i class="fas fa-cog"></i> Manage</a>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-danger mb-3"><i class="fas fa-receipt fa-3x"></i></div>
+          <h5>Manage Expenses</h5>
+          <a href="{{ url_for('manage_expenses') }}" class="btn btn-danger btn-action w-100 mt-2 btn-lg"><i class="fas fa-money-bill"></i> View All</a>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-info mb-3"><i class="fas fa-users-cog fa-3x"></i></div>
+          <h5>Manage Investors</h5>
+          <a href="{{ url_for('manage_investors') }}" class="btn btn-info btn-action w-100 mt-2 btn-lg"><i class="fas fa-list"></i> View All</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+      <div class="col-md-6">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-warning mb-3"><i class="fas fa-hand-holding-usd fa-3x"></i></div>
+          <h5>সঞ্চয় ফেরত / Withdrawal</h5>
+          <a href="{{ url_for('manage_withdrawals') }}" class="btn btn-warning btn-action w-100 mt-2"><i class="fas fa-money-check"></i> Manage</a>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="action-card shadow p-4 text-center">
+          <div class="mb-3" style="color: #6f42c1;"><i class="fas fa-chart-line fa-3x"></i></div>
+          <h5>Profit & Loss</h5>
+          <a href="{{ url_for('profit_loss') }}" class="btn btn-action w-100 mt-2" style="background: #6f42c1; color: white;"><i class="fas fa-file-invoice-dollar"></i> View Statement</a>
+        </div>
+      </div>
+    </div>
+
+    <h4 class="section-title mb-3"><i class="fas fa-chart-bar"></i> Reports</h4>
+    <div class="row g-4 mb-4">
+      <div class="col-md-3">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-primary mb-3"><i class="fas fa-calendar-day fa-3x"></i></div>
+          <h5>দৈনিক রিপোর্ট</h5>
+          <a href="{{ url_for('daily_report') }}" class="btn btn-primary btn-action w-100 mt-2"><i class="fas fa-file-alt"></i> View Report</a>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-success mb-3"><i class="fas fa-calendar-week fa-3x"></i></div>
+          <h5>মাসিক রিপোর্ট</h5>
+          <a href="{{ url_for('monthly_report') }}" class="btn btn-success btn-action w-100 mt-2"><i class="fas fa-file-alt"></i> View Report</a>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-warning mb-3"><i class="fas fa-table fa-3x"></i></div>
+          <h5>এক নজরে মাসিক শীট</h5>
+          <a href="{{ url_for('monthly_sheet') }}" class="btn btn-warning btn-action w-100 mt-2"><i class="fas fa-eye"></i> View Sheet</a>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-danger mb-3"><i class="fas fa-exclamation-triangle fa-3x"></i></div>
+          <h5>বকেয়া রিপোর্ট</h5>
+          <a href="{{ url_for('due_report') }}" class="btn btn-danger btn-action w-100 mt-2"><i class="fas fa-file-alt"></i> View Report</a>
+        </div>
+      </div>
+    </div>
+    <div class="row g-4 mb-4">
+      <div class="col-md-4">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-info mb-3"><i class="fas fa-money-check fa-3x"></i></div>
+          <h5>Withdrawal রিপোর্ট</h5>
+          <a href="{{ url_for('withdrawal_report') }}" class="btn btn-info btn-action w-100 mt-2"><i class="fas fa-file-alt"></i> View Report</a>
+        </div>
+      </div>
+    </div>
+
+    <h4 class="section-title mb-3"><i class="fas fa-cog"></i> System Settings</h4>
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-dark mb-3"><i class="fas fa-envelope fa-3x"></i></div>
+          <h5>Send Messages to Staff</h5>
+          <a href="{{ url_for('view_messages') }}" class="btn btn-dark btn-action w-100 mt-2"><i class="fas fa-paper-plane"></i> Messages</a>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-primary mb-3"><i class="fas fa-file-alt fa-3x"></i></div>
+          <h5>আবেদন ফর্ম</h5>
+          <a href="{{ url_for('application_forms') }}" class="btn btn-primary btn-action w-100 mt-2"><i class="fas fa-file-contract"></i> ফর্ম দেখুন</a>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-warning mb-3"><i class="fas fa-cog fa-3x"></i></div>
+          <h5>Admin Settings</h5>
+          <a href="{{ url_for('admin_settings') }}" class="btn btn-warning btn-action w-100 mt-2"><i class="fas fa-tools"></i> Settings</a>
+        </div>
       </div>
     </div>
   </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

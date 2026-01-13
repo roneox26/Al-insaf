@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>ঋণ আবেদন পত্র</title>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        @page { size: A4; margin: 12mm; }
+        @media print {
+            .no-print { display: none !important; }
+            body { margin: 0; padding: 12mm; }
+        }
+        body { 
+            font-family: 'Kalpurush', 'Nikosh', Arial, sans-serif; 
+            margin: 0; padding: 20px; font-size: 13px; line-height: 1.7;
+            width: 210mm; min-height: 297mm; background: white;
+        }
+        .header { text-align: center; margin-bottom: 10px; border-bottom: 3px double #000; padding-bottom: 8px; position: relative; }
+        .header h2 { margin: 2px; font-size: 24px; font-weight: bold; color: #1a1a1a; }
+        .header p { margin: 1px; font-size: 11px; color: #333; }
+        .header h3 { 
+            margin: 8px auto; font-size: 16px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white; padding: 8px 25px; display: inline-block; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .photo-box { 
+            position: absolute; right: 10px; top: 5px; width: 95px; height: 115px;
+            border: 2px solid #000; display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+            font-size: 11px; color: #666; font-weight: bold;
+        }
+        .form-section { margin: 8px 0; }
+        .form-section p { margin: 4px 0; text-align: justify; line-height: 1.8; }
+        .form-row { 
+            margin: 5px 0; line-height: 2.3; border-bottom: 1px dotted #ccc;
+            padding: 3px 0; display: flex; align-items: center;
+        }
+        .form-row strong { color: #28a745; font-weight: 600; }
+        .nominee-box { 
+            border: 2px solid #28a745; padding: 15px; margin: 12px 0;
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            border-radius: 8px; box-shadow: 0 2px 8px rgba(40,167,69,0.2);
+        }
+        .nominee-box h4 { 
+            margin: 0 0 12px 0; font-size: 15px; text-align: center; 
+            font-weight: bold; color: #1b5e20; background: white;
+            padding: 8px; border-radius: 5px;
+        }
+        .commitment-box {
+            background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%);
+            border: 2px solid #ffc107; padding: 18px; margin: 15px 0;
+            border-radius: 8px; box-shadow: 0 2px 8px rgba(255,193,7,0.2);
+        }
+        .commitment-box h3 {
+            text-align: center; background: linear-gradient(135deg, #333 0%, #555 100%);
+            color: white; padding: 10px; margin: -18px -18px 12px -18px;
+            border-radius: 6px 6px 0 0; font-size: 15px;
+        }
+        .signature-section { 
+            margin-top: 35px; display: flex; justify-content: space-between;
+            font-size: 12px; padding-top: 15px; border-top: 2px solid #ddd;
+        }
+        .signature-box { text-align: center; min-width: 140px; }
+        .signature-line { border-top: 1.5px solid #000; margin-top: 45px; padding-top: 5px; font-weight: 500; }
+        .no-print { 
+            position: fixed; top: 10px; right: 10px; z-index: 1000;
+            background: white; padding: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border-radius: 10px; border: 2px solid #28a745;
+        }
+        .customer-select {
+            margin-bottom: 12px; padding: 10px; background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            border-radius: 8px; border: 2px solid #28a745;
+        }
+        .customer-select label { font-weight: bold; margin-bottom: 5px; display: block; color: #1b5e20; }
+        .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; 
+               font-size: 14px; font-weight: 500; transition: all 0.3s; }
+        .btn-success { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; }
+        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(40,167,69,0.4); }
+        .btn-secondary { background: #6c757d; color: white; text-decoration: none; display: inline-block; }
+        .info-highlight { background: #d4edda; padding: 2px 8px; border-radius: 3px; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <div class="customer-select">
+            <label>সদস্য নির্বাচন করুন:</label>
+            <select id="customerSelect" style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #28a745;">
+                <option value="">-- সদস্য নির্বাচন করুন --</option>
+                {% for c in customers %}
+                <option value="{{ c.id }}" {% if customer and customer.id == c.id %}selected{% endif %}>
+                    {{ c.member_no }} - {{ c.name }} - {{ c.phone }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <button onclick="window.print()" class="btn btn-success">🖨️ প্রিন্ট করুন</button>
+        <a href="{{ url_for('application_forms') }}" class="btn btn-secondary">← ফিরে যান</a>
+    </div>
+
+    <div class="header">
+        <div class="photo-box">ছবি</div>
+        <h2>আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h2>
+        <p>ঠিকানাঃ গ্রাম/পোষ্টঃ নেহালপুর, থানাঃ মনিরামপুর, জেলাঃ যশোর।</p>
+        <p>রেজিস্ট্রেশন নং: ৭৮ জে | ফোন: ০১৭১৫-০০০০০০</p>
+        <h3>ঋণ আবেদন পত্র</h3>
+        <p style="text-align: right; margin: 5px 10px 0 0; font-weight: 500;">
+            সদস্য নং: <span class="info-highlight" id="memberNo">{{ customer.member_no if customer else '______' }}</span> | 
+            তারিখ: <span id="currentDate" class="info-highlight"></span>
+        </p>
+    </div>
+
+    <div class="form-section">
+        <p><strong>বরাবর,</strong><br>
+        সভাপতি/সম্পাদক<br>
+        আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ<br>
+        <strong>বিষয়:</strong> ঋণ পাওয়ার জন্য আবেদন।</p>
+        
+        <p><strong>জনাব,</strong></p>
+        <p style="text-indent: 50px; text-align: justify;">
+            বিনীত নিবেদন এই যে, আমি আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ এর একজন সদস্য হিসেবে সকল নিয়ম-কানুন মেনে ঋণ গ্রহণের জন্য আবেদন করিতেছি। আমি আপনার সংগঠনের সকল নিয়ম-কানুন মেনে চলার অঙ্গীকার করিতেছি এবং এই সংগঠনের স্থায়ী ক্ষতিকর কোন কাজ করিব না বা এ ব্যাপারে কাউকে কোন সাহায্য করব না।
+        </p>
+    </div>
+
+    <div class="form-section" style="background: #f8f9fa; padding: 10px; border-radius: 5px; border-left: 4px solid #28a745;">
+        <h4 style="margin: 5px 0 10px 0; color: #28a745;">ব্যক্তিগত তথ্যাবলী:</h4>
+        <div class="form-row"><strong>১.</strong> আবেদনকারীর নাম: <strong id="name">{{ customer.name if customer else '___________________________' }}</strong> | পিতা/স্বামী: <strong id="father">{{ customer.father_husband if customer else '___________________________' }}</strong></div>
+        <div class="form-row"><strong>২.</strong> মাতার নাম: ___________________________ | ধর্ম: ইসলাম/হিন্দু | জাতীয়তা: বাংলাদেশী</div>
+        <div class="form-row"><strong>৩.</strong> জন্ম তারিখ: ____/____/________ | পেশা: <strong id="profession">{{ customer.profession if customer else 'ব্যবসা/কৃষি/চাকুরীজীবি/অন্যান্য' }}</strong></div>
+        <div class="form-row"><strong>৪.</strong> জাতীয় পরিচয়পত্র/জন্ম নিবন্ধন নং: <strong id="nid">{{ customer.nid_no if customer else '___________________________' }}</strong> | লিঙ্গ: পুরুষ/মহিলা</div>
+        <div class="form-row"><strong>৫.</strong> বর্তমান ঠিকানা - গ্রাম: <strong id="village">{{ customer.village if customer else '________' }}</strong> | পোস্ট: <strong id="post">{{ customer.post if customer else '________' }}</strong> | থানা: <strong id="thana">{{ customer.thana if customer else '________' }}</strong> | জেলা: <strong id="district">{{ customer.district if customer else 'যশোর' }}</strong></div>
+        <div class="form-row"><strong>৬.</strong> স্থায়ী ঠিকানা - গ্রাম: __________ | পোস্ট: __________ | থানা: __________ | জেলা: যশোর</div>
+        <div class="form-row"><strong>৭.</strong> শিক্ষাগত যোগ্যতা: __________ | বৈবাহিক অবস্থা: বিবাহিত/অবিবাহিত | সন্তান সংখ্যা: ছেলে __টি, মেয়ে __টি</div>
+        <div class="form-row"><strong>৮.</strong> আবেদনকারীর ফোন: <strong id="phone">{{ customer.phone if customer else '___________________________' }}</strong> | অভিভাবকের ফোন: ___________________________</div>
+        <div class="form-row"><strong>৯.</strong> সম্পদের পরিমাণ: __________ টাকা | সম্পদের মেয়াদ: __________ বছর</div>
+    </div>
+
+    <div class="nominee-box">
+        <h4>📋 নমিনীর তথ্যাবলী</h4>
+        <div class="form-row" style="border-bottom: 1px solid #28a745;"><strong>ক)</strong> নমিনীর নাম: ___________________________ | পিতার নাম: ___________________________</div>
+        <div class="form-row" style="border-bottom: 1px solid #28a745;"><strong>খ)</strong> মাতার নাম: ___________________________ | সম্পর্ক: ___________________________ | ঠিকানা: ___________________________</div>
+        <div class="form-row" style="border-bottom: 1px solid #28a745;"><strong>গ)</strong> জাতীয় পরিচয়পত্র/জন্ম নিবন্ধন নং: ___________________________ | ফোন নং: ___________________________</div>
+    </div>
+
+    <div class="commitment-box">
+        <h3>📝 অঙ্গীকারনামা</h3>
+        <p style="text-indent: 50px; text-align: justify; line-height: 2;">
+            আমি, <strong id="nameCommitment">{{ customer.name if customer else '___________________________' }}</strong> এই মর্মে ঘোষণা করিতেছি যে, আমি স্বজ্ঞানে ও সুস্থ শরীরে স্বীকার করিতেছি যে, আমার দেওয়া উপরোক্ত সকল তথ্য সত্য এবং নিজস্ব। এছাড়া আমি অঙ্গীকার করিতেছি যে, আমি অত্র সমিতির কার্যবিধি ও কমিটির সকল সিদ্ধান্ত মানিয়া চলিব। আমি অত্র সমিতির সংবিধান বহির্ভূত কোন কাজ করিব না। সংবিধান বহির্ভূত কোন কাজে লিপ্ত থাকলে বা প্রমাণ পাওয়া গেলে আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ কর্তৃপক্ষ সদস্যপদ বাতিল সহ যে কোন পদক্ষেপ গ্রহণ করতে পারবে, ইহাতে আমার কোন আপত্তি থাকিবে না।
+        </p>
+    </div>
+
+    <div class="commitment-box" style="background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border-color: #28a745;">
+        <h3 style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">✅ অঙ্গীকার কর্তৃক পুনরীয়</h3>
+        <p style="text-align: center; font-weight: 600; font-size: 14px; color: #155724; line-height: 2;">
+            ধন্যবাদ সহকারে আবেদনটি গৃহীত হলে অত্র সমিতির সম্মানিত সদস্য হিসাবে অন্তর্ভুক্ত করা হবে।
+        </p>
+    </div>
+
+    <div class="signature-section" style="margin-top: 40px; border-top: 2px solid #28a745; padding-top: 20px;">
+        <div class="signature-box">
+            <div style="font-weight: 600; color: #28a745;">সম্পাদক</div>
+            <div class="signature-line">স্বাক্ষর ও সীল</div>
+        </div>
+        <div class="signature-box">
+            <div style="font-weight: 600; color: #28a745;">আবেদনকারী</div>
+            <div class="signature-line">স্বাক্ষর ও তারিখ</div>
+        </div>
+        <div class="signature-box">
+            <div style="font-weight: 600; color: #28a745;">সভাপতি</div>
+            <div class="signature-line">স্বাক্ষর ও সীল</div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        const today = new Date();
+        const dateStr = today.getDate() + '/' + (today.getMonth() + 1) + '/' + today.getFullYear();
+        document.getElementById('currentDate').textContent = dateStr;
+
+        $(document).ready(function() {
+            $('#customerSelect').select2({ placeholder: '-- সদস্য নির্বাচন করুন --' });
+            $('#customerSelect').on('change', function() {
+                const customerId = $(this).val();
+                if (customerId) window.location.href = '{{ url_for("commitment_form") }}?customer_id=' + customerId;
+            });
+        });
+    </script>
+</body>
+</html>

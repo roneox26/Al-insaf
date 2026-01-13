@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -15,12 +15,16 @@
       <div class="card shadow">
         <div class="card-body">
           <h5 class="card-title">{{ investor.investor_id }}</h5>
-          <h6>{{ investor.name }}</h6>
+          <h6><a href="{{ url_for('investor_details', id=investor.id) }}" class="text-decoration-none">{{ investor.name }}</a></h6>
           <p class="mb-1"><strong>📞 Phone:</strong> {{ investor.phone or 'N/A' }}</p>
           <hr>
           <p class="mb-1"><strong>💰 Total Investment:</strong> <span class="text-success">৳{{ "{:,.2f}".format(investor.total_investment) }}</span></p>
           <p class="mb-1"><strong>💸 Total Withdrawal:</strong> <span class="text-danger">৳{{ "{:,.2f}".format(investor.total_withdrawal) }}</span></p>
           <p class="mb-1"><strong>💵 Current Balance:</strong> <span class="text-primary">৳{{ "{:,.2f}".format(investor.current_balance) }}</span></p>
+          <div class="mt-2">
+            <a href="{{ url_for('investor_details', id=investor.id) }}" class="btn btn-sm btn-info">📊 View Details</a>
+            <a href="{{ url_for('investor_details_print', id=investor.id) }}" class="btn btn-sm btn-primary" target="_blank">🖨️ Print</a>
+          </div>
         </div>
       </div>
     </div>

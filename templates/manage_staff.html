@@ -1,9 +1,15 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <title>Manage Staff</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .staff-card { border-left: 4px solid #007bff; }
+    .staff-card.office { border-left-color: #28a745; }
+    .staff-card.monitor { border-left-color: #17a2b8; }
+    .staff-card.inactive { opacity: 0.6; background-color: #f8f9fa; }
+  </style>
 </head>
 
 <body class="container mt-5">
@@ -15,39 +21,130 @@
     {% endif %}
   {% endwith %}
 
-  <h2 class="mb-4">👨💼 Manage Staff</h2>
-  <a href="{{ url_for('add_staff') }}" class="btn btn-success mb-3">➕ Add New Staff</a>
-  <a href="{{ url_for('all_staff_report_print') }}" class="btn btn-primary mb-3" target="_blank">🖨️ Print All Staff Report</a>
+  <h2 class="mb-4">👨‍💼 Staff Management</h2>
+  
+  <div class="mb-3">
+    <a href="{{ url_for('add_staff') }}" class="btn btn-success">➕ নতুন Staff যোগ করুন</a>
+    <a href="{{ url_for('all_staff_report_print') }}?period={{ period }}" class="btn btn-primary" target="_blank">🖨️ Print Report</a>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">⬅️ Dashboard</a>
+  </div>
 
-  <table class="table table-bordered">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Total Collection</th>
-        <th>Collection %</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for data in staff_data %}
-      <tr>
-        <td>{{ data.staff.name }}</td>
-        <td>{{ data.staff.email }}</td>
-        <td>৳{{ "{:,.2f}".format(data.total_collection) }}</td>
-        <td>
-          <span class="badge bg-success" style="font-size: 14px;">{{ "%.1f"|format(data.percentage) }}%</span>
-        </td>
-        <td>
-          <a href="{{ url_for('edit_staff', id=data.staff.id) }}" class="btn btn-sm btn-warning">✏️ Edit</a>
-          <a href="{{ url_for('staff_collection_report', id=data.staff.id) }}" class="btn btn-sm btn-info" target="_blank">📊 Print Report</a>
-          <a href="{{ url_for('delete_staff', id=data.staff.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">🗑️ Delete</a>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="btn-group mb-3" role="group">
+    <a href="{{ url_for('manage_staff', period='daily') }}" class="btn btn-{{ 'primary' if period == 'daily' else 'outline-primary' }}">📅 Daily</a>
+    <a href="{{ url_for('manage_staff', period='monthly') }}" class="btn btn-{{ 'primary' if period == 'monthly' else 'outline-primary' }}">📆 Monthly</a>
+    <a href="{{ url_for('manage_staff', period='yearly') }}" class="btn btn-{{ 'primary' if period == 'yearly' else 'outline-primary' }}">📊 Yearly</a>
+  </div>
 
-  <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-3">⬅️ Back</a>
+  <form method="GET" class="row g-3 mb-4">
+    <div class="col-md-4">
+      <label class="form-label">শুরুর তারিখ</label>
+      <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">শেষ তারিখ</label>
+      <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">&nbsp;</label>
+      <button type="submit" class="btn btn-info d-block w-100">🔍 Filter</button>
+    </div>
+  </form>
+
+  <div class="row">
+    {% for data in staff_data %}
+    <div class="col-md-6 mb-3">
+      <div class="card staff-card {% if data.staff.is_office_staff %}office{% elif data.staff.is_monitor %}monitor{% endif %} {% if data.staff.status == 'inactive' %}inactive{% endif %}">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="d-flex align-items-center">
+              {% if data.staff.photo %}
+              <img src="{{ url_for('static', filename='uploads/' + data.staff.photo) }}" alt="{{ data.staff.name }}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; margin-right: 15px;">
+              {% else %}
+              <div style="width: 60px; height: 60px; border-radius: 50%; background: #e9ecef; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                <span style="font-size: 24px;">👤</span>
+              </div>
+              {% endif %}
+              <div>
+                <h5 class="card-title mb-1">{{ data.staff.name }}</h5>
+                <p class="card-text mb-1">
+                  <small class="text-muted">📧 {{ data.staff.email }}</small>
+                </p>
+                {% if data.staff.phone %}
+                <p class="card-text mb-1">
+                  <small class="text-muted">📱 {{ data.staff.phone }}</small>
+                </p>
+                {% endif %}
+              </div>
+            </div>
+            <div class="text-end">
+              {% if data.staff.is_monitor %}
+                <span class="badge bg-info">Monitor</span>
+              {% elif data.staff.is_office_staff %}
+                <span class="badge bg-success">Office</span>
+              {% else %}
+                <span class="badge bg-primary">Field</span>
+              {% endif %}
+              {% if data.staff.status == 'inactive' %}
+                <span class="badge bg-secondary">Inactive</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <hr>
+
+          <div class="row text-center mb-2">
+            <div class="col-6">
+              <small class="text-muted">Collection</small>
+              <h6 class="mb-0">৳{{ "{:,.2f}".format(data.total_collection) }}</h6>
+            </div>
+            <div class="col-6">
+              <small class="text-muted">Salary</small>
+              <h6 class="mb-0">৳{{ "{:,.2f}".format(data.staff.salary or 0) }}</h6>
+            </div>
+          </div>
+
+          {% if data.staff.address %}
+          <p class="card-text mb-2">
+            <small>📍 {{ data.staff.address }}</small>
+          </p>
+          {% endif %}
+
+          {% if data.staff.nid %}
+          <p class="card-text mb-2">
+            <small>🆔 NID: {{ data.staff.nid }}</small>
+          </p>
+          {% endif %}
+
+          <div class="btn-group w-100 mt-2" role="group">
+            <a href="{{ url_for('staff_dashboard_view', id=data.staff.id) }}" class="btn btn-sm btn-success">🔓 Access</a>
+            <a href="{{ url_for('staff_collection_report', id=data.staff.id, period=period) }}" class="btn btn-sm btn-primary">👁️ Report</a>
+            <a href="{{ url_for('edit_staff', id=data.staff.id) }}" class="btn btn-sm btn-warning">✏️ Edit</a>
+            <button class="btn btn-sm btn-danger" onclick="deleteStaff({{ data.staff.id }}, '{{ data.staff.name }}')">🗑️ Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <script>
+  function deleteStaff(staffId, staffName) {
+    const password = prompt('Staff "' + staffName + '" ডিলিট করতে আপনার পাসওয়ার্ড দিন:');
+    if (password) {
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/admin/staff/delete/' + staffId;
+      
+      const passwordInput = document.createElement('input');
+      passwordInput.type = 'hidden';
+      passwordInput.name = 'password';
+      passwordInput.value = password;
+      
+      form.appendChild(passwordInput);
+      document.body.appendChild(form);
+      form.submit();
+    }
+  }
+  </script>
 </body>
 </html>

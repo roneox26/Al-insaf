@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -7,38 +7,54 @@
   <style>
     @media print {
       .no-print { display: none; }
+      table { page-break-inside: auto; }
+      thead { display: table-header-group; }
+      tbody { display: table-row-group; }
+      tr { page-break-inside: avoid; page-break-after: auto; }
     }
   </style>
 </head>
 
 <body class="container mt-4">
   <div class="text-center mb-4">
+    <h3>আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h3>
     <h3>Staff Collection Report</h3>
     <h5>{{ staff.name }}</h5>
     <p>Email: {{ staff.email }}</p>
-    {% if from_date or to_date %}
-    <p><strong>Period:</strong> 
-      {% if from_date %}{{ from_date }}{% else %}Start{% endif %} 
-      to 
-      {% if to_date %}{{ to_date }}{% else %}End{% endif %}
-    </p>
-    {% endif %}
+    <p><strong>Period:</strong> {{ period_display }}</p>
   </div>
 
   <div class="no-print mb-3">
-    <form method="GET" class="row g-3">
-      <div class="col-md-4">
-        <label class="form-label">From Date</label>
-        <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
+    <div class="btn-group" role="group">
+      {% if request.args.get('from_staff_view') %}
+      <a href="{{ url_for('staff_collection_report', id=staff.id, period='daily', from_staff_view='1') }}" class="btn btn-{{ 'primary' if period == 'daily' else 'outline-primary' }}">📅 Daily</a>
+      <a href="{{ url_for('staff_collection_report', id=staff.id, period='monthly', from_staff_view='1') }}" class="btn btn-{{ 'primary' if period == 'monthly' else 'outline-primary' }}">📆 Monthly</a>
+      <a href="{{ url_for('staff_collection_report', id=staff.id, period='yearly', from_staff_view='1') }}" class="btn btn-{{ 'primary' if period == 'yearly' else 'outline-primary' }}">📊 Yearly</a>
+      {% else %}
+      <a href="{{ url_for('staff_collection_report', id=staff.id, period='daily') }}" class="btn btn-{{ 'primary' if period == 'daily' else 'outline-primary' }}">📅 Daily</a>
+      <a href="{{ url_for('staff_collection_report', id=staff.id, period='monthly') }}" class="btn btn-{{ 'primary' if period == 'monthly' else 'outline-primary' }}">📆 Monthly</a>
+      <a href="{{ url_for('staff_collection_report', id=staff.id, period='yearly') }}" class="btn btn-{{ 'primary' if period == 'yearly' else 'outline-primary' }}">📊 Yearly</a>
+      {% endif %}
+    </div>
+    
+    <form method="GET" class="mt-3">
+      <div class="row g-2">
+        <div class="col-md-4">
+          <label class="form-label">From Date</label>
+          <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">To Date</label>
+          <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">&nbsp;</label>
+          <button type="submit" class="btn btn-success w-100">🔍 Filter</button>
+        </div>
       </div>
-      <div class="col-md-4">
-        <label class="form-label">To Date</label>
-        <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
-      </div>
-      <div class="col-md-4">
-        <label class="form-label">&nbsp;</label>
-        <button type="submit" class="btn btn-primary w-100">Filter</button>
-      </div>
+      {% if request.args.get('from_staff_view') %}
+      <input type="hidden" name="from_staff_view" value="1">
+      {% endif %}
     </form>
   </div>
 
@@ -91,7 +107,11 @@
 
   <div class="no-print mt-4">
     <button onclick="window.print()" class="btn btn-primary">🖨️ Print</button>
+    {% if request.args.get('from_staff_view') %}
+    <a href="{{ url_for('staff_dashboard_view', id=staff.id) }}" class="btn btn-warning">⬅️ Back to Staff View</a>
+    {% else %}
     <a href="{{ url_for('manage_staff') }}" class="btn btn-secondary">⬅️ Back</a>
+    {% endif %}
   </div>
 </body>
 </html>

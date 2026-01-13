@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -15,23 +15,77 @@
     {% endif %}
   {% endwith %}
 
-  <h2 class="mb-4">➕ Add New Staff</h2>
+  <h2 class="mb-4">➕ নতুন Staff যোগ করুন</h2>
 
-  <form method="POST">
-    <div class="mb-3">
-      <label class="form-label">Name</label>
-      <input type="text" name="name" class="form-control" required>
+  <form method="POST" enctype="multipart/form-data">
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label">নাম *</label>
+        <input type="text" name="name" class="form-control" required>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">ইমেইল *</label>
+        <input type="email" name="email" class="form-control" required>
+      </div>
     </div>
-    <div class="mb-3">
-      <label class="form-label">Email</label>
-      <input type="email" name="email" class="form-control" required>
+
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label">পাসওয়ার্ড *</label>
+        <input type="password" name="password" class="form-control" required>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">ফোন নম্বর</label>
+        <input type="text" name="phone" class="form-control" placeholder="01XXXXXXXXX">
+      </div>
     </div>
-    <div class="mb-3">
-      <label class="form-label">Password</label>
-      <input type="password" name="password" class="form-control" required>
+
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label">NID নম্বর</label>
+        <input type="text" name="nid" class="form-control">
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">বেতন (মাসিক) ৳</label>
+        <input type="number" name="salary" class="form-control" step="0.01" value="0" placeholder="0.00">
+      </div>
     </div>
-    <button type="submit" class="btn btn-success">Add Staff</button>
-    <a href="{{ url_for('manage_staff') }}" class="btn btn-secondary">Cancel</a>
+
+    <div class="mb-3">
+      <label class="form-label">ছবি (Photo)</label>
+      <input type="file" name="photo" class="form-control" accept="image/*">
+      <small class="text-muted">JPG, PNG, GIF - Max 5MB</small>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">ঠিকানা</label>
+      <textarea name="address" class="form-control" rows="2"></textarea>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Staff Type *</label>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="staff_type" id="field_staff" value="field" checked>
+        <label class="form-check-label" for="field_staff">
+          <strong>Field Staff</strong> - নিজের কাস্টমারদের কালেকশন করবে
+        </label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="staff_type" id="office_staff" value="office">
+        <label class="form-check-label" for="office_staff">
+          <strong>Office Staff</strong> - সব কাস্টমারদের কালেকশন করতে পারবে
+        </label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="staff_type" id="monitor_staff" value="monitor">
+        <label class="form-check-label" for="monitor_staff">
+          <strong>Monitor Staff</strong> - শুধু মনিটর করবে, কালেকশন করতে পারবে না
+        </label>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-success">✅ Staff যোগ করুন</button>
+    <a href="{{ url_for('manage_staff') }}" class="btn btn-secondary">⬅️ ফিরে যান</a>
   </form>
 </body>
 </html>

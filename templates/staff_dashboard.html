@@ -1,81 +1,221 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
-  <title>Staff Dashboard</title>
+  <title>Office Staff Dashboard - Al-Insaf NGO</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+    .navbar { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%) !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .stat-card { border-radius: 15px; transition: all 0.3s; border: none; background: white; }
+    .stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+    .stat-icon { font-size: 2.5rem; opacity: 0.8; }
+    .action-card { border-radius: 15px; background: white; border: none; height: 100%; }
+    .action-card:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+    .btn-action { border-radius: 10px; font-weight: 500; padding: 12px 20px; transition: all 0.3s; }
+    .btn-action:hover { transform: scale(1.05); }
+    .section-title { color: white; font-weight: 700; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+    .welcome-card { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border-radius: 15px; }
+  </style>
 </head>
-<body class="bg-light">
-  <nav class="navbar navbar-dark bg-dark px-3">
-    <span class="navbar-brand">Staff Panel</span>
-    <div>
-      <a href="{{ url_for('view_messages') }}" class="btn btn-warning btn-sm me-2">
-        📩 Messages {% if unread_messages > 0 %}<span class="badge bg-danger">{{ unread_messages }}</span>{% endif %}
+<body>
+  <nav class="navbar navbar-dark px-4">
+    <span class="navbar-brand fs-4">
+      {% if logo_exists %}
+      <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Logo" style="height: 40px; width: auto; margin-right: 10px; border-radius: 5px;">
+      {% else %}
+      <i class="fas fa-building"></i>
+      {% endif %}
+      Office Staff Panel
+    </span>
+    <div class="d-flex align-items-center gap-3">
+      {% include 'bd_time_display.html' %}
+      {% include 'theme_toggle.html' %}
+      <a href="{{ url_for('view_messages') }}" class="btn btn-warning btn-sm">
+        <i class="fas fa-envelope"></i> Messages {% if unread_messages > 0 %}<span class="badge bg-danger">{{ unread_messages }}</span>{% endif %}
       </a>
-      <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+      <a href="{{ url_for('logout') }}" class="btn btn-danger btn-sm"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </div>
   </nav>
 
-  <div class="container mt-4">
-    <h2>Welcome, {{ name }} (Staff)</h2>
+  <div class="container mt-4 pb-5">
+    <div class="welcome-card shadow-lg p-4 mb-4">
+      <h2><i class="fas fa-user-tie"></i> Welcome, {{ name }}</h2>
+      <p class="mb-0"><i class="fas fa-briefcase"></i> Office Staff | Full Access</p>
+    </div>
 
-    <div class="row mt-4">
-      <div class="col-md-4">
-        <div class="card shadow p-3">
-          <h5>My Customers</h5>
-          <h3>{{ my_customers }}</h3>
+    <div class="row g-4 mb-4">
+      <div class="col-md-3">
+        <div class="stat-card shadow p-4 text-center">
+          <div class="stat-icon text-primary"><i class="fas fa-users"></i></div>
+          <h3 class="mt-2">{{ my_customers }}</h3>
+          <p class="text-muted mb-0">Total Customers</p>
         </div>
       </div>
-      <div class="col-md-4">
+      <div class="col-md-3">
         <a href="{{ url_for('due_report') }}" class="text-decoration-none">
-          <div class="card shadow p-3 bg-danger text-white">
-            <h5>⚠️ বকেয়া লোন</h5>
-            <h3>৳{{ "{:,.2f}".format(total_remaining) }}</h3>
-            <small>বকেয়া গ্রাহক: {{ due_customers }}</small>
+          <div class="stat-card shadow p-4 text-center bg-danger text-white">
+            <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <h3 class="mt-2">৳{{ "{:,.0f}".format(total_remaining) }}</h3>
+            <p class="mb-0">বকেয়া লোন ({{ due_customers }} জন)</p>
           </div>
         </a>
       </div>
+      <div class="col-md-3">
+        <div class="stat-card shadow p-4 text-center bg-success text-white">
+          <div class="stat-icon"><i class="fas fa-money-bill-wave"></i></div>
+          <h3 class="mt-2">{{ today_collections }}</h3>
+          <p class="mb-0">Today Collections</p>
+          <small>{{ today.strftime('%d-%m-%Y') }}</small>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stat-card shadow p-4 text-center bg-info text-white">
+          <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+          <h3 class="mt-2">Active</h3>
+          <p class="mb-0">System Status</p>
+        </div>
+      </div>
+    </div>
+
+    <h4 class="section-title mb-3"><i class="fas fa-users-cog"></i> Customer Management</h4>
+    <div class="row g-4 mb-4">
+      <div class="col-md-3">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-primary mb-3"><i class="fas fa-users fa-3x"></i></div>
+          <h5>Manage Customers</h5>
+          <a href="{{ url_for('manage_customers') }}" class="btn btn-primary btn-action w-100 mt-2"><i class="fas fa-list"></i> View All</a>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-success mb-3"><i class="fas fa-user-plus fa-3x"></i></div>
+          <h5>Add Customer</h5>
+          <a href="{{ url_for('add_customer') }}" class="btn btn-success btn-action w-100 mt-2"><i class="fas fa-plus"></i> Add New</a>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-warning mb-3"><i class="fas fa-hand-holding-usd fa-3x"></i></div>
+          <h5>Loan Customers</h5>
+          <a href="{{ url_for('loan_customers') }}" class="btn btn-warning btn-action w-100 mt-2"><i class="fas fa-list-alt"></i> View List</a>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-danger mb-3"><i class="fas fa-exclamation-circle fa-3x"></i></div>
+          <h5>Due Report</h5>
+          <a href="{{ url_for('due_report') }}" class="btn btn-danger btn-action w-100 mt-2"><i class="fas fa-file-invoice"></i> View Report</a>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-secondary mb-3"><i class="fas fa-user-slash fa-3x"></i></div>
+          <h5>Inactive Customers</h5>
+          <a href="{{ url_for('inactive_customers') }}" class="btn btn-secondary btn-action w-100 mt-2"><i class="fas fa-eye"></i> View List</a>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-info mb-3"><i class="fas fa-file-contract fa-3x"></i></div>
+          <h5>আবেদন ফর্ম</h5>
+          <a href="{{ url_for('application_forms') }}" class="btn btn-info btn-action w-100 mt-2"><i class="fas fa-file-alt"></i> View Forms</a>
+        </div>
+      </div>
+    </div>
+
+    <h4 class="section-title mb-3"><i class="fas fa-money-check-alt"></i> Collections</h4>
+    <div class="row g-4 mb-4">
       <div class="col-md-4">
-        <div class="card shadow p-3">
-          <h5>Today Collections</h5>
-          <h3>{{ today_collections }}</h3>
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-success mb-3"><i class="fas fa-hand-holding-usd fa-3x"></i></div>
+          <h5>All Collections</h5>
+          <a href="{{ url_for('collection') }}" class="btn btn-success btn-action w-100 mt-2 btn-lg"><i class="fas fa-coins"></i> Collect Now</a>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-primary mb-3"><i class="fas fa-history fa-3x"></i></div>
+          <h5>Loan Collections</h5>
+          <a href="{{ url_for('loan_collections_history') }}" class="btn btn-primary btn-action w-100 mt-2"><i class="fas fa-list"></i> History</a>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-info mb-3"><i class="fas fa-piggy-bank fa-3x"></i></div>
+          <h5>Savings Collections</h5>
+          <a href="{{ url_for('manage_savings') }}" class="btn btn-info btn-action w-100 mt-2"><i class="fas fa-list"></i> History</a>
         </div>
       </div>
     </div>
 
-    <h4 class="mt-5">Quick Actions</h4>
-    <div class="row mt-3">
+    <h4 class="section-title mb-3"><i class="fas fa-receipt"></i> Fee Management</h4>
+    <div class="row g-4 mb-4">
       <div class="col-md-6">
-        <div class="card shadow p-3">
-          <h5>👥 Customer Management</h5>
-          <a href="{{ url_for('manage_customers') }}" class="btn btn-primary mt-2">View Customers</a>
-          <a href="{{ url_for('add_customer') }}" class="btn btn-success mt-2">Add Customer</a>
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-purple mb-3"><i class="fas fa-file-invoice-dollar fa-3x" style="color: #6f42c1;"></i></div>
+          <h5>All Fees History</h5>
+          <a href="{{ url_for('all_fees_history') }}" class="btn btn-action w-100 mt-2" style="background: #6f42c1; color: white;"><i class="fas fa-history"></i> View All Fees</a>
         </div>
       </div>
       <div class="col-md-6">
-        <div class="card shadow p-3">
-          <h5>💰 কালেকশন</h5>
-          <a href="{{ url_for('collection') }}" class="btn btn-success btn-lg mt-2">💰 লোন/সেভিংস কালেকশন</a>
-          <a href="{{ url_for('daily_collections') }}" class="btn btn-info mt-2">আজকের কালেকশন</a>
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-secondary mb-3"><i class="fas fa-calendar-day fa-3x"></i></div>
+          <h5>Daily Collections</h5>
+          <a href="{{ url_for('daily_collections') }}" class="btn btn-secondary btn-action w-100 mt-2"><i class="fas fa-calendar-check"></i> Today's Report</a>
         </div>
       </div>
     </div>
 
-    <div class="row mt-3">
+    <h4 class="section-title mb-3"><i class="fas fa-chart-bar"></i> Reports</h4>
+    <div class="row g-4 mb-4">
       <div class="col-md-6">
-        <div class="card shadow p-3">
-          <h5>📊 হিস্টরি</h5>
-          <a href="{{ url_for('loan_collections_history') }}" class="btn btn-primary mt-2">💰 লোন কালেকশন হিস্টরি</a>
-          <a href="{{ url_for('manage_savings') }}" class="btn btn-info mt-2">🏦 সেভিংস হিস্টরি</a>
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-info mb-3"><i class="fas fa-calendar-alt fa-3x"></i></div>
+          <h5>Daily Report</h5>
+          <a href="{{ url_for('daily_report') }}" class="btn btn-info btn-action w-100 mt-2"><i class="fas fa-file-alt"></i> View Report</a>
         </div>
       </div>
       <div class="col-md-6">
-        <div class="card shadow p-3">
-          <h5>📋 অন্যান্য</h5>
-          <a href="{{ url_for('loan_customers') }}" class="btn btn-warning mt-2">লোন কাস্টমার লিস্ট</a>
-          <a href="{{ url_for('due_report') }}" class="btn btn-danger mt-2">⚠️ বকেয়া রিপোর্ট</a>
+        <div class="action-card shadow p-4 text-center">
+          <div class="text-success mb-3"><i class="fas fa-user-check fa-3x"></i></div>
+          <h5>My Collection Report</h5>
+          <a href="{{ url_for('staff_collection_report', id=current_user.id, period='daily') }}" class="btn btn-success btn-sm btn-action w-100 mt-2"><i class="fas fa-calendar-day"></i> Daily</a>
+          <a href="{{ url_for('staff_collection_report', id=current_user.id, period='monthly') }}" class="btn btn-primary btn-sm btn-action w-100 mt-2"><i class="fas fa-calendar-alt"></i> Monthly</a>
+          <a href="{{ url_for('staff_collection_report', id=current_user.id, period='yearly') }}" class="btn btn-info btn-sm btn-action w-100 mt-2"><i class="fas fa-chart-line"></i> Yearly</a>
         </div>
       </div>
     </div>
+
+    {% if is_office_staff and all_staff %}
+    <h4 class="section-title mb-3"><i class="fas fa-users-cog"></i> সব স্টাফদের কালেকশন রিপোর্ট</h4>
+    <div class="row g-4 mb-4">
+      {% for staff in all_staff %}
+      <div class="col-md-4">
+        <div class="action-card shadow p-3">
+          <div class="d-flex align-items-center mb-3">
+            <div class="text-primary me-3"><i class="fas fa-user-tie fa-2x"></i></div>
+            <div>
+              <h6 class="mb-0">{{ staff.name }}</h6>
+              <small class="text-muted">{{ staff.email }}</small>
+            </div>
+          </div>
+          <div class="d-grid gap-2">
+            <a href="{{ url_for('staff_collection_report', id=staff.id, period='daily') }}" class="btn btn-success btn-sm"><i class="fas fa-calendar-day"></i> আজকের রিপোর্ট</a>
+            <a href="{{ url_for('staff_collection_report', id=staff.id, period='monthly') }}" class="btn btn-primary btn-sm"><i class="fas fa-calendar-alt"></i> মাসিক রিপোর্ট</a>
+            <a href="{{ url_for('staff_collection_report', id=staff.id, period='yearly') }}" class="btn btn-info btn-sm"><i class="fas fa-chart-line"></i> বার্ষিক রিপোর্ট</a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% elif is_office_staff %}
+    <div class="alert alert-info">
+      <i class="fas fa-info-circle"></i> কোন অন্য স্টাফ পাওয়া যায়নি।
+    </div>
+    {% endif %}
   </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

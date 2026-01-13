@@ -1,32 +1,63 @@
 @echo off
-echo ==========================================
+echo ========================================
 echo   Pushing to GitHub
-echo ==========================================
+echo ========================================
 echo.
 
-cd /d e:\ngo
+echo Checking Git status...
+git status
+echo.
 
-echo [Step 1/3] Staging files...
+echo Adding all files...
 git add .
+echo.
 
+echo Committing changes...
+git commit -m "Updated NGO System - MySQL support, Application Forms, Staff Collections"
 echo.
-echo [Step 2/3] Committing...
-git commit -m "Fix Flask 3.0 compatibility - remove deprecated before_first_request"
 
+echo Setting remote repository...
+git remote remove origin 2>nul
+git remote add origin https://github.com/roneox26/Al-insaf.git
 echo.
-echo [Step 3/3] Pushing to GitHub...
-git push origin main
 
+echo Setting branch to main...
+git branch -M main
 echo.
-echo ==========================================
-echo   SUCCESS! Code pushed to GitHub
-echo ==========================================
+
+echo Pushing to GitHub...
+git push -u origin main --force
 echo.
-echo Now update PythonAnywhere:
-echo   1. Go to PythonAnywhere Bash Console
-echo   2. Run: cd ~/Al-insaf
-echo   3. Run: git pull origin main
-echo   4. Run: python create_db.py
-echo   5. Go to Web tab and click Reload
-echo.
+
+if errorlevel 1 (
+    echo.
+    echo ========================================
+    echo   Push Failed!
+    echo ========================================
+    echo.
+    echo Please check:
+    echo 1. Git is installed
+    echo 2. You have access to the repository
+    echo 3. GitHub credentials are correct
+    echo.
+    echo Try manual push:
+    echo git push -u origin main --force
+    echo.
+) else (
+    echo.
+    echo ========================================
+    echo   SUCCESS! Pushed to GitHub
+    echo ========================================
+    echo.
+    echo Repository: https://github.com/roneox26/Al-insaf.git
+    echo.
+    echo Next Steps:
+    echo 1. Go to https://render.com
+    echo 2. Sign in with GitHub
+    echo 3. Create New Web Service
+    echo 4. Select Al-insaf repository
+    echo 5. Deploy!
+    echo.
+)
+
 pause

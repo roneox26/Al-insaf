@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -10,120 +10,133 @@
   <h2 class="mb-4">👤 Customer Details</h2>
 
   <div class="card shadow mb-4">
+    <div class="card-header bg-primary text-white">
+      <h4 class="mb-0">👤 {{ customer.name }}</h4>
+    </div>
     <div class="card-body">
-      <h4>👤 {{ customer.name }}</h4>
       <div class="row">
         <div class="col-md-6">
-          <p><strong>সদস্যা নং:</strong> {{ customer.member_no or 'N/A' }}</p>
-          <p><strong>📞 মোবাইল:</strong> {{ customer.phone }}</p>
-          <p><strong>👨 পিতা/স্বামী:</strong> {{ customer.father_husband or 'N/A' }}</p>
-          <p><strong>🏘️ গ্রাম:</strong> {{ customer.village or 'N/A' }}</p>
-          <p><strong>🏤 পোস্ট:</strong> {{ customer.post or 'N/A' }}</p>
-          <p><strong>🏛️ থানা:</strong> {{ customer.thana or 'N/A' }}</p>
+          <table class="table table-sm">
+            <tr><td><strong>🎯 সদস্যা নং:</strong></td><td>{{ customer.member_no or 'N/A' }}</td></tr>
+            <tr><td><strong>📞 মোবাইল:</strong></td><td>{{ customer.phone }}</td></tr>
+            <tr><td><strong>👨 পিতা/স্বামী:</strong></td><td>{{ customer.father_husband or 'N/A' }}</td></tr>
+            <tr><td><strong>🏘️ গ্রাম:</strong></td><td>{{ customer.village or 'N/A' }}</td></tr>
+            <tr><td><strong>🏤 পোস্ট:</strong></td><td>{{ customer.post or 'N/A' }}</td></tr>
+            <tr><td><strong>🏛️ থানা:</strong></td><td>{{ customer.thana or 'N/A' }}</td></tr>
+          </table>
         </div>
         <div class="col-md-6">
-          <p><strong>🏛️ জেলা:</strong> {{ customer.district or 'N/A' }}</p>
-          <p><strong>🤝 জামিনদার:</strong> {{ customer.granter or 'N/A' }}</p>
-          <p><strong>💼 পেশা:</strong> {{ customer.profession or 'N/A' }}</p>
-          <p><strong>🎫 NID:</strong> {{ customer.nid_no or 'N/A' }}</p>
-          <p><strong>💵 ভর্তি ফি:</strong> ৳{{ "{:,.2f}".format(customer.admission_fee or 0) }}</p>
-          <p><strong>👨‍💼 Staff:</strong> {{ customer.staff.name if customer.staff else 'N/A' }}</p>
-          <p><strong>📅 যোগ তারিখ:</strong> {{ customer.created_date.strftime('%Y-%m-%d') }}</p>
+          <table class="table table-sm">
+            <tr><td><strong>🏛️ জেলা:</strong></td><td>{{ customer.district or 'N/A' }}</td></tr>
+            <tr><td><strong>🤝 জামিনদার:</strong></td><td>{{ customer.granter or 'N/A' }}</td></tr>
+            <tr><td><strong>💼 পেশা:</strong></td><td>{{ customer.profession or 'N/A' }}</td></tr>
+            <tr><td><strong>🎫 NID:</strong></td><td>{{ customer.nid_no or 'N/A' }}</td></tr>
+            <tr><td><strong>💵 ভর্তি ফি:</strong></td><td>৳{{ "{:,.2f}".format(customer.admission_fee or 0) }}</td></tr>
+            <tr><td><strong>👨‍💼 Staff:</strong></td><td>{{ customer.staff.name if customer.staff else 'N/A' }}</td></tr>
+            <tr><td><strong>📅 যোগ তারিখ:</strong></td><td>{{ customer.created_date.strftime('%d-%m-%Y') }}</td></tr>
+          </table>
         </div>
       </div>
       {% if customer.address %}
-      <p class="mt-2"><strong>📍 ঠিকানা:</strong> {{ customer.address }}</p>
+      <div class="alert alert-info mt-2 mb-0">
+        <strong>📍 ঠিকানা:</strong> {{ customer.address }}
+      </div>
       {% endif %}
     </div>
   </div>
 
   <div class="row mb-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
       <div class="card shadow p-3 bg-primary text-white">
-        <h5>Total Loan</h5>
+        <h6>💵 Total Loan</h6>
         <h3>৳{{ "{:,.2f}".format(customer.total_loan) }}</h3>
       </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
       <div class="card shadow p-3 bg-danger text-white">
-        <h5>Remaining Loan</h5>
+        <h6>⚠️ Remaining Loan</h6>
         <h3>৳{{ "{:,.2f}".format(customer.remaining_loan) }}</h3>
       </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
       <div class="card shadow p-3 bg-success text-white">
-        <h5>Total Collected</h5>
+        <h6>✅ Total Collected</h6>
         <h3>৳{{ "{:,.2f}".format(total_collected) }}</h3>
       </div>
     </div>
-  </div>
-
-  <div class="row mb-4">
-    <div class="col-md-12">
-      <div class="card shadow p-3">
-        <h5>Savings Balance</h5>
-        <h3 class="text-success">৳{{ "{:,.2f}".format(customer.savings_balance) }}</h3>
+    <div class="col-md-3">
+      <div class="card shadow p-3 bg-info text-white">
+        <h6>💰 Savings Balance</h6>
+        <h3>৳{{ "{:,.2f}".format(customer.savings_balance) }}</h3>
       </div>
     </div>
   </div>
 
   <h4 class="mt-4">💰 Collection History</h4>
-  <table class="table table-bordered">
-    <thead>
+  <table class="table table-bordered table-striped">
+    <thead class="table-dark">
       <tr>
-        <th>Loan</th>
-        <th>Saving</th>
-        <th>Date</th>
-        <th>Collected By</th>
+        <th>ক্রমিক</th>
+        <th>💵 Loan</th>
+        <th>💰 Saving</th>
+        <th>📅 Date</th>
+        <th>👤 Collected By</th>
       </tr>
     </thead>
     <tbody>
       {% for item in all_collections %}
       <tr>
-        <td>{{ '৳{:,.2f}'.format(item.loan) if item.loan > 0 else '-' }}</td>
-        <td>{{ '৳{:,.2f}'.format(item.saving) if item.saving > 0 else '-' }}</td>
-        <td>{{ item.date.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td>{{ loop.index }}</td>
+        <td class="text-end">{{ '৳{:,.2f}'.format(item.loan) if item.loan > 0 else '-' }}</td>
+        <td class="text-end">{{ '৳{:,.2f}'.format(item.saving) if item.saving > 0 else '-' }}</td>
+        <td>{{ item.date.strftime('%d-%m-%Y %H:%M') }}</td>
         <td>{{ item.staff }}</td>
       </tr>
       {% endfor %}
       {% if not all_collections %}
       <tr>
-        <td colspan="4" class="text-center">No collections yet</td>
+        <td colspan="5" class="text-center">কোন collection নেই</td>
       </tr>
       {% endif %}
     </tbody>
   </table>
 
   <h4 class="mt-4">💵 Savings Withdrawal History</h4>
-  <table class="table table-bordered">
-    <thead>
+  <table class="table table-bordered table-striped">
+    <thead class="table-dark">
       <tr>
-        <th>Amount</th>
-        <th>Date</th>
-        <th>Note</th>
+        <th>ক্রমিক</th>
+        <th>💵 Amount</th>
+        <th>📅 Date</th>
+        <th>📝 Note</th>
       </tr>
     </thead>
     <tbody>
       {% for w in withdrawals %}
-      <tr class="table-danger">
-        <td>৳{{ "{:,.2f}".format(w.amount) }}</td>
-        <td>{{ w.date.strftime('%Y-%m-%d %H:%M') }}</td>
+      <tr class="table-warning">
+        <td>{{ loop.index }}</td>
+        <td class="text-end">৳{{ "{:,.2f}".format(w.amount) }}</td>
+        <td>{{ w.date.strftime('%d-%m-%Y %H:%M') }}</td>
         <td>{{ w.note or '-' }}</td>
       </tr>
       {% endfor %}
       {% if not withdrawals %}
       <tr>
-        <td colspan="3" class="text-center">No withdrawals yet</td>
+        <td colspan="4" class="text-center">কোন withdrawal নেই</td>
       </tr>
       {% endif %}
     </tbody>
   </table>
 
-  <div class="alert alert-info mt-3">
-    <strong>মোট উত্তোলন:</strong> ৳{{ "{:,.2f}".format(total_withdrawn) }}
+  {% if total_withdrawn > 0 %}
+  <div class="alert alert-warning mt-3">
+    <strong>💵 মোট উত্তোলন:</strong> ৳{{ "{:,.2f}".format(total_withdrawn) }}
   </div>
+  {% endif %}
 
   <a href="{{ url_for('customer_details_print', id=customer.id) }}" class="btn btn-primary mt-3" target="_blank">🖨️ Print Details</a>
-  <a href="{{ url_for('loan_customers') }}" class="btn btn-secondary mt-3">⬅️ Back to Loan Customers</a>
+  <a href="{{ url_for('customer_loan_sheet', id=customer.id) }}" class="btn btn-info mt-3" target="_blank">📄 Loan Sheet</a>
+  <a href="{{ url_for('edit_customer', id=customer.id) }}" class="btn btn-warning mt-3">✏️ Edit Customer</a>
+  <a href="{{ url_for('manage_customers') }}" class="btn btn-secondary mt-3">⬅️ Back</a>
 </body>
 </html>

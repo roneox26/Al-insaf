@@ -1,0 +1,63 @@
+========================================
+আপনার Logo যোগ করার সহজ নিয়ম
+========================================
+
+বর্তমানে একটি placeholder logo ব্যবহার হচ্ছে।
+আপনার আসল logo যোগ করতে:
+
+পদ্ধতি ১: Manual Copy (সবচেয়ে সহজ)
+-------------------------------------
+1. আপনার WhatsApp থেকে logo image টি খুঁজে বের করুন
+   File name: "WhatsApp Image 2025-12-15 at 7.31.56 PM.jpeg"
+
+2. File টি copy করুন
+
+3. এই folder এ paste করুন:
+   e:\ngo\static\images\
+
+4. File এর নাম পরিবর্তন করে রাখুন:
+   logo.jpg  (অথবা logo.png)
+
+5. Browser refresh করুন (Ctrl + F5)
+
+
+পদ্ধতি ২: Command Line
+-------------------------------------
+Command Prompt খুলে এই command টি run করুন:
+
+copy "C:\Users\YourName\Downloads\WhatsApp Image 2025-12-15 at 7.31.56 PM.jpeg" "e:\ngo\static\images\logo.jpg"
+
+(আপনার file এর সঠিক path দিন)
+
+
+পদ্ধতি ৩: Direct থেকে
+-------------------------------------
+1. File Explorer এ যান: e:\ngo\static\images\
+2. আপনার logo image টি drag & drop করুন
+3. নাম পরিবর্তন করে logo.jpg রাখুন
+
+
+Logo Format Support:
+-------------------------------------
+✅ .jpg / .jpeg
+✅ .png
+✅ .svg
+
+File size: Max 2MB recommended
+
+
+Logo দেখাবে কোথায়:
+-------------------------------------
+✅ Login page - Header এবং background
+✅ Admin Dashboard - Navbar এবং background
+✅ All pages - Watermark হিসেবে
+
+
+সমস্যা হলে:
+-------------------------------------
+1. File name ঠিক আছে কিনা check করুন: logo.jpg
+2. File location ঠিক আছে কিনা: e:\ngo\static\images\logo.jpg
+3. Browser cache clear করুন: Ctrl + Shift + Delete
+4. Application restart করুন: python run.py
+
+========================================

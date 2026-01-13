@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -15,23 +15,94 @@
     {% endif %}
   {% endwith %}
 
-  <h2 class="mb-4">✏️ Edit Staff</h2>
+  <h2 class="mb-4">✏️ Staff সম্পাদনা করুন</h2>
 
-  <form method="POST">
-    <div class="mb-3">
-      <label class="form-label">Name</label>
-      <input type="text" name="name" class="form-control" value="{{ staff.name }}" required>
+  <form method="POST" enctype="multipart/form-data">
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label">নাম *</label>
+        <input type="text" name="name" class="form-control" value="{{ staff.name }}" required>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">ইমেইল *</label>
+        <input type="email" name="email" class="form-control" value="{{ staff.email }}" required>
+      </div>
     </div>
-    <div class="mb-3">
-      <label class="form-label">Email</label>
-      <input type="email" name="email" class="form-control" value="{{ staff.email }}" required>
+
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label">নতুন পাসওয়ার্ড (খালি রাখলে পরিবর্তন হবে না)</label>
+        <input type="password" name="password" class="form-control">
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">ফোন নম্বর</label>
+        <input type="text" name="phone" class="form-control" value="{{ staff.phone or '' }}">
+      </div>
     </div>
-    <div class="mb-3">
-      <label class="form-label">New Password (leave blank to keep current)</label>
-      <input type="password" name="password" class="form-control">
+
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label">NID নম্বর</label>
+        <input type="text" name="nid" class="form-control" value="{{ staff.nid or '' }}">
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">বেতন (মাসিক) ৳</label>
+        <input type="number" name="salary" class="form-control" step="0.01" value="{{ staff.salary or 0 }}" placeholder="0.00">
+      </div>
     </div>
-    <button type="submit" class="btn btn-warning">Update Staff</button>
-    <a href="{{ url_for('manage_staff') }}" class="btn btn-secondary">Cancel</a>
+
+    <div class="mb-3">
+      <label class="form-label">ছবি (Photo)</label>
+      {% if staff.photo %}
+      <div class="mb-2">
+        <img src="{{ url_for('static', filename='uploads/' + staff.photo) }}" alt="Staff Photo" style="max-width: 150px; max-height: 150px; border-radius: 8px;">
+        <div class="form-check mt-2">
+          <input class="form-check-input" type="checkbox" name="remove_photo" id="remove_photo">
+          <label class="form-check-label" for="remove_photo">ছবি সরান</label>
+        </div>
+      </div>
+      {% endif %}
+      <input type="file" name="photo" class="form-control" accept="image/*">
+      <small class="text-muted">JPG, PNG, GIF - Max 5MB</small>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">ঠিকানা</label>
+      <textarea name="address" class="form-control" rows="2">{{ staff.address or '' }}</textarea>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Status</label>
+      <select name="status" class="form-select">
+        <option value="active" {% if staff.status == 'active' %}selected{% endif %}>Active</option>
+        <option value="inactive" {% if staff.status == 'inactive' %}selected{% endif %}>Inactive</option>
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Staff Type *</label>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="staff_type" id="field_staff" value="field" {% if not staff.is_office_staff and not staff.is_monitor %}checked{% endif %}>
+        <label class="form-check-label" for="field_staff">
+          <strong>Field Staff</strong> - নিজের কাস্টমারদের কালেকশন করবে
+        </label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="staff_type" id="office_staff" value="office" {% if staff.is_office_staff %}checked{% endif %}>
+        <label class="form-check-label" for="office_staff">
+          <strong>Office Staff</strong> - সব কাস্টমারদের কালেকশন করতে পারবে
+        </label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="staff_type" id="monitor_staff" value="monitor" {% if staff.is_monitor %}checked{% endif %}>
+        <label class="form-check-label" for="monitor_staff">
+          <strong>Monitor Staff</strong> - শুধু মনিটর করবে, কালেকশন করতে পারবে না
+        </label>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-warning">💾 আপডেট করুন</button>
+    <a href="{{ url_for('manage_staff') }}" class="btn btn-secondary">⬅️ ফিরে যান</a>
   </form>
 </body>
 </html>

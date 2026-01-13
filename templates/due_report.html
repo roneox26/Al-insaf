@@ -1,162 +1,390 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>বকেয়া রিপোর্ট - Al-Insaf NGO</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>🔥 Advanced Due Report - Al-Insaf</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Noto Sans Bengali', sans-serif; background: #f8f9fa; }
-        .navbar { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .card { border: none; box-shadow: 0 0 20px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .table-hover tbody tr:hover { background-color: #f1f3f5; cursor: pointer; }
-        .badge-due { background: #dc3545; }
-        .badge-installment { background: #ffc107; color: #000; }
-        .stats-card { 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
+        :root {
+            --primary: #6366f1;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+            --info: #3b82f6;
         }
-        .stats-item {
-            text-align: center;
-            padding: 10px;
-        }
-        .stats-item h3 {
-            font-size: 2rem;
-            margin: 0;
-        }
-        .stats-item p {
-            margin: 5px 0 0 0;
-            opacity: 0.9;
-        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Noto Sans Bengali', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        
+        .main-container { background: #f8fafc; min-height: 100vh; padding: 20px; }
+        
+        /* Navbar */
+        .top-nav { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); padding: 15px 30px; border-radius: 15px; margin-bottom: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        .top-nav h2 { margin: 0; color: #1e293b; font-weight: 700; }
+        
+        /* Stats Cards */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px; }
+        .stat-card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); position: relative; overflow: hidden; transition: transform 0.3s; }
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+        .stat-card::before { content: ''; position: absolute; top: 0; right: 0; width: 100px; height: 100px; background: linear-gradient(135deg, rgba(99,102,241,0.1), transparent); border-radius: 50%; transform: translate(30%, -30%); }
+        .stat-icon { font-size: 2.5rem; margin-bottom: 10px; }
+        .stat-value { font-size: 2rem; font-weight: 700; margin: 10px 0; }
+        .stat-label { color: #64748b; font-size: 0.9rem; }
+        
+        /* Risk Cards */
+        .risk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .risk-card { padding: 20px; border-radius: 12px; color: white; text-align: center; transition: all 0.3s; cursor: pointer; }
+        .risk-card:hover { transform: scale(1.05); }
+        .risk-critical { background: linear-gradient(135deg, #dc2626, #991b1b); }
+        .risk-high { background: linear-gradient(135deg, #ea580c, #c2410c); }
+        .risk-medium { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .risk-low { background: linear-gradient(135deg, #10b981, #059669); }
+        .risk-card h3 { font-size: 2.5rem; margin: 10px 0; }
+        
+        /* Filter Section */
+        .filter-box { background: white; padding: 25px; border-radius: 15px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        .filter-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 20px; color: #1e293b; }
+        
+        /* Table */
+        .table-container { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        .custom-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .custom-table thead th { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 15px 10px; font-weight: 600; text-align: center; font-size: 0.9rem; position: sticky; top: 0; z-index: 10; }
+        .custom-table thead th:first-child { border-radius: 10px 0 0 0; }
+        .custom-table thead th:last-child { border-radius: 0 10px 0 0; }
+        .custom-table tbody tr { transition: all 0.2s; }
+        .custom-table tbody tr:hover { background: #f1f5f9; transform: scale(1.01); }
+        .custom-table tbody td { padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align: center; font-size: 0.85rem; }
+        
+        .row-critical { background: linear-gradient(90deg, rgba(239,68,68,0.1), transparent); border-left: 4px solid #ef4444; }
+        .row-high { background: linear-gradient(90deg, rgba(249,115,22,0.1), transparent); border-left: 4px solid #f97316; }
+        .row-medium { background: linear-gradient(90deg, rgba(245,158,11,0.1), transparent); border-left: 4px solid #f59e0b; }
+        .row-low { background: linear-gradient(90deg, rgba(16,185,129,0.1), transparent); border-left: 4px solid #10b981; }
+        
+        /* Badges */
+        .badge-custom { padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+        .badge-critical { background: #fee2e2; color: #991b1b; }
+        .badge-high { background: #ffedd5; color: #9a3412; }
+        .badge-medium { background: #fef3c7; color: #92400e; }
+        .badge-low { background: #d1fae5; color: #065f46; }
+        
+        /* Action Buttons */
+        .action-btns { position: fixed; bottom: 30px; right: 30px; z-index: 1000; }
+        .action-btn { width: 60px; height: 60px; border-radius: 50%; margin: 10px 0; box-shadow: 0 4px 20px rgba(0,0,0,0.2); border: none; color: white; font-size: 1.5rem; cursor: pointer; transition: all 0.3s; }
+        .action-btn:hover { transform: scale(1.1); }
+        .btn-export { background: linear-gradient(135deg, #10b981, #059669); }
+        .btn-print { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .btn-top { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+        
+        /* Charts */
+        .chart-container { background: white; padding: 25px; border-radius: 15px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        
+        /* Progress Bar */
+        .progress-custom { height: 8px; border-radius: 10px; background: #e2e8f0; overflow: hidden; }
+        .progress-bar-custom { height: 100%; border-radius: 10px; transition: width 0.5s; }
+        
+        /* Modal */
+        .modal-content { border-radius: 15px; border: none; }
+        .modal-header { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border-radius: 15px 15px 0 0; }
+        
         @media print {
-            .no-print { display: none; }
+            .no-print { display: none !important; }
             body { background: white; }
+            .main-container { padding: 0; }
+        }
+        
+        @media (max-width: 768px) {
+            .stats-grid, .risk-grid { grid-template-columns: 1fr; }
+            .action-btns { bottom: 15px; right: 15px; }
+            .action-btn { width: 50px; height: 50px; font-size: 1.2rem; }
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-dark no-print">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
-                <i class="fas fa-arrow-left"></i> Al-Insaf
-            </a>
-            <a href="{{ url_for('due_report_print') }}" class="btn btn-light btn-sm" target="_blank">
-                <i class="fas fa-print"></i> প্রিন্ট ভার্সন
-            </a>
-        </div>
-    </nav>
-
-    <div class="container mt-4">
-        <div class="stats-card no-print">
-            <div class="row">
-                <div class="col-md-4 stats-item">
-                    <h3>৳{{ "{:,.0f}".format(total_due) }}</h3>
-                    <p>মোট বকেয়া টাকা</p>
+    <div class="main-container">
+        <!-- Top Navigation -->
+        <div class="top-nav no-print">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-building"></i> আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h2>
+                    <h4><i class="fas fa-chart-line"></i> Advanced Due Report</h4>
+                    <small class="text-muted">{{ now.strftime('%d %B %Y, %I:%M %p') }}</small>
                 </div>
-                <div class="col-md-4 stats-item">
-                    <h3>{{ due_data|length }}</h3>
-                    <p>বকেয়া গ্রাহক সংখ্যা</p>
-                </div>
-                <div class="col-md-4 stats-item">
-                    <h3>৳{{ "{:,.0f}".format(total_due / due_data|length if due_data else 0) }}</h3>
-                    <p>গড় বকেয়া</p>
+                <div>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-home"></i> Dashboard
+                    </a>
+                    <a href="{{ url_for('due_report_export') }}" class="btn btn-success me-2">
+                        <i class="fas fa-file-excel"></i> Export
+                    </a>
+                    <a href="{{ url_for('due_report_print') }}" class="btn btn-primary" target="_blank">
+                        <i class="fas fa-print"></i> Print
+                    </a>
                 </div>
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header bg-danger text-white">
-                <h4 class="mb-0"><i class="fas fa-exclamation-triangle"></i> বকেয়া রিপোর্ট</h4>
+        <!-- Main Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon" style="color: #ef4444;"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="stat-value">৳{{ "{:,.0f}".format(total_due) }}</div>
+                <div class="stat-label">মোট বকেয়া টাকা</div>
             </div>
-            <div class="card-body">
-                <div class="row mb-3 no-print">
-                    <div class="col-md-6">
-                        <input type="text" id="searchInput" class="form-control" placeholder="🔍 নাম, ফোন বা সদস্য নং দিয়ে খুঁজুন...">
-                    </div>
-                    <div class="col-md-6 text-end">
-                        <div class="btn-group" role="group">
-                            <button class="btn btn-outline-primary" onclick="sortTable('name')"><i class="fas fa-sort-alpha-down"></i> নাম</button>
-                            <button class="btn btn-outline-danger" onclick="sortTable('amount')"><i class="fas fa-sort-amount-down"></i> বকেয়া</button>
-                            <button class="btn btn-outline-warning" onclick="sortTable('installment')"><i class="fas fa-sort-numeric-down"></i> কিস্তি</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table table-hover table-bordered">
-                        <thead class="table-dark">
-                            <tr>
-                                <th>ক্রমিক</th>
-                                <th>সদস্য নং</th>
-                                <th>নাম</th>
-                                <th>ফোন</th>
-                                <th>ঠিকানা</th>
-                                <th>বকেয়া টাকা</th>
-                                <th>মোট কিস্তি</th>
-                                <th>পরিশোধিত কিস্তি</th>
-                                <th>বকেয়া কিস্তি</th>
-                                <th class="no-print">অ্যাকশন</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% if due_data %}
-                                {% for data in due_data %}
-                                <tr>
-                                    <td>{{ loop.index }}</td>
-                                    <td>{{ data.customer.member_no or 'N/A' }}</td>
-                                    <td>{{ data.customer.name }}</td>
-                                    <td>{{ data.customer.phone }}</td>
-                                    <td>{{ data.customer.village }}, {{ data.customer.thana }}</td>
-                                    <td>
-                                        <span class="badge badge-due">৳{{ "{:,.2f}".format(data.due_amount) }}</span>
-                                    </td>
-                                    <td>{{ data.total_installments }}</td>
-                                    <td><span class="badge bg-success">{{ data.paid_installments }}</span></td>
-                                    <td>
-                                        <span class="badge badge-installment">{{ data.due_installments }}</span>
-                                    </td>
-                                    <td class="no-print">
-                                        <a href="{{ url_for('customer_details', id=data.customer.id) }}" class="btn btn-sm btn-primary">
-                                            <i class="fas fa-eye"></i> বিস্তারিত
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            {% else %}
-                                <tr>
-                                    <td colspan="10" class="text-center text-muted">
-                                        <i class="fas fa-check-circle fa-3x mb-3 text-success"></i>
-                                        <p>কোনো বকেয়া নেই!</p>
-                                    </td>
-                                </tr>
-                            {% endif %}
-                        </tbody>
-                        {% if due_data %}
-                        <tfoot class="table-secondary">
-                            <tr>
-                                <th colspan="5" class="text-end">মোট:</th>
-                                <th>৳{{ "{:,.2f}".format(total_due) }}</th>
-                                <th colspan="4"></th>
-                            </tr>
-                        </tfoot>
+            <div class="stat-card">
+                <div class="stat-icon" style="color: #3b82f6;"><i class="fas fa-users"></i></div>
+                <div class="stat-value">{{ due_data|length }}</div>
+                <div class="stat-label">বকেয়া গ্রাহক</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="color: #f59e0b;"><i class="fas fa-money-bill-wave"></i></div>
+                <div class="stat-value">
+                    {% set overdue_total = namespace(value=0) %}
+                    {% for d in due_data %}
+                        {% if d.days_overdue > 0 %}
+                            {% set overdue_total.value = overdue_total.value + (d.days_overdue * d.installment_amount) %}
                         {% endif %}
-                    </table>
+                    {% endfor %}
+                    ৳{{ "{:,.0f}".format(overdue_total.value) }}
                 </div>
+                <div class="stat-label">বকেয়া কিস্তির টাকা</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="color: #10b981;"><i class="fas fa-calculator"></i></div>
+                <div class="stat-value">৳{{ "{:,.0f}".format(total_due / due_data|length if due_data|length > 0 else 0) }}</div>
+                <div class="stat-label">গড় বকেয়া</div>
+            </div>
+        </div>
+
+        <!-- Risk Analytics -->
+        <div class="risk-grid no-print">
+            <div class="risk-card risk-critical" onclick="filterByRisk('critical')">
+                <i class="fas fa-skull-crossbones fa-2x"></i>
+                <h3>{{ analytics.critical }}</h3>
+                <p>Critical Risk</p>
+                <small>30+ দিন বকেয়া</small>
+            </div>
+            <div class="risk-card risk-high" onclick="filterByRisk('high')">
+                <i class="fas fa-exclamation-triangle fa-2x"></i>
+                <h3>{{ analytics.high }}</h3>
+                <p>High Risk</p>
+                <small>15-30 দিন বকেয়া</small>
+            </div>
+            <div class="risk-card risk-medium" onclick="filterByRisk('medium')">
+                <i class="fas fa-exclamation-circle fa-2x"></i>
+                <h3>{{ analytics.medium }}</h3>
+                <p>Medium Risk</p>
+                <small>7-15 দিন বকেয়া</small>
+            </div>
+            <div class="risk-card risk-low" onclick="filterByRisk('low')">
+                <i class="fas fa-check-circle fa-2x"></i>
+                <h3>{{ analytics.low }}</h3>
+                <p>Low Risk</p>
+                <small>7 দিনের কম</small>
+            </div>
+        </div>
+
+        <!-- Advanced Filters -->
+        <div class="filter-box no-print">
+            <div class="filter-title"><i class="fas fa-filter"></i> Advanced Filters</div>
+            <form method="GET" action="{{ url_for('due_report') }}">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label"><i class="fas fa-search"></i> Quick Search</label>
+                        <input type="text" id="searchInput" class="form-control" placeholder="নাম, ফোন, সদস্য নং...">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label"><i class="fas fa-user-tie"></i> Staff</label>
+                        <select name="staff_id" class="form-select">
+                            <option value="">সবাই</option>
+                            {% for staff in all_staff %}
+                            <option value="{{ staff.id }}">{{ staff.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label"><i class="fas fa-map-marker-alt"></i> Village</label>
+                        <select name="village" class="form-select">
+                            <option value="">সবাই</option>
+                            {% for village in villages %}
+                            <option value="{{ village }}">{{ village }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label"><i class="fas fa-money-bill"></i> Min Due</label>
+                        <input type="number" name="min_due" class="form-control" placeholder="0">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label"><i class="fas fa-money-bill"></i> Max Due</label>
+                        <input type="number" name="max_due" class="form-control" placeholder="∞">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search"></i></button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Village & Staff Statistics -->
+        <div class="row no-print mb-4">
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <h5><i class="fas fa-map-marked-alt"></i> Village-wise Due</h5>
+                    <div class="mt-3">
+                        {% for village, stats in village_stats.items() %}
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span><strong>{{ village }}</strong> ({{ stats.count }} জন)</span>
+                                <span class="text-danger">৳{{ "{:,.0f}".format(stats.amount) }}</span>
+                            </div>
+                            <div class="progress-custom">
+                                <div class="progress-bar-custom" style="width: {{ (stats.amount / total_due * 100) if total_due > 0 else 0 }}%; background: linear-gradient(90deg, #ef4444, #f97316);"></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <h5><i class="fas fa-users-cog"></i> Staff-wise Due</h5>
+                    <div class="mt-3">
+                        {% for staff, stats in staff_stats.items() %}
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span><strong>{{ staff }}</strong> ({{ stats.count }} জন)</span>
+                                <span class="text-danger">৳{{ "{:,.0f}".format(stats.amount) }}</span>
+                            </div>
+                            <div class="progress-custom">
+                                <div class="progress-bar-custom" style="width: {{ (stats.amount / total_due * 100) if total_due > 0 else 0 }}%; background: linear-gradient(90deg, #3b82f6, #8b5cf6);"></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Table -->
+        <div class="table-container">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4><i class="fas fa-table"></i> Due Report Details ({{ due_data|length }} entries)</h4>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-primary" onclick="sortTable('name')"><i class="fas fa-sort-alpha-down"></i> Name</button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="sortTable('amount')"><i class="fas fa-sort-amount-down"></i> Amount</button>
+                    <button class="btn btn-sm btn-outline-warning" onclick="sortTable('days')"><i class="fas fa-sort-numeric-down"></i> Days</button>
+                </div>
+            </div>
+            
+            <div style="overflow-x: auto;">
+                <table class="custom-table" id="dueTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>সদস্য নং</th>
+                            <th>নাম</th>
+                            <th>ফোন</th>
+                            <th>গ্রাম</th>
+                            <th>স্টাফ</th>
+                            <th>কিস্তি</th>
+                            <th>শেষ কালেকশন</th>
+                            <th>পরবর্তী তারিখ</th>
+                            <th>দিন বাকি</th>
+                            <th>বকেয়া কিস্তির টাকা</th>
+                            <th>মোট বকেয়া</th>
+                            <th>Payment Rate</th>
+                            <th>Risk</th>
+                            <th class="no-print">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if due_data %}
+                            {% for data in due_data %}
+                            <tr class="row-{{ data.risk_level }}">
+                                <td><strong>{{ loop.index }}</strong></td>
+                                <td>{{ data.customer.member_no or '-' }}</td>
+                                <td><strong>{{ data.customer.name }}</strong></td>
+                                <td>{{ data.customer.phone }}</td>
+                                <td><small>{{ data.customer.village or '-' }}</small></td>
+                                <td><small>{{ data.staff_name }}</small></td>
+                                <td>
+                                    <span class="badge bg-primary">{{ data.installment_type }}</span><br>
+                                    <small>৳{{ "{:,.0f}".format(data.installment_amount) }}</small>
+                                </td>
+                                <td><small>{{ data.last_collection_date.strftime('%d-%m-%Y') if data.last_collection_date else '-' }}</small></td>
+                                <td><small>{{ data.next_due_date.strftime('%d-%m-%Y') if data.next_due_date else '-' }}</small></td>
+                                <td>
+                                    {% if data.days_overdue > 0 %}
+                                    <span class="badge bg-danger">{{ data.days_overdue }} দিন</span>
+                                    {% elif data.days_overdue == 0 %}
+                                    <span class="badge bg-warning text-dark">আজ</span>
+                                    {% else %}
+                                    <span class="badge bg-success">{{ data.days_overdue|abs }} দিন</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if data.days_overdue > 0 %}
+                                    <strong style="color: #ef4444;">৳{{ "{:,.0f}".format(data.days_overdue * data.installment_amount) }}</strong>
+                                    {% else %}
+                                    <span style="color: #10b981;">-</span>
+                                    {% endif %}
+                                </td>
+                                <td><strong style="color: #ef4444;">৳{{ "{:,.0f}".format(data.due_amount) }}</strong></td>
+                                <td>
+                                    <div class="progress-custom" style="width: 60px;">
+                                        <div class="progress-bar-custom" style="width: {{ data.payment_rate }}%; background: {% if data.payment_rate >= 70 %}#10b981{% elif data.payment_rate >= 50 %}#f59e0b{% else %}#ef4444{% endif %};"></div>
+                                    </div>
+                                    <small>{{ data.payment_rate }}%</small>
+                                </td>
+                                <td>
+                                    <span class="badge-custom badge-{{ data.risk_level }}">
+                                        {{ data.risk_level|upper }}
+                                    </span>
+                                </td>
+                                <td class="no-print">
+                                    <a href="{{ url_for('customer_details', id=data.customer.id) }}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="15" class="text-center py-5">
+                                    <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+                                    <h4>কোনো বকেয়া নেই! 🎉</h4>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Floating Action Buttons -->
+    <div class="action-btns no-print">
+        <button class="action-btn btn-export" onclick="window.location.href='{{ url_for('due_report_export') }}'" title="Export to Excel">
+            <i class="fas fa-file-excel"></i>
+        </button>
+        <button class="action-btn btn-print" onclick="window.print()" title="Print Report">
+            <i class="fas fa-print"></i>
+        </button>
+        <button class="action-btn btn-top" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" title="Scroll to Top">
+            <i class="fas fa-arrow-up"></i>
+        </button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Search functionality
         document.getElementById('searchInput').addEventListener('keyup', function() {
             const searchValue = this.value.toLowerCase();
-            const rows = document.querySelectorAll('tbody tr');
-            
+            const rows = document.querySelectorAll('#dueTable tbody tr');
             rows.forEach(row => {
                 const text = row.textContent.toLowerCase();
                 row.style.display = text.includes(searchValue) ? '' : 'none';
@@ -166,40 +394,44 @@
         // Sort functionality
         let sortOrder = {};
         function sortTable(type) {
-            const tbody = document.querySelector('tbody');
+            const tbody = document.querySelector('#dueTable tbody');
             const rows = Array.from(tbody.querySelectorAll('tr'));
-            
             sortOrder[type] = !sortOrder[type];
             const ascending = sortOrder[type];
             
             rows.sort((a, b) => {
                 let aVal, bVal;
-                
                 if (type === 'name') {
                     aVal = a.cells[2].textContent.trim();
                     bVal = b.cells[2].textContent.trim();
                     return ascending ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
                 } else if (type === 'amount') {
-                    aVal = parseFloat(a.cells[5].textContent.replace(/[^0-9.]/g, ''));
-                    bVal = parseFloat(b.cells[5].textContent.replace(/[^0-9.]/g, ''));
-                } else if (type === 'installment') {
-                    aVal = parseInt(a.cells[8].textContent.trim());
-                    bVal = parseInt(b.cells[8].textContent.trim());
+                    aVal = parseFloat(a.cells[10].textContent.replace(/[^0-9.]/g, ''));
+                    bVal = parseFloat(b.cells[10].textContent.replace(/[^0-9.]/g, ''));
+                } else if (type === 'days') {
+                    aVal = parseInt(a.cells[9].textContent.replace(/[^0-9]/g, '')) || 0;
+                    bVal = parseInt(b.cells[9].textContent.replace(/[^0-9]/g, '')) || 0;
                 }
-                
                 return ascending ? aVal - bVal : bVal - aVal;
             });
             
             rows.forEach(row => tbody.appendChild(row));
         }
 
-        // Row click to view details
-        document.querySelectorAll('tbody tr').forEach(row => {
+        // Filter by risk
+        function filterByRisk(risk) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('risk_level', risk);
+            window.location.href = url.toString();
+        }
+
+        // Row click
+        document.querySelectorAll('#dueTable tbody tr').forEach(row => {
             row.style.cursor = 'pointer';
             row.addEventListener('click', function(e) {
                 if (!e.target.closest('.btn')) {
-                    const detailBtn = this.querySelector('.btn-primary');
-                    if (detailBtn) detailBtn.click();
+                    const link = this.querySelector('a.btn-primary');
+                    if (link) window.location.href = link.href;
                 }
             });
         });

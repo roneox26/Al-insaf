@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8">
+  <title>কালেকশন শিডিউল</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .schedule-card { border-left: 4px solid #007bff; }
+    .schedule-card.today { border-left-color: #28a745; background: #f0fff4; }
+    .schedule-card.overdue { border-left-color: #dc3545; background: #fff5f5; }
+    .schedule-card.upcoming { border-left-color: #ffc107; background: #fffbf0; }
+    .badge-today { background: #28a745; }
+    .badge-overdue { background: #dc3545; }
+    .badge-upcoming { background: #ffc107; color: #000; }
+    .badge-collected { background: #6c757d; }
+  </style>
+</head>
+<body class="container-fluid mt-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>📅 কালেকশন শিডিউল</h3>
+    <div>
+      <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">⬅️ ড্যাশবোর্ড</a>
+      <button onclick="window.print()" class="btn btn-primary no-print">🖨️ প্রিন্ট</button>
+    </div>
+  </div>
+
+  <!-- Filter Section -->
+  <div class="card mb-3 no-print">
+    <div class="card-body">
+      <form method="get" class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label">তারিখ ফিল্টার</label>
+          <select name="date_filter" class="form-select" onchange="this.form.submit()">
+            <option value="today" {% if date_filter == 'today' %}selected{% endif %}>আজ</option>
+            <option value="tomorrow" {% if date_filter == 'tomorrow' %}selected{% endif %}>আগামীকাল</option>
+            <option value="week" {% if date_filter == 'week' %}selected{% endif %}>এই সপ্তাহ</option>
+            <option value="month" {% if date_filter == 'month' %}selected{% endif %}>এই মাস</option>
+            <option value="overdue" {% if date_filter == 'overdue' %}selected{% endif %}>বকেয়া</option>
+            <option value="all" {% if date_filter == 'all' %}selected{% endif %}>সব</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">স্ট্যাটাস</label>
+          <select name="status_filter" class="form-select" onchange="this.form.submit()">
+            <option value="all" {% if status_filter == 'all' %}selected{% endif %}>সব</option>
+            <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>পেন্ডিং</option>
+            <option value="collected" {% if status_filter == 'collected' %}selected{% endif %}>সংগৃহীত</option>
+            <option value="missed" {% if status_filter == 'missed' %}selected{% endif %}>মিসড</option>
+          </select>
+        </div>
+        {% if current_user.role == 'admin' %}
+        <div class="col-md-3">
+          <label class="form-label">স্টাফ</label>
+          <select name="staff_filter" class="form-select" onchange="this.form.submit()">
+            <option value="">সব স্টাফ</option>
+            {% for staff in all_staff %}
+            <option value="{{ staff.id }}" {% if staff_filter == staff.id|string %}selected{% endif %}>{{ staff.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="row mb-3">
+    <div class="col-md-3">
+      <div class="card text-white bg-success">
+        <div class="card-body">
+          <h6>আজকের কালেকশন</h6>
+          <h3>{{ today_count }} টি</h3>
+          <p class="mb-0">৳{{ "{:,.0f}".format(today_amount) }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-white bg-warning">
+        <div class="card-body">
+          <h6>আগামী সপ্তাহ</h6>
+          <h3>{{ week_count }} টি</h3>
+          <p class="mb-0">৳{{ "{:,.0f}".format(week_amount) }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-white bg-danger">
+        <div class="card-body">
+          <h6>বকেয়া</h6>
+          <h3>{{ overdue_count }} টি</h3>
+          <p class="mb-0">৳{{ "{:,.0f}".format(overdue_amount) }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-white bg-info">
+        <div class="card-body">
+          <h6>মোট পেন্ডিং</h6>
+          <h3>{{ total_pending }} টি</h3>
+          <p class="mb-0">৳{{ "{:,.0f}".format(total_pending_amount) }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Schedule List -->
+  <div class="card">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">📋 কালেকশন লিস্ট ({{ schedules|length }} টি)</h5>
+    </div>
+    <div class="card-body">
+      {% if schedules %}
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>তারিখ</th>
+              <th>গ্রাহক</th>
+              <th>সদস্য নং</th>
+              <th>ফোন</th>
+              <th>টাইপ</th>
+              <th>পরিমাণ</th>
+              <th>স্ট্যাটাস</th>
+              <th>স্টাফ</th>
+              <th class="no-print">অ্যাকশন</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for schedule in schedules %}
+            <tr class="{% if schedule.status == 'collected' %}table-secondary{% elif schedule.days_diff < 0 %}table-danger{% elif schedule.days_diff == 0 %}table-success{% endif %}">
+              <td>
+                {{ schedule.scheduled_date.strftime('%d-%m-%Y') }}
+                {% if schedule.days_diff < 0 %}
+                <span class="badge badge-overdue">{{ schedule.days_diff|abs }} দিন বকেয়া</span>
+                {% elif schedule.days_diff == 0 %}
+                <span class="badge badge-today">আজ</span>
+                {% elif schedule.days_diff <= 7 %}
+                <span class="badge badge-upcoming">{{ schedule.days_diff }} দিন বাকি</span>
+                {% endif %}
+              </td>
+              <td>
+                <a href="{{ url_for('customer_details', id=schedule.customer.id) }}">{{ schedule.customer.name }}</a>
+              </td>
+              <td>{{ schedule.customer.member_no }}</td>
+              <td>{{ schedule.customer.phone }}</td>
+              <td>
+                {% if schedule.collection_type == 'loan' %}
+                <span class="badge bg-primary">লোন</span>
+                {% else %}
+                <span class="badge bg-info">সেভিংস</span>
+                {% endif %}
+              </td>
+              <td>৳{{ "{:,.0f}".format(schedule.expected_amount) }}</td>
+              <td>
+                {% if schedule.status == 'collected' %}
+                <span class="badge badge-collected">✓ সংগৃহীত</span>
+                {% elif schedule.status == 'missed' %}
+                <span class="badge bg-danger">✗ মিসড</span>
+                {% elif schedule.status == 'rescheduled' %}
+                <span class="badge bg-warning text-dark">⟳ রিশিডিউল</span>
+                {% else %}
+                <span class="badge bg-secondary">⏳ পেন্ডিং</span>
+                {% endif %}
+              </td>
+              <td>{{ schedule.customer.staff.name if schedule.customer.staff else 'N/A' }}</td>
+              <td class="no-print">
+                {% if schedule.status == 'pending' %}
+                <a href="{{ url_for('collect_loan') }}?customer_id={{ schedule.customer.id }}" class="btn btn-sm btn-success">💰 কালেক্ট</a>
+                <button class="btn btn-sm btn-warning" onclick="reschedule({{ schedule.id }})">⟳</button>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="alert alert-info">কোনো শিডিউল নেই</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <script>
+    function reschedule(scheduleId) {
+      const newDate = prompt('নতুন তারিখ দিন (YYYY-MM-DD):');
+      if (newDate) {
+        fetch(`/collection_schedule/reschedule/${scheduleId}`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({new_date: newDate})
+        }).then(response => {
+          if (response.ok) {
+            location.reload();
+          }
+        });
+      }
+    }
+  </script>
+</body>
+</html>

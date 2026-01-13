@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -18,21 +18,53 @@
   <h2 class="mb-4">✏️ Edit Loan</h2>
 
   <form method="POST">
-    <div class="mb-3">
-      <label class="form-label">Customer Name</label>
-      <input type="text" name="customer_name" class="form-control" value="{{ loan.customer_name }}" required>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Customer Name</label>
+        <input type="text" name="customer_name" class="form-control" value="{{ loan.customer_name }}" readonly>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Loan Amount (৳)</label>
+        <input type="number" step="0.01" name="amount" class="form-control" value="{{ loan.amount }}" required>
+      </div>
     </div>
-    <div class="mb-3">
-      <label class="form-label">Loan Amount (৳)</label>
-      <input type="number" step="0.01" name="amount" class="form-control" value="{{ loan.amount }}" required>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Interest Rate (%)</label>
+        <input type="number" step="0.01" name="interest" class="form-control" value="{{ loan.interest }}" required>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Service Charge (৳)</label>
+        <input type="number" step="0.01" name="service_charge" class="form-control" value="{{ loan.service_charge }}">
+      </div>
     </div>
-    <div class="mb-3">
-      <label class="form-label">Interest Rate (%)</label>
-      <input type="number" step="0.01" name="interest" class="form-control" value="{{ loan.interest }}" required>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Loan Date</label>
+        <input type="date" name="loan_date" class="form-control" value="{{ loan.loan_date.strftime('%Y-%m-%d') }}" required>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Due Date</label>
+        <input type="date" name="due_date" class="form-control" value="{{ loan.due_date.strftime('%Y-%m-%d') }}" required>
+      </div>
     </div>
-    <div class="mb-3">
-      <label class="form-label">Due Date</label>
-      <input type="date" name="due_date" class="form-control" value="{{ loan.due_date.strftime('%Y-%m-%d') }}" required>
+    <div class="row">
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Installment Type</label>
+        <select name="installment_type" class="form-control">
+          <option value="Daily" {% if loan.installment_type == 'Daily' %}selected{% endif %}>Daily</option>
+          <option value="Weekly" {% if loan.installment_type == 'Weekly' %}selected{% endif %}>Weekly</option>
+          <option value="Monthly" {% if loan.installment_type == 'Monthly' %}selected{% endif %}>Monthly</option>
+        </select>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Installment Count</label>
+        <input type="number" name="installment_count" class="form-control" value="{{ loan.installment_count }}">
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Installment Amount (৳)</label>
+        <input type="number" step="0.01" name="installment_amount" class="form-control" value="{{ loan.installment_amount }}">
+      </div>
     </div>
     <div class="mb-3">
       <label class="form-label">Status</label>
@@ -41,8 +73,11 @@
         <option value="Paid" {% if loan.status == 'Paid' %}selected{% endif %}>Paid</option>
       </select>
     </div>
-    <button type="submit" class="btn btn-warning">Update Loan</button>
-    <a href="{{ url_for('manage_loans') }}" class="btn btn-secondary">Cancel</a>
+    <div class="alert alert-warning">
+      <strong>⚠️ সতর্কতা:</strong> Loan amount পরিবর্তন করলে customer এর total loan এবং remaining loan আপডেট হবে না। সাবধানে এডিট করুন!
+    </div>
+    <button type="submit" class="btn btn-warning">💾 Update Loan</button>
+    <a href="{{ url_for('manage_loans') }}" class="btn btn-secondary">❌ Cancel</a>
   </form>
 </body>
 </html>

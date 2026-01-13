@@ -1,8 +1,9 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="bn">
 <head>
   <meta charset="utf-8">
   <title>সকল স্টাফ রিপোর্ট</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/print-watermark.css') }}">
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
     h2 { text-align: center; margin-bottom: 20px; }
@@ -11,14 +12,45 @@
     th { background-color: #f0f0f0; font-weight: bold; }
     .summary { margin-top: 20px; font-weight: bold; }
     @media print {
+      body::before {
+        content: "আল-ইনসাফ";
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-45deg);
+        font-size: 80pt;
+        font-weight: bold;
+        color: #000;
+        opacity: 0.08;
+        z-index: 1;
+      }
+      body::after {
+        content: "";
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-45deg);
+        width: 700px;
+        height: 700px;
+        background-image: url('/static/images/watermark.png');
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        opacity: 0.25;
+        z-index: 1;
+      }
       .no-print { display: none; }
+      table { page-break-inside: auto; }
+      thead { display: table-header-group; }
+      tbody { display: table-row-group; }
+      tr { page-break-inside: avoid; page-break-after: auto; }
     }
   </style>
 </head>
 <body>
   <button onclick="window.print()" class="no-print" style="margin-bottom: 20px; padding: 10px 20px; cursor: pointer;">🖨️ Print</button>
   
-  <h2>আল-ইনসাফ</h2>
+  <h3 style="text-align: center;">আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h3>
   <h3 style="text-align: center;">সকল স্টাফ রিপোর্ট</h3>
   <p style="text-align: center;">তারিখ: {{ now.strftime('%d-%m-%Y') }}</p>
 
@@ -32,8 +64,10 @@
         <th>লোন কালেকশন</th>
         <th>সেভিংস কালেকশন</th>
         <th>মোট কালেকশন</th>
+        {% if period != 'daily' %}
         <th>কালেকশন %</th>
         <th>বাকি লোন</th>
+        {% endif %}
       </tr>
     </thead>
     <tbody>
@@ -47,8 +81,10 @@
         <td>৳{{ "%.2f"|format(data.total_loan) }}</td>
         <td>৳{{ "%.2f"|format(data.total_saving) }}</td>
         <td>৳{{ "%.2f"|format(data.total_collection) }}</td>
+        {% if period != 'daily' %}
         <td><strong>{{ "%.1f"|format((data.total_collection / total_all * 100) if total_all > 0 else 0) }}%</strong></td>
         <td>৳{{ "%.2f"|format(data.remaining_loan) }}</td>
+        {% endif %}
       </tr>
       {% endfor %}
     </tbody>
@@ -59,8 +95,10 @@
         <td>৳{{ "%.2f"|format(staff_data|sum(attribute='total_loan')) }}</td>
         <td>৳{{ "%.2f"|format(staff_data|sum(attribute='total_saving')) }}</td>
         <td>৳{{ "%.2f"|format(staff_data|sum(attribute='total_collection')) }}</td>
+        {% if period != 'daily' %}
         <td>100%</td>
         <td>৳{{ "%.2f"|format(staff_data|sum(attribute='remaining_loan')) }}</td>
+        {% endif %}
       </tr>
     </tfoot>
   </table>

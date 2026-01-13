@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>অঙ্গীকারনামা</title>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        @page { size: A4; margin: 12mm; }
+        @media print {
+            .no-print { display: none !important; }
+            body { margin: 0; padding: 12mm; }
+        }
+        body { 
+            font-family: 'Kalpurush', 'Nikosh', Arial, sans-serif; 
+            margin: 0; padding: 20px; font-size: 13.5px; line-height: 1.9;
+            width: 210mm; min-height: 297mm; background: white;
+        }
+        .header { text-align: center; margin-bottom: 12px; border-bottom: 3px double #000; padding-bottom: 10px; position: relative; }
+        .header h2 { margin: 3px; font-size: 26px; font-weight: bold; color: #1a1a1a; }
+        .header p { margin: 2px; font-size: 11px; color: #333; }
+        .header h3 { 
+            margin: 10px auto; font-size: 17px; background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+            color: #000; padding: 10px 30px; display: inline-block; border-radius: 5px; 
+            box-shadow: 0 3px 8px rgba(255,193,7,0.4); font-weight: bold;
+        }
+        .photo-box { 
+            position: absolute; right: 10px; top: 5px; width: 100px; height: 120px;
+            border: 2.5px solid #000; display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+            font-size: 12px; color: #666; font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .form-section { margin: 10px 0; }
+        .form-section p { margin: 6px 0; text-align: justify; line-height: 2; }
+        .content-box {
+            background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%);
+            border: 2.5px solid #ffc107; padding: 20px; margin: 18px 0;
+            border-radius: 10px; text-align: justify; line-height: 2.2;
+            box-shadow: 0 3px 10px rgba(255,193,7,0.3);
+        }
+        .content-box p { margin: 8px 0; }
+        .content-box strong { color: #f57c00; font-weight: 700; }
+        .signature-section { 
+            margin-top: 50px; display: flex; justify-content: space-between;
+            font-size: 13px; padding-top: 20px; border-top: 2px solid #ddd;
+        }
+        .signature-box { text-align: center; min-width: 120px; }
+        .signature-box > div:first-child { font-weight: 600; color: #333; margin-bottom: 5px; }
+        .signature-line { border-top: 1.5px solid #000; margin-top: 50px; padding-top: 6px; font-weight: 500; }
+        .no-print { 
+            position: fixed; top: 10px; right: 10px; z-index: 1000;
+            background: white; padding: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border-radius: 10px; border: 2px solid #ffc107;
+        }
+        .customer-select {
+            margin-bottom: 12px; padding: 10px; background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%);
+            border-radius: 8px; border: 2px solid #ffc107;
+        }
+        .customer-select label { font-weight: bold; margin-bottom: 5px; display: block; color: #f57c00; }
+        .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; 
+               font-size: 14px; font-weight: 500; transition: all 0.3s; }
+        .btn-warning { background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%); color: #000; font-weight: 600; }
+        .btn-warning:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255,193,7,0.5); }
+        .btn-secondary { background: #6c757d; color: white; text-decoration: none; display: inline-block; }
+        .info-highlight { background: #fff3cd; padding: 3px 10px; border-radius: 4px; font-weight: 600; border: 1px solid #ffc107; }
+        .terms-list { background: white; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #ffc107; }
+        .terms-list p { margin: 10px 0; padding-left: 10px; }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <div class="customer-select">
+            <label>সদস্য নির্বাচন করুন:</label>
+            <select id="customerSelect" style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #ffc107;">
+                <option value="">-- সদস্য নির্বাচন করুন --</option>
+                {% for c in customers %}
+                <option value="{{ c.id }}" {% if customer and customer.id == c.id %}selected{% endif %}>
+                    {{ c.member_no }} - {{ c.name }} - {{ c.phone }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <button onclick="window.print()" class="btn btn-warning">🖨️ প্রিন্ট করুন</button>
+        <a href="{{ url_for('application_forms') }}" class="btn btn-secondary">← ফিরে যান</a>
+    </div>
+
+    <div class="header">
+        <div class="photo-box">ছবি</div>
+        <h2>আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h2>
+        <p>ঠিকানাঃ গ্রাম/পোষ্টঃ নেহালপুর, থানাঃ মনিরামপুর, জেলাঃ যশোর।</p>
+        <p>রেজিস্ট্রেশন নং: ৭৮ জে | ফোন: ০১৭১৫-০০০০০০</p>
+        <h3>অঙ্গীকারনামা</h3>
+        <p style="text-align: right; margin: 5px 10px 0 0; font-weight: 500;">তারিখ: <span id="currentDate" class="info-highlight"></span></p>
+    </div>
+
+    <div class="form-section">
+        <p><strong>বরাবর,</strong><br>
+        সভাপতি,<br>
+        আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ<br>
+        নেহালপুর বাজার, মনিরামপুর, যশোর।</p>
+    </div>
+
+    <div class="content-box">
+        <p style="text-indent: 50px;">
+            আমি <strong>{{ customer.name if customer else '___________________________' }}</strong> 
+            পিতা/স্বামী/অভিভাবক <strong>{{ customer.father_husband if customer else '___________________________' }}</strong> 
+            গ্রাম: <strong>{{ customer.village if customer else '___________' }}</strong> 
+            পোস্ট: <strong>{{ customer.post if customer else '___________' }}</strong> 
+            থানা: <strong>{{ customer.thana if customer else '___________' }}</strong> 
+            জেলা: <strong>{{ customer.district if customer else 'যশোর' }}</strong>। 
+            "আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ" এর একজন সদস্য।
+        </p>
+        
+        <p style="text-indent: 50px;">
+            আমি <strong>{{ customer.name if customer else '___________________________' }}</strong> 
+            উপশহর/প্রোগ্রামে "আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ" আঞ্চলিক কার্যালয় হইতে 
+            <span class="info-highlight">____/____/________</span> তারিখে 
+            <span class="info-highlight">_______________</span> টাকা 
+            (কথায়: <span class="info-highlight">_________________________________</span> টাকা মাত্র) 
+            নগদ অর্থ ঋণ হিসেবে গ্রহণ করিলাম এবং এক্ষেত্রে নিম্নরূপ অঙ্গীকার করিতেছি।
+        </p>
+    </div>
+
+    <div class="terms-list">
+        <p><strong>১.</strong> আমি অদ্য <span class="info-highlight">____/____/________</span> তারিখ হইতে 
+        <strong>প্রতিদিন/সাপ্তাহিক/পাক্ষিক/মাসিক/একবারীন</strong> 
+        <span class="info-highlight">_______________</span> টাকা করিয়া 
+        <span class="info-highlight">_______________</span> কিস্তিতে 
+        <strong>২০____</strong> সনের <span class="info-highlight">____/____/________</span> তারিখের মধ্যে 
+        উপরোক্ত ঋণের সার্ভিস চার্জ সহ বাকি <span class="info-highlight">_____</span> শতাংশ হারে পরিশোধ করিব।</p>
+        
+        <p><strong>২.</strong> আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ এর যে আদর্শ ও কর্মসূচিতে উদ্বুদ্ধ হইয়া ঋণ গ্রহণ করিয়াছি, 
+        আমি এই ঋণের অর্থ সেই উদ্দেশ্যেই এবং আমার সেই প্রোগ্রামের তাগিদেই উক্ত ঋণের কাজে লাগাইব। তাহার অন্যথা করিব না। 
+        অন্যথা হইলে মঞ্জুরীকৃত সমুদয় অর্থ ও অন্যান্য সকল খরচ তৎক্ষণাৎ পরিশোধ করিতে বাধ্য থাকিব। 
+        এতদ্বারা স্পষ্ট করা যাইতেছে যে, ঋণের টাকা দ্বারা অর্জিত লাভ বা ক্ষতির সকল দায়ভার আমার এবং ঋণদাতার কোন সম্পর্ক থাকিবে না।</p>
+        
+        <p><strong>৩.</strong> আমি যতদিন উপরোক্ত ঋণের সমুদয় টাকা সার্ভিস চার্জ সহ সম্পূর্ণরূপে পরিশোধ না করিব, 
+        ততদিন পর্যন্ত উক্ত ঋণের টাকা দ্বারা অর্জিত সম্পত্তি/সম্পদ "আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ" এর নিকট দায়বদ্ধ থাকিবে 
+        এবং সমিতির অনুমতি ব্যতীত উক্ত সম্পত্তি হস্তান্তর, বিক্রয় বা বন্ধক রাখিতে পারিব না। 
+        আমি দেশের প্রচলিত আইনানুসারে কাজ করিব। আমার উপরোক্ত কার্যক্রমে আমার উত্তরাধিকারীগণের মধ্যে কেহ কোন আপত্তি করিতে পারিবে না 
+        বা করিলে তাহা সর্বাবস্থায় অগ্রাহ্য হইবে।</p>
+    </div>
+
+    <div class="content-box" style="background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border-color: #28a745;">
+        <p style="text-align: center; font-weight: 600; font-size: 14px; color: #155724;">
+            এতদ্বারা ঋণের টাকা বুঝিয়া পাইয়া এবং অত্র অঙ্গীকারনামার মর্মে সম্মত হইয়া স্বেচ্ছায় ও সম্পূর্ণ সচেতনভাবে 
+            এই অঙ্গীকারনামা পাঠ করিয়া সম্পাদন করিয়া দিলাম।
+        </p>
+    </div>
+
+    <div class="signature-section" style="margin-top: 50px;">
+        <div class="signature-box">
+            <div>দায় দেনা বহনকারী</div>
+            <div class="signature-line">স্বামী/মনিটরের স্বাক্ষর</div>
+        </div>
+        <div class="signature-box">
+            <div>আবেদনকারী</div>
+            <div class="signature-line">স্বাক্ষর ও তারিখ</div>
+        </div>
+        <div class="signature-box">
+            <div>ম্যানেজার</div>
+            <div class="signature-line">স্বাক্ষর ও সীল</div>
+        </div>
+        <div class="signature-box">
+            <div>চেয়ারম্যান</div>
+            <div class="signature-line">স্বাক্ষর ও সীল</div>
+        </div>
+        <div class="signature-box">
+            <div>সভাপতি</div>
+            <div class="signature-line">স্বাক্ষর ও সীল</div>
+        </div>
+    </div>
+
+    <div style="margin-top: 30px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
+        <p style="text-align: center; font-size: 11px; color: #6c757d; margin: 0;">
+            <strong>দ্রষ্টব্য:</strong> এই অঙ্গীকারনামা আইনগতভাবে বাধ্যতামূলক এবং সমিতির নিয়ম-কানুন অনুযায়ী কার্যকর থাকিবে।
+        </p>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        const today = new Date();
+        const dateStr = today.getDate() + '/' + (today.getMonth() + 1) + '/' + today.getFullYear();
+        document.getElementById('currentDate').textContent = dateStr;
+
+        $(document).ready(function() {
+            $('#customerSelect').select2({ placeholder: '-- সদস্য নির্বাচন করুন --' });
+            $('#customerSelect').on('change', function() {
+                const customerId = $(this).val();
+                if (customerId) window.location.href = '{{ url_for("angikarnama_form") }}?customer_id=' + customerId;
+            });
+        });
+    </script>
+</body>
+</html>

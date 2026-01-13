@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>বকেয়া রিপোর্ট - Al-Insaf</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/print-watermark.css') }}">
     <style>
         @page { 
             size: A4; 
@@ -146,12 +147,43 @@
                 print-color-adjust: exact;
                 -webkit-print-color-adjust: exact;
             }
+            body::before {
+                content: "আল-ইনসাফ";
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-45deg);
+                font-size: 80pt;
+                font-weight: bold;
+                color: #000;
+                opacity: 0.08;
+                z-index: 1;
+            }
+            body::after {
+                content: "";
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-45deg);
+                width: 700px;
+                height: 700px;
+                background-image: url('/static/images/watermark.png');
+                background-size: contain;
+                background-repeat: no-repeat;
+                background-position: center;
+                opacity: 0.25;
+                z-index: 1;
+            }
             .no-print { 
                 display: none !important; 
             }
             tbody tr:hover {
                 background: inherit;
             }
+            table { page-break-inside: auto; }
+            thead { display: table-header-group; }
+            tbody { display: table-row-group; }
+            tr { page-break-inside: avoid; page-break-after: auto; }
         }
         .print-btn {
             position: fixed;
@@ -175,7 +207,7 @@
     <button class="print-btn no-print" onclick="window.print()">🖨️ প্রিন্ট করুন</button>
 
     <div class="header">
-        <h1>🏦 Al-Insaf</h1>
+        <h2>আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h2>
         <h2>⚠️ বকেয়া রিপোর্ট</h2>
         <p>তারিখ: {{ now.strftime('%d-%m-%Y') }} | সময়: {{ now.strftime('%I:%M %p') }}</p>
     </div>
@@ -190,8 +222,8 @@
             <div class="value">{{ due_data|length }} জন</div>
         </div>
         <div class="summary-item">
-            <div class="label">গড় বকেয়া</div>
-            <div class="value">৳{{ "{:,.2f}".format(total_due / due_data|length if due_data else 0) }}</div>
+            <div class="label">মোট বকেয়া কিস্তির টাকা</div>
+            <div class="value">৳{{ "{:,.0f}".format(total_due_installment_amount) }}</div>
         </div>
     </div>
 
@@ -204,10 +236,10 @@
                 <th>নাম</th>
                 <th>ফোন</th>
                 <th>ঠিকানা</th>
-                <th class="text-right">বকেয়া টাকা</th>
                 <th class="text-center">মোট কিস্তি</th>
                 <th class="text-center">পরিশোধিত</th>
                 <th class="text-center">বকেয়া কিস্তি</th>
+                <th class="text-right">মোট বকেয়া</th>
             </tr>
         </thead>
         <tbody>
@@ -218,9 +250,6 @@
                 <td><strong>{{ data.customer.name }}</strong></td>
                 <td>{{ data.customer.phone }}</td>
                 <td>{{ data.customer.village }}{% if data.customer.thana %}, {{ data.customer.thana }}{% endif %}</td>
-                <td class="text-right">
-                    <span class="badge badge-danger">৳{{ "{:,.2f}".format(data.due_amount) }}</span>
-                </td>
                 <td class="text-center">{{ data.total_installments }}</td>
                 <td class="text-center">
                     <span class="badge badge-success">{{ data.paid_installments }}</span>
@@ -228,14 +257,16 @@
                 <td class="text-center">
                     <span class="badge badge-warning">{{ data.due_installments }}</span>
                 </td>
+                <td class="text-right">
+                    <span class="badge badge-danger">৳{{ "{:,.2f}".format(data.due_amount) }}</span>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
         <tfoot>
             <tr>
-                <td colspan="5" class="text-right">সর্বমোট:</td>
-                <td class="text-right">৳{{ "{:,.2f}".format(total_due) }}</td>
-                <td colspan="3"></td>
+                <td colspan="8" class="text-right">সর্বমোট:</td>
+                <td class="text-right"><strong>৳{{ "{:,.2f}".format(total_due) }}</strong></td>
             </tr>
         </tfoot>
     </table>

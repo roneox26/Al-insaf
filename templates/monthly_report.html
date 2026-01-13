@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -19,6 +19,7 @@
   <div class="no-print mb-3">
     <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">⬅️ Back</a>
     <button onclick="window.print()" class="btn btn-primary">🖨️ Print</button>
+    <button onclick="toggleCalculation()" class="btn btn-info">📊 সব হিসাব</button>
     
     <form method="get" class="d-inline-block ms-3">
       <select name="month" class="form-select d-inline-block" style="width:auto;">
@@ -36,6 +37,7 @@
   </div>
 
   <div class="text-center mb-3">
+    <h4>আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h4>
     <h4>মাসিক আর্থিক রিপোর্ট</h4>
     <p>মাস: {{ month_name|default('') }} {{ year|default('') }}</p>
   </div>
@@ -51,6 +53,7 @@
           <th>ভর্তি ফি</th>
           <th>আবেদন ফি</th>
           <th>মূলধন সঞ্চয়</th>
+          <th>মোট আয়</th>
           <th>লোন প্রদান</th>
           <th>লাভ</th>
           <th>লাভ্যাংশ সহ লোন</th>
@@ -65,70 +68,379 @@
         {% for day in range(1, (last_day|default(31)) + 1) %}
         {% set day_data = daily_data.get(day, {}) %}
         <tr {% if day_data.get('is_weekend', False) %}class="weekend"{% endif %}>
-          <td>{{ day }}</td>
+          <td>{{ "%02d-%02d-%04d"|format(day, month, year) }}</td>
           <td class="text-end">{{ "{:,.0f}".format(day_data.get('savings', 0)) }}</td>
           <td class="text-end">{{ "{:,.0f}".format(day_data.get('installments', 0)) }}</td>
           <td class="text-end">{{ "{:,.0f}".format(day_data.get('welfare_fee', 0)) }}</td>
           <td class="text-end">{{ "{:,.0f}".format(day_data.get('admission_fee', 0)) }}</td>
           <td class="text-end">{{ "{:,.0f}".format(day_data.get('service_charge', 0)) }}</td>
           <td class="text-end">{{ "{:,.0f}".format(day_data.get('capital_savings', 0)) }}</td>
+          <td class="text-end"><strong>{{ "{:,.0f}".format(day_data.get('total_income', 0)) }}</strong></td>
           <td class="text-end">{{ "{:,.0f}".format(day_data.get('loan_given', 0)) }}</td>
           <td class="text-end">{{ "{:,.0f}".format(day_data.get('interest', 0)) }}</td>
           <td class="text-end">{{ "{:,.0f}".format(day_data.get('loan_with_interest', 0)) }}</td>
           <td class="text-end">{{ "{:,.0f}".format(day_data.get('savings_return', 0)) }}</td>
           <td class="text-end">{{ "{:,.0f}".format(day_data.get('expenses', 0)) }}</td>
-          <td class="text-end">{{ "{:,.0f}".format(day_data.get('total_expense', 0)) }}</td>
+          <td class="text-end"><strong>{{ "{:,.0f}".format(day_data.get('total_expense', 0)) }}</strong></td>
           <td class="text-end"><strong>{{ "{:,.0f}".format(day_data.get('balance', 0)) }}</strong></td>
         </tr>
         {% endfor %}
         {% else %}
         <tr>
-          <td colspan="14" class="text-center">কোনো ডেটা নেই</td>
+          <td colspan="15" class="text-center">কোনো ডেটা নেই</td>
         </tr>
         {% endif %}
       </tbody>
     </table>
   </div>
 
-  <!-- Summary Section -->
-  <div class="mt-4">
-    <h5 class="text-center">মাসিক সারাংশ / Monthly Summary</h5>
-    <table class="table table-bordered table-sm mt-3">
-      <tbody>
-        <tr class="table-info">
-          <td><strong>মোট মূলধন সঞ্চয় / Total Capital Savings:</strong></td>
-          <td class="text-end"><strong>৳{{ "{:,.0f}".format(total_capital_savings|default(0)) }}</strong></td>
-        </tr>
-        <tr class="table-warning">
-          <td><strong>মোট লোন বিতরণ / Total Loan Distributed:</strong></td>
-          <td class="text-end"><strong>৳{{ "{:,.0f}".format(total_loan_distributed|default(0)) }}</strong></td>
-        </tr>
-        <tr>
-          <td>মূলধন সঞ্চয় / Capital Savings:</td>
-          <td class="text-end">৳{{ "{:,.0f}".format(total_capital_savings|default(0)) }}</td>
-        </tr>
-        <tr class="table-success">
-          <td><strong>লাভ্যাংশ / Interest:</strong></td>
-          <td class="text-end"><strong>৳{{ "{:,.0f}".format(total_interest|default(0)) }}</strong></td>
-        </tr>
-        <tr class="table-light">
-          <td>পূর্বের বকেয়া / Previous Outstanding:</td>
-          <td class="text-end">৳{{ "{:,.0f}".format(prev_remaining|default(0)) }}</td>
-        </tr>
-        <tr class="table-warning">
-          <td><strong>মোট বকেয়া / Total Outstanding:</strong></td>
-          <td class="text-end"><strong>৳{{ "{:,.0f}".format(current_remaining|default(0)) }}</strong></td>
-        </tr>
-        <tr>
-          <td>খরচ / Expenses:</td>
-          <td class="text-end">৳{{ "{:,.0f}".format(total_monthly_expenses|default(0)) }}</td>
-        </tr>
-        <tr class="table-danger">
-          <td><strong>মোট খরচ / Total Expenses:</strong></td>
-          <td class="text-end"><strong>৳{{ "{:,.0f}".format(total_monthly_expenses|default(0)) }}</strong></td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  <!-- Detailed Calculation Section -->
+  <div id="calculationSection" style="display:none;" class="mt-4">
+    <div class="no-print mb-3">
+      <button onclick="printCalculation()" class="btn btn-success">🖨️ সব হিসাব Print</button>
+    </div>
+    <h5 class="text-center mb-4">📊 মাসিক বিস্তারিত হিসাব</h5>
+    
+    <div class="row">
+      <div class="col-md-6">
+        <div class="card mb-3">
+          <div class="card-header bg-success text-white">
+            <h5 class="mb-0">💰 মাসিক আয়</h5>
+          </div>
+          <div class="card-body">
+            <table class="table table-sm table-bordered mb-0">
+              <tr>
+                <td>💵 লোন কিস্তি</td>
+                <td class="text-end"><strong>৳{{ "{:,.0f}".format(daily_data.values()|sum(attribute='installments')) }}</strong></td>
+              </tr>
+              <tr>
+                <td>🏦 সঞ্চয় জমা</td>
+                <td class="text-end"><strong>৳{{ "{:,.0f}".format(daily_data.values()|sum(attribute='savings')) }}</strong></td>
+              </tr>
+              <tr>
+                <td>🎫 ভর্তি ফি</td>
+                <td class="text-end"><strong>৳{{ "{:,.0f}".format(daily_data.values()|sum(attribute='admission_fee')) }}</strong></td>
+              </tr>
+              <tr>
+                <td>📝 আবেদন ফি</td>
+                <td class="text-end"><strong>৳{{ "{:,.0f}".format(daily_data.values()|sum(attribute='service_charge')) }}</strong></td>
+              </tr>
+              <tr>
+                <td>🤝 কল্যাণ ফি</td>
+                <td class="text-end"><strong>৳{{ "{:,.0f}".format(daily_data.values()|sum(attribute='welfare_fee')) }}</strong></td>
+              </tr>
+              <tr>
+                <td>💸 মূলধন সঞ্চয়</td>
+                <td class="text-end"><strong>৳{{ "{:,.0f}".format(total_capital_savings|default(0)) }}</strong></td>
+              </tr>
+              <tr class="table-success">
+                <td><strong>মোট আয়</strong></td>
+                <td class="text-end"><strong>৳{{ "{:,.0f}".format(daily_data.values()|sum(attribute='installments') + daily_data.values()|sum(attribute='savings') + daily_data.values()|sum(attribute='admission_fee') + daily_data.values()|sum(attribute='service_charge') + daily_data.values()|sum(attribute='welfare_fee') + total_capital_savings|default(0)) }}</strong></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card mb-3">
+          <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">📉 মাসিক ব্যয়</h5>
+          </div>
+          <div class="card-body">
+            <table class="table table-sm table-bordered mb-0">
+              <tr>
+                <td>💸 লোন বিতরণ</td>
+                <td class="text-end"><strong>৳{{ "{:,.0f}".format(total_loan_distributed|default(0)) }}</strong></td>
+              </tr>
+              <tr>
+                <td>💵 সঞ্চয় ফেরত</td>
+                <td class="text-end"><strong>৳{{ "{:,.0f}".format(daily_data.values()|sum(attribute='savings_return')) }}</strong></td>
+              </tr>
+              <tr>
+                <td>📄 মাসিক খরচ</td>
+                <td class="text-end"><strong>৳{{ "{:,.0f}".format(total_monthly_expenses|default(0)) }}</strong></td>
+              </tr>
+              <tr class="table-danger">
+                <td><strong>মোট ব্যয়</strong></td>
+                <td class="text-end"><strong>৳{{ "{:,.0f}".format(total_loan_distributed|default(0) + daily_data.values()|sum(attribute='savings_return') + total_monthly_expenses|default(0)) }}</strong></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-12">
+        <div class="card mb-3">
+          <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">💡 লাভ্যাংশ বিবরণ</h5>
+          </div>
+          <div class="card-body">
+            <table class="table table-sm table-bordered mb-0">
+              <tr>
+                <td style="width: 50%;"><strong>মোট লাভ্যাংশ (লোন বিতরণের সাথে)</strong></td>
+                <td class="text-end" style="width: 50%;"><strong>৳{{ "{:,.0f}".format(total_interest|default(0)) }}</strong></td>
+              </tr>
+            </table>
+            <p class="text-muted mt-2 mb-0" style="font-size: 12px;">* লাভ্যাংশ লোন বিতরণের সাথে গ্রাহকের কাছে যায়, তাই এটি সরাসরি ব্যয় নয়</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-12">
+        <div class="card mb-3">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">📊 মাসিক সারাংশ</h5>
+          </div>
+          <div class="card-body">
+            <div class="row text-center">
+              <div class="col-md-2">
+                <div class="p-3" style="background: #e3f2fd; color: #1565c0; border-radius: 5px;">
+                  <h6>পূর্বের হাতে</h6>
+                  <h3>৳{{ "{:,.0f}".format(opening_balance|default(0)) }}</h3>
+                </div>
+              </div>
+              <div class="col-md-2">
+                <div class="p-3 bg-success text-white rounded">
+                  <h6>মোট আয়</h6>
+                  <h3>৳{{ "{:,.0f}".format(daily_data.values()|sum(attribute='installments') + daily_data.values()|sum(attribute='savings') + daily_data.values()|sum(attribute='admission_fee') + daily_data.values()|sum(attribute='service_charge') + daily_data.values()|sum(attribute='welfare_fee') + total_capital_savings|default(0)) }}</h3>
+                </div>
+              </div>
+              <div class="col-md-2">
+                <div class="p-3 bg-danger text-white rounded">
+                  <h6>মোট ব্যয়</h6>
+                  <h3>৳{{ "{:,.0f}".format(total_loan_distributed|default(0) + daily_data.values()|sum(attribute='savings_return') + total_monthly_expenses|default(0)) }}</h3>
+                </div>
+              </div>
+              <div class="col-md-2">
+                <div class="p-3" style="background: #fff9c4; color: #f57f17; border-radius: 5px;">
+                  <h6>এই মাসে বকেয়া</h6>
+                  <h3>৳{{ "{:,.0f}".format(monthly_due|default(0)) }}</h3>
+                </div>
+              </div>
+              <div class="col-md-2">
+                <div class="p-3 bg-warning text-dark rounded">
+                  <h6>বর্তমান বকেয়া</h6>
+                  <h3>৳{{ "{:,.0f}".format(current_remaining|default(0)) }}</h3>
+                </div>
+              </div>
+              <div class="col-md-2">
+                <div class="p-3 bg-info text-white rounded">
+                  <h6>হাতে</h6>
+                  <h3>৳{{ "{:,.0f}".format(closing_balance|default(0)) }}</h3>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+
+
+  <script>
+    function toggleCalculation() {
+      const section = document.getElementById('calculationSection');
+      section.style.display = section.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function printCalculation() {
+      const section = document.getElementById('calculationSection');
+      section.style.display = 'block';
+      
+      const printWindow = window.open('', '', 'width=900,height=700');
+      printWindow.document.write(`
+        <html>
+        <head>
+          <title>মাসিক হিসাব - {{ month_name }} {{ year }}</title>
+          <style>
+            @page { 
+              size: A4; 
+              margin: 12mm 10mm;
+            }
+            * { box-sizing: border-box; }
+            body { 
+              font-family: 'Noto Sans Bengali', 'SolaimanLipi', Arial, sans-serif; 
+              font-size: 10px;
+              line-height: 1.4;
+              margin: 0;
+              padding: 0;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 15px;
+              border-bottom: 2px solid #000;
+              padding-bottom: 10px;
+            }
+            .header h2 { margin: 0; font-size: 18px; font-weight: bold; }
+            .header h4 { margin: 5px 0; font-size: 14px; }
+            
+            .section {
+              margin-bottom: 12px;
+              page-break-inside: avoid;
+            }
+            .section-title {
+              background: #e9ecef;
+              padding: 6px 10px;
+              font-weight: bold;
+              font-size: 11px;
+              border: 1px solid #000;
+              margin-bottom: 5px;
+            }
+            
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 8px;
+            }
+            table td {
+              padding: 4px 8px;
+              border: 1px solid #666;
+              font-size: 9px;
+            }
+            table td:first-child {
+              font-weight: bold;
+              width: 45%;
+            }
+            table td:last-child {
+              text-align: right;
+              width: 55%;
+            }
+            
+            .summary-grid {
+              display: grid;
+              grid-template-columns: repeat(6, 1fr);
+              gap: 8px;
+              margin: 10px 0;
+            }
+            .summary-box {
+              border: 2px solid #000;
+              padding: 8px;
+              text-align: center;
+            }
+            .summary-box.income { background: #d4edda; }
+            .summary-box.expense { background: #f8d7da; }
+            .summary-box.monthly-due { background: #fff9c4; }
+            .summary-box.due { background: #fff3cd; }
+            .summary-box.profit { background: #d1ecf1; }
+            .summary-box h6 {
+              margin: 0 0 5px 0;
+              font-size: 9px;
+              font-weight: bold;
+            }
+            .summary-box h3 {
+              margin: 0;
+              font-size: 14px;
+              font-weight: bold;
+            }
+            
+            .two-column {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 10px;
+              margin-bottom: 10px;
+            }
+            
+            .footer {
+              margin-top: 15px;
+              padding-top: 10px;
+              border-top: 1px solid #666;
+              text-align: center;
+              font-size: 8px;
+              color: #666;
+            }
+            
+            @media print {
+              body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h2>আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h2>
+            <h4>মাসিক আর্থিক হিসাব - {{ month_name }} {{ year }}</h4>
+          </div>
+          
+          <div class="two-column">
+            <div class="section">
+              <div class="section-title">💰 মাসিক আয়</div>
+              <table>
+                <tr><td>💵 লোন কিস্তি</td><td>৳{{ "{:,.0f}".format(daily_data.values()|sum(attribute='installments')) }}</td></tr>
+                <tr><td>🏦 সঞ্চয় জমা</td><td>৳{{ "{:,.0f}".format(daily_data.values()|sum(attribute='savings')) }}</td></tr>
+                <tr><td>🎫 ভর্তি ফি</td><td>৳{{ "{:,.0f}".format(daily_data.values()|sum(attribute='admission_fee')) }}</td></tr>
+                <tr><td>📝 আবেদন ফি</td><td>৳{{ "{:,.0f}".format(daily_data.values()|sum(attribute='service_charge')) }}</td></tr>
+                <tr><td>🤝 কল্যাণ ফি</td><td>৳{{ "{:,.0f}".format(daily_data.values()|sum(attribute='welfare_fee')) }}</td></tr>
+                <tr><td>💸 মূলধন সঞ্চয়</td><td>৳{{ "{:,.0f}".format(total_capital_savings|default(0)) }}</td></tr>
+                <tr style="background: #d4edda; font-weight: bold;"><td>মোট আয়</td><td>৳{{ "{:,.0f}".format((daily_data.values()|sum(attribute='installments')) + (daily_data.values()|sum(attribute='savings')) + (daily_data.values()|sum(attribute='admission_fee')) + (daily_data.values()|sum(attribute='service_charge')) + (daily_data.values()|sum(attribute='welfare_fee')) + (total_capital_savings|default(0))) }}</td></tr>
+              </table>
+            </div>
+            
+            <div class="section">
+              <div class="section-title">📉 মাসিক ব্যয়</div>
+              <table>
+                <tr><td>💸 লোন বিতরণ</td><td>৳{{ "{:,.0f}".format(total_loan_distributed|default(0)) }}</td></tr>
+                <tr><td>💵 সঞ্চয় ফেরত</td><td>৳{{ "{:,.0f}".format(daily_data.values()|sum(attribute='savings_return')) }}</td></tr>
+                <tr><td>📄 মাসিক খরচ</td><td>৳{{ "{:,.0f}".format(total_monthly_expenses|default(0)) }}</td></tr>
+                <tr style="background: #f8d7da; font-weight: bold;"><td>মোট ব্যয়</td><td>৳{{ "{:,.0f}".format((total_loan_distributed|default(0)) + (daily_data.values()|sum(attribute='savings_return')) + (total_monthly_expenses|default(0))) }}</td></tr>
+              </table>
+            </div>
+          </div>
+          
+          <div class="section">
+            <div class="section-title">💡 লাভ্যাংশ বিবরণ</div>
+            <table>
+              <tr style="background: #fff3cd;"><td>মোট লাভ্যাংশ (লোন বিতরণের সাথে)</td><td>৳{{ "{:,.0f}".format(total_interest|default(0)) }}</td></tr>
+            </table>
+          </div>
+          
+          <div class="section">
+            <div class="section-title">📊 মাসিক সারাংশ</div>
+            <div class="summary-grid">
+              <div class="summary-box" style="background: #e3f2fd;">
+                <h6>পূর্বের হাতে</h6>
+                <h3>৳{{ "{:,.0f}".format(opening_balance|default(0)) }}</h3>
+              </div>
+              <div class="summary-box income">
+                <h6>মোট আয়</h6>
+                <h3>৳{{ "{:,.0f}".format((daily_data.values()|sum(attribute='installments')) + (daily_data.values()|sum(attribute='savings')) + (daily_data.values()|sum(attribute='admission_fee')) + (daily_data.values()|sum(attribute='service_charge')) + (daily_data.values()|sum(attribute='welfare_fee')) + (total_capital_savings|default(0))) }}</h3>
+              </div>
+              <div class="summary-box expense">
+                <h6>মোট ব্যয়</h6>
+                <h3>৳{{ "{:,.0f}".format((total_loan_distributed|default(0)) + (daily_data.values()|sum(attribute='savings_return')) + (total_monthly_expenses|default(0))) }}</h3>
+              </div>
+              <div class="summary-box monthly-due">
+                <h6>এই মাসে বকেয়া</h6>
+                <h3>৳{{ "{:,.0f}".format(monthly_due|default(0)) }}</h3>
+              </div>
+              <div class="summary-box due">
+                <h6>বর্তমান বকেয়া</h6>
+                <h3>৳{{ "{:,.0f}".format(current_remaining|default(0)) }}</h3>
+              </div>
+              <div class="summary-box profit">
+                <h6>হাতে</h6>
+                <h3>৳{{ "{:,.0f}".format(closing_balance|default(0)) }}</h3>
+              </div>
+            </div>
+          </div>
+          
+          <div class="footer">
+            <p>প্রিন্ট তারিখ: ${new Date().toLocaleDateString('bn-BD')} | সময়: ${new Date().toLocaleTimeString('bn-BD')}</p>
+          </div>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 300);
+    }
+  </script>
 </body>
 </html>

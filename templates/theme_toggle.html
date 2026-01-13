@@ -1,0 +1,55 @@
+<!-- Theme Toggle Button -->
+<button id="themeToggle" class="btn btn-sm" style="border-radius: 50%; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.3); color: white;">
+    <i class="fas fa-moon" id="themeIcon"></i>
+</button>
+
+<style>
+    body.dark-theme {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%) !important;
+    }
+    body.dark-theme .stat-card,
+    body.dark-theme .action-card {
+        background: #2d3748 !important;
+        color: white !important;
+    }
+    body.dark-theme .stat-card p,
+    body.dark-theme .action-card h5,
+    body.dark-theme .action-card p {
+        color: #e2e8f0 !important;
+    }
+    body.dark-theme .section-title {
+        color: #e2e8f0 !important;
+    }
+    body.dark-theme .welcome-card {
+        background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%) !important;
+    }
+</style>
+
+<script>
+// Theme Toggle Script
+const themeToggle = document.getElementById('themeToggle');
+const themeIcon = document.getElementById('themeIcon');
+const body = document.body;
+
+// Load saved theme
+const savedTheme = localStorage.getItem('theme') || 'light';
+if (savedTheme === 'dark') {
+    body.classList.add('dark-theme');
+    themeIcon.classList.remove('fa-moon');
+    themeIcon.classList.add('fa-sun');
+}
+
+themeToggle.addEventListener('click', () => {
+    body.classList.toggle('dark-theme');
+    
+    if (body.classList.contains('dark-theme')) {
+        themeIcon.classList.remove('fa-moon');
+        themeIcon.classList.add('fa-sun');
+        localStorage.setItem('theme', 'dark');
+    } else {
+        themeIcon.classList.remove('fa-sun');
+        themeIcon.classList.add('fa-moon');
+        localStorage.setItem('theme', 'light');
+    }
+});
+</script>

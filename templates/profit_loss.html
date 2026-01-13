@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -24,7 +24,7 @@
     <div class="col-md-4">
       <div class="card shadow p-3 bg-danger text-white">
         <h5>💸 Total Outflow</h5>
-        <h3>৳{{ "{:,.2f}".format(total_expenses + total_withdrawals + total_loans_given) }}</h3>
+        <h3>৳{{ "{:,.2f}".format(total_expenses + total_withdrawals) }}</h3>
       </div>
     </div>
     <div class="col-md-4">
@@ -80,13 +80,9 @@
             <td>💸 Investor Withdrawals</td>
             <td class="text-end">৳{{ "{:,.2f}".format(total_withdrawals) }}</td>
           </tr>
-          <tr>
-            <td>💰 Loans Given</td>
-            <td class="text-end">৳{{ "{:,.2f}".format(total_loans_given) }}</td>
-          </tr>
           <tr class="table-danger">
             <td><strong>Total Outflow</strong></td>
-            <td class="text-end"><strong>৳{{ "{:,.2f}".format(total_expenses + total_withdrawals + total_loans_given) }}</strong></td>
+            <td class="text-end"><strong>৳{{ "{:,.2f}".format(total_expenses + total_withdrawals) }}</strong></td>
           </tr>
         </table>
       </div>
@@ -107,10 +103,6 @@
       <tr>
         <td>Investor Withdrawals</td>
         <td class="text-end text-danger">৳{{ "{:,.2f}".format(total_withdrawals) }}</td>
-      </tr>
-      <tr>
-        <td>Loans Given</td>
-        <td class="text-end text-danger">৳{{ "{:,.2f}".format(total_loans_given) }}</td>
       </tr>
       <tr class="{% if net_profit >= 0 %}table-primary{% else %}table-warning{% endif %}">
         <td><strong>{% if net_profit >= 0 %}Net Profit{% else %}Net Loss{% endif %}</strong></td>

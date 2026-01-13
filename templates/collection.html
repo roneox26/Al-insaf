@@ -1,76 +1,192 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>কালেকশন</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Collection - Al-Insaf NGO</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); min-height: 100vh; padding-bottom: 20px; }
+    .page-title { color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); font-size: 1.5rem; }
+    .form-card { background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+    .customer-info-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 10px; }
+    .input-icon { position: relative; }
+    .input-icon i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #6c757d; z-index: 10; }
+    .input-icon input, .input-icon select { padding-left: 35px; }
+    .customer-card { cursor: pointer; transition: all 0.3s; border: 2px solid #e0e0e0; border-radius: 10px; margin-bottom: 10px; }
+    .customer-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-color: #667eea; }
+    .customer-card.collected { background: #d4edda; border-color: #28a745; opacity: 0.7; }
+    .customer-card.collected::after { content: '✓ সংগৃহীত'; position: absolute; top: 10px; right: 10px; background: #28a745; color: white; padding: 2px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
+    .customer-card { position: relative; }
+    @media (max-width: 768px) {
+      .page-title { font-size: 1.2rem; }
+      .customer-card { font-size: 0.9rem; }
+      .btn { font-size: 0.9rem; }
+    }
+  </style>
 </head>
 
-<body class="container mt-5">
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for category, message in messages %}
-        <div class="alert alert-{{ category }}">{{ message }}</div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
-
-  <h2 class="mb-4">💰 কালেকশন</h2>
-
-  <form method="POST">
-    <div class="mb-3">
-      <label class="form-label">গ্রাহক নির্বাচন করুন</label>
-      <select name="customer_id" id="customerSelect" class="form-control" required>
-        <option value="">নির্বাচন করুন</option>
-        {% for customer in customers %}
-        <option value="{{ customer.id }}" 
-                data-loan="{{ customer.remaining_loan }}" 
-                data-saving="{{ customer.savings_balance }}">
-          {{ customer.name }} - {{ customer.phone }}
-          (লোন বাকি: ৳{{ "{:,.2f}".format(customer.remaining_loan) }})
-        </option>
+<body>
+  <div class="container mt-4 pb-5">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
         {% endfor %}
-      </select>
+      {% endif %}
+    {% endwith %}
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="page-title"><i class="fas fa-hand-holding-usd"></i> কালেকশন / Collection</h2>
+      <a href="{{ url_for('dashboard') }}" class="btn btn-light"><i class="fas fa-arrow-left"></i> Back</a>
     </div>
 
-    <div id="customerInfo" class="alert alert-info" style="display:none;">
-      <strong>গ্রাহক তথ্য:</strong><br>
-      <span id="loanInfo"></span><br>
-      <span id="savingInfo"></span>
+    <div class="form-card p-3 p-md-4">
+      <form method="POST" id="collectionForm">
+        <div class="mb-3">
+          <label class="form-label fw-bold"><i class="fas fa-user-check"></i> গ্রাহক নির্বাচন করুন</label>
+          <div class="input-icon mb-2">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchBox" class="form-control" placeholder="নাম, ফোন বা সদস্যা নং দিয়ে খুঁজুন...">
+          </div>
+          <input type="hidden" name="customer_id" id="selectedCustomerId" required>
+          <div id="customerList" style="max-height: 400px; overflow-y: auto;">
+            {% for customer in customers %}
+            <div class="customer-card p-3" 
+                 data-id="{{ customer.id }}"
+                 data-totalloan="{{ customer.total_loan }}"
+                 data-loan="{{ customer.remaining_loan }}" 
+                 data-saving="{{ customer.savings_balance }}"
+                 data-name="{{ customer.name }}"
+                 data-phone="{{ customer.phone }}"
+                 data-member="{{ customer.member_no or '' }}">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <strong>{{ customer.name }}</strong>
+                  <div class="text-muted small">📞 {{ customer.phone }}</div>
+                  <div class="text-muted small">সদস্য: {{ customer.member_no or '-' }}</div>
+                </div>
+                <div class="text-end">
+                  <div class="text-danger small fw-bold">লোন: ৳{{ "{:,.0f}".format(customer.remaining_loan) }}</div>
+                  <div class="text-success small">সঞ্চয়: ৳{{ "{:,.0f}".format(customer.savings_balance) }}</div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div id="customerInfo" class="customer-info-card p-3 mb-3" style="display:none;">
+          <h6 class="mb-2"><i class="fas fa-user-circle"></i> <span id="customerName"></span></h6>
+          <div class="row g-2">
+            <div class="col-6 col-md-3">
+              <small>সদস্য নং</small><br>
+              <strong id="memberInfo"></strong>
+            </div>
+            <div class="col-6 col-md-3">
+              <small>মোট লোন</small><br>
+              <strong id="totalLoanInfo"></strong>
+            </div>
+            <div class="col-6 col-md-3">
+              <small>লোন বাকি</small><br>
+              <strong id="loanInfo" class="text-warning"></strong>
+            </div>
+            <div class="col-6 col-md-3">
+              <small>সেভিংস</small><br>
+              <strong id="savingInfo"></strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-2">
+          <div class="col-12 col-md-6 mb-3">
+            <label class="form-label fw-bold"><i class="fas fa-hand-holding-usd"></i> লোন কালেকশন (৳)</label>
+            <div class="input-icon">
+              <i class="fas fa-coins"></i>
+              <input type="number" step="0.01" name="loan_amount" id="loanAmount" class="form-control form-control-lg" placeholder="0" min="0">
+            </div>
+          </div>
+          <div class="col-12 col-md-6 mb-3">
+            <label class="form-label fw-bold"><i class="fas fa-piggy-bank"></i> সঞ্চয় কালেকশন (৳)</label>
+            <div class="input-icon">
+              <i class="fas fa-wallet"></i>
+              <input type="number" step="0.01" name="saving_amount" id="savingAmount" class="form-control form-control-lg" placeholder="0" min="0">
+            </div>
+          </div>
+        </div>
+
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-success btn-lg"><i class="fas fa-check-circle"></i> কালেকশন সম্পন্ন করুন</button>
+          <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary"><i class="fas fa-times"></i> বাতিল</a>
+        </div>
+      </form>
     </div>
+  </div>
 
-    <div class="row">
-      <div class="col-md-6 mb-3">
-        <label class="form-label">লোন কালেকশন (৳)</label>
-        <input type="number" step="0.01" name="loan_amount" id="loanAmount" class="form-control" placeholder="0" min="0">
-      </div>
-      <div class="col-md-6 mb-3">
-        <label class="form-label">সঞ্চয় কালেকশন (৳)</label>
-        <input type="number" step="0.01" name="saving_amount" id="savingAmount" class="form-control" placeholder="0" min="0">
-      </div>
-    </div>
-
-    <button type="submit" class="btn btn-success">কালেকশন সম্পন্ন করুন</button>
-    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">বাতিল</a>
-  </form>
-
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    const customerSelect = document.getElementById('customerSelect');
+    const searchBox = document.getElementById('searchBox');
+    const customerCards = document.querySelectorAll('.customer-card');
     const customerInfo = document.getElementById('customerInfo');
-    const loanInfo = document.getElementById('loanInfo');
-    const savingInfo = document.getElementById('savingInfo');
+    const selectedCustomerId = document.getElementById('selectedCustomerId');
+    const collectionForm = document.getElementById('collectionForm');
+    
+    // Load collected customers from localStorage
+    const collectedToday = JSON.parse(localStorage.getItem('collectedToday_' + new Date().toDateString()) || '[]');
+    
+    // Mark collected customers
+    collectedToday.forEach(id => {
+      const card = document.querySelector(`[data-id="${id}"]`);
+      if (card) card.classList.add('collected');
+    });
 
-    customerSelect.addEventListener('change', function() {
-      const selectedOption = this.options[this.selectedIndex];
-      if (selectedOption.value) {
-        const loan = parseFloat(selectedOption.dataset.loan);
-        const saving = parseFloat(selectedOption.dataset.saving);
+    // Search functionality
+    searchBox.addEventListener('input', function() {
+      const searchTerm = this.value.toLowerCase();
+      customerCards.forEach(card => {
+        const name = card.dataset.name.toLowerCase();
+        const phone = card.dataset.phone.toLowerCase();
+        const member = card.dataset.member.toLowerCase();
+        card.style.display = (name.includes(searchTerm) || phone.includes(searchTerm) || member.includes(searchTerm)) ? '' : 'none';
+      });
+    });
+
+    // Customer card click
+    customerCards.forEach(card => {
+      card.addEventListener('click', function() {
+        customerCards.forEach(c => c.style.border = '2px solid #e0e0e0');
+        this.style.border = '2px solid #667eea';
         
-        loanInfo.textContent = `লোন বাকি: ৳${loan.toFixed(2)}`;
-        savingInfo.textContent = `সেভিংস ব্যালেন্স: ৳${saving.toFixed(2)}`;
+        const id = this.dataset.id;
+        const name = this.dataset.name;
+        const member = this.dataset.member || '-';
+        const totalLoan = parseFloat(this.dataset.totalloan);
+        const loan = parseFloat(this.dataset.loan);
+        const saving = parseFloat(this.dataset.saving);
+        
+        selectedCustomerId.value = id;
+        document.getElementById('customerName').textContent = name;
+        document.getElementById('memberInfo').textContent = member;
+        document.getElementById('totalLoanInfo').textContent = '৳' + totalLoan.toFixed(0);
+        document.getElementById('loanInfo').textContent = '৳' + loan.toFixed(0);
+        document.getElementById('savingInfo').textContent = '৳' + saving.toFixed(0);
         customerInfo.style.display = 'block';
-      } else {
-        customerInfo.style.display = 'none';
+        
+        // Scroll to form
+        customerInfo.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    });
+    
+    // Save collected customer on form submit
+    collectionForm.addEventListener('submit', function(e) {
+      const customerId = selectedCustomerId.value;
+      if (customerId && !collectedToday.includes(customerId)) {
+        collectedToday.push(customerId);
+        localStorage.setItem('collectedToday_' + new Date().toDateString(), JSON.stringify(collectedToday));
       }
     });
   </script>

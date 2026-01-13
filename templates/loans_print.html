@@ -1,0 +1,176 @@
+﻿<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ঋণ রিপোর্ট - Al-Insaf</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/print-watermark.css') }}">
+    <style>
+        @page { size: A4; margin: 15mm; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Noto Sans Bengali', Arial, sans-serif; font-size: 11pt; line-height: 1.4; }
+        .header { text-align: center; margin-bottom: 20px; border-bottom: 3px solid #333; padding-bottom: 10px; }
+        .header h1 { font-size: 24pt; color: #2c3e50; margin-bottom: 5px; }
+        .header h2 { font-size: 18pt; color: #3498db; margin-bottom: 5px; }
+        .header p { font-size: 10pt; color: #7f8c8d; }
+        .summary { background: #f8f9fa; padding: 15px; margin: 20px 0; border-left: 5px solid #3498db; display: flex; justify-content: space-around; }
+        .summary-item { text-align: center; }
+        .summary-item .label { font-size: 10pt; color: #7f8c8d; margin-bottom: 5px; }
+        .summary-item .value { font-size: 16pt; font-weight: bold; color: #2c3e50; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 10pt; }
+        thead { background: #2c3e50; color: white; }
+        th, td { padding: 8px; text-align: left; border: 1px solid #ddd; }
+        th { font-weight: bold; font-size: 10pt; }
+        tbody tr:nth-child(even) { background: #f8f9fa; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 3px; font-size: 9pt; font-weight: bold; }
+        .badge-success { background: #27ae60; color: white; }
+        .badge-warning { background: #f39c12; color: white; }
+        tfoot { background: #ecf0f1; font-weight: bold; font-size: 11pt; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #333; display: flex; justify-content: space-between; font-size: 9pt; }
+        .signature { text-align: center; margin-top: 10px; }
+        .signature-line { border-top: 1px solid #333; width: 200px; margin: 40px auto 5px; }
+        @media print {
+            body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+            body::before {
+                content: "আল-ইনসাফ";
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-45deg);
+                font-size: 80pt;
+                font-weight: bold;
+                color: #000;
+                opacity: 0.08;
+                z-index: 1;
+            }
+            body::after {
+                content: "";
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-45deg);
+                width: 700px;
+                height: 700px;
+                background-image: url('/static/images/watermark.png');
+                background-size: contain;
+                background-repeat: no-repeat;
+                background-position: center;
+                opacity: 0.25;
+                z-index: 1;
+            }
+            .no-print { display: none !important; }
+            table { page-break-inside: auto; }
+            thead { display: table-header-group; }
+            tbody { display: table-row-group; }
+            tr { page-break-inside: avoid; page-break-after: auto; }
+        }
+        .print-btn { position: fixed; top: 20px; right: 20px; padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12pt; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .print-btn:hover { background: #2980b9; }
+    </style>
+</head>
+<body>
+    <button class="print-btn no-print" onclick="window.print()">🖨️ প্রিন্ট করুন</button>
+
+    <div class="header">
+        <h2>আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h2>
+        <h2>💰 ঋণ রিপোর্ট</h2>
+        <p>
+            {% if filter_type == 'month' and month and year %}
+                {% set month_names = ['', 'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'] %}
+                মাস: {{ month_names[month] }} {{ year }}
+            {% elif filter_type == 'year' and year %}
+                বছর: {{ year }}
+            {% else %}
+                সকল ঋণ
+            {% endif %}
+            | প্রিন্ট: {{ now.strftime('%d-%m-%Y %I:%M %p') }}
+        </p>
+    </div>
+
+    <div class="summary">
+        <div class="summary-item">
+            <div class="label">💵 মোট লোন বিতারণ</div>
+            <div class="value">৳{{ "{:,.2f}".format(total_amount) }}</div>
+        </div>
+        <div class="summary-item">
+            <div class="label">📈 মোট লভ্যাংশ</div>
+            <div class="value">৳{{ "{:,.2f}".format(total_interest) }}</div>
+        </div>
+        <div class="summary-item">
+            <div class="label">💰 মোট লভ্যাংশসহ</div>
+            <div class="value">৳{{ "{:,.2f}".format(total_with_interest) }}</div>
+        </div>
+    </div>
+
+    {% if loans %}
+    <table>
+        <thead>
+            <tr>
+                <th class="text-center">ক্রমিক</th>
+                <th>গ্রাহক</th>
+                <th class="text-right">ঋণ</th>
+                <th class="text-center">সুদ</th>
+                <th class="text-center">ঋণের তারিখ</th>
+                <th class="text-center">শেষ তারিখ</th>
+                <th class="text-center">স্ট্যাটাস</th>
+                <th>স্টাফ</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for loan in loans %}
+            <tr>
+                <td class="text-center">{{ loop.index }}</td>
+                <td>{{ loan.customer_name }}</td>
+                <td class="text-right"><strong>৳{{ "{:,.2f}".format(loan.amount) }}</strong></td>
+                <td class="text-center">{{ loan.interest }}%</td>
+                <td class="text-center">{{ loan.loan_date.strftime('%d-%m-%Y') }}</td>
+                <td class="text-center">{{ loan.due_date.strftime('%d-%m-%Y') }}</td>
+                <td class="text-center">
+                    {% if loan.status == 'Paid' %}
+                        <span class="badge badge-success">লোন প্রদান</span>
+                    {% else %}
+                        <span class="badge badge-warning">লোন প্রদান হয়নি</span>
+                    {% endif %}
+                </td>
+                <td>{{ loan.staff.name if loan.staff else 'N/A' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="2" class="text-right">সর্বমোট:</td>
+                <td class="text-right">৳{{ "{:,.2f}".format(total_amount) }}</td>
+                <td colspan="5"></td>
+            </tr>
+        </tfoot>
+    </table>
+    {% else %}
+    <div style="text-align: center; padding: 40px; color: #27ae60; font-size: 14pt;">
+        <p>✅ কোনো ঋণ নেই!</p>
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        <div>
+            <div class="signature">
+                <div class="signature-line"></div>
+                <p>প্রস্তুতকারী</p>
+            </div>
+        </div>
+        <div>
+            <div class="signature">
+                <div class="signature-line"></div>
+                <p>যাচাইকারী</p>
+            </div>
+        </div>
+        <div>
+            <div class="signature">
+                <div class="signature-line"></div>
+                <p>অনুমোদনকারী</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,459 @@
+﻿<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>গ্রাহক বিবরণ - {{ customer.name }}</title>
+    <style>
+        @media print {
+            .no-print { display: none; }
+            body { margin: 0; padding: 5mm; }
+            .header { background: #28a745 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .section-title { background: #4facfe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .collection-header { background: #fa709a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .collection-table th { background: #667eea !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .info-cell.label { background: #e3f2fd !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .summary-box:nth-child(1) { background: #28a745 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .summary-box:nth-child(2) { background: #17a2b8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .summary-box:nth-child(3) { background: #0d6efd !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .summary-box:nth-child(4) { background: #dc3545 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .summary-box:nth-child(5) { background: #ffc107 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Kalpurush', 'SolaimanLipi', Arial, sans-serif;
+            padding: 10px;
+            background: #fff;
+        }
+        
+        .container {
+            max-width: 210mm;
+            margin: 0 auto;
+            border: 2px solid #000;
+            background: #fff;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 15px;
+            border-bottom: 3px solid #000;
+            background: #28a745;
+            color: white;
+        }
+        
+        .header h2 {
+            font-size: 22px;
+            margin-bottom: 3px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .main-section {
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            border-bottom: 2px solid #000;
+        }
+        
+        .left-panel {
+            border-right: 2px solid #000;
+        }
+        
+        .section-title {
+            background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 8px 10px;
+            border-bottom: 2px solid #000;
+            font-weight: bold;
+            font-size: 14px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+        }
+        
+        .info-cell {
+            border-right: 1px solid #000;
+            border-bottom: 1px solid #000;
+            padding: 5px 6px;
+            font-size: 11px;
+            min-height: 26px;
+        }
+        
+        .info-cell:nth-child(4n) {
+            border-right: none;
+        }
+        
+        .info-cell.label {
+            background: #e3f2fd;
+            font-weight: 600;
+            color: #1565c0;
+        }
+        
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .staff-section {
+            border-bottom: 1px solid #000;
+            padding: 6px;
+        }
+        
+        .staff-row {
+            display: grid;
+            grid-template-columns: 60px 1fr;
+            margin-bottom: 2px;
+            font-size: 10px;
+        }
+        
+        .staff-row label {
+            font-weight: bold;
+        }
+        
+        .photo-section {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+        }
+        
+        .photo-box {
+            width: 90px;
+            height: 110px;
+            border: 1px solid #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fafafa;
+        }
+        
+        .photo-box img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        
+        .summary-section {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            border-bottom: 2px solid #000;
+            background: #f8f9fa;
+        }
+        
+        .summary-box {
+            border-right: 1px solid #000;
+            padding: 12px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .summary-box:nth-child(1) {
+            background: c;
+            color: white;
+        }
+        
+        .summary-box:nth-child(2) {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .summary-box:nth-child(3) {
+            background: #0d6efd;
+            color: white;
+        }
+        
+        .summary-box:nth-child(4) {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .summary-box:nth-child(5) {
+            background: #ffc107;
+            color: #000;
+        }
+        
+        .summary-box:last-child {
+            border-right: none;
+        }
+        
+        .summary-label {
+            font-size: 11px;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+        
+        .summary-value {
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .collection-section {
+            padding: 10px;
+        }
+        
+        .collection-header {
+            background: linear-gradient(to right, #fa709a 0%, #fee140 100%);
+            color: white;
+            padding: 8px 10px;
+            margin-bottom: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+        
+        .collection-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .collection-table th {
+            background: linear-gradient(to bottom, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: 1px solid #000;
+            padding: 8px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .collection-table td {
+            border: 1px solid #000;
+            padding: 6px;
+            text-align: center;
+            font-size: 11px;
+        }
+        
+        .print-btn {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .print-btn:hover {
+            background: #1976D2;
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="text-align: center; margin-bottom: 10px;">
+        <button class="print-btn" onclick="window.print()">🖨️ সম্পূর্ণ প্রিন্ট</button>
+        <button class="print-btn" style="background: #4CAF50;" onclick="printDetails()">📄 শুধু বিবরণ প্রিন্ট</button>
+        <button class="print-btn" style="background: #FF9800;" onclick="printHistory()">📊 শুধু হিস্ট্রি প্রিন্ট</button>
+        <button class="print-btn" style="background: #666;" onclick="window.history.back()">← ফিরে যান</button>
+    </div>
+
+    <script>
+        function printDetails() {
+            document.querySelector('.collection-section').style.display = 'none';
+            window.print();
+            document.querySelector('.collection-section').style.display = 'block';
+        }
+        function printHistory() {
+            document.querySelector('.main-section').style.display = 'none';
+            document.querySelector('.summary-section').style.display = 'none';
+            window.print();
+            document.querySelector('.main-section').style.display = 'grid';
+            document.querySelector('.summary-section').style.display = 'grid';
+        }
+    </script>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h2>গ্রাহক বিবরণ</h2>
+        </div>
+
+        <!-- Main Section -->
+        <div class="main-section">
+            <!-- Left Panel: Customer Details -->
+            <div class="left-panel">
+                <div class="section-title">গ্রাহকের বিবরণ</div>
+                <div class="info-grid">
+                    <div class="info-cell label">নাম</div>
+                    <div class="info-cell">{{ customer.name }}</div>
+                    <div class="info-cell label">সদস্যা নং</div>
+                    <div class="info-cell">{{ customer.member_no or '' }}</div>
+                    
+                    <div class="info-cell label">পিতা/স্বামী</div>
+                    <div class="info-cell">{{ customer.father_husband or '' }}</div>
+                    <div class="info-cell label">মোবাইল</div>
+                    <div class="info-cell">{{ customer.phone }}</div>
+                    
+                    <div class="info-cell label">পেশা</div>
+                    <div class="info-cell">{{ customer.profession or '' }}</div>
+                    <div class="info-cell label">NID</div>
+                    <div class="info-cell">{{ customer.nid_no or '' }}</div>
+                    
+                    <div class="info-cell label">গ্রাম</div>
+                    <div class="info-cell">{{ customer.village or '' }}</div>
+                    <div class="info-cell label">পোস্ট</div>
+                    <div class="info-cell">{{ customer.post or '' }}</div>
+                    
+                    <div class="info-cell label">থানা</div>
+                    <div class="info-cell">{{ customer.thana or '' }}</div>
+                    <div class="info-cell label">জেলা</div>
+                    <div class="info-cell">{{ customer.district or '' }}</div>
+                    
+                    <div class="info-cell label">জামিনদার</div>
+                    <div class="info-cell">{{ customer.granter or '' }}</div>
+                    <div class="info-cell label">ভর্তি ফি</div>
+                    <div class="info-cell">{{ "{:,.0f}".format(admission_fee) if admission_fee else '০' }}</div>
+                    
+                    <div class="info-cell label">ঠিকানা</div>
+                    <div class="info-cell" style="grid-column: span 3;">{{ customer.address or '' }}</div>
+                    
+                    <div class="info-cell label">মোবাইল জামিনদার</div>
+                    <div class="info-cell">{{ customer.granter_phone or '' }}</div>
+                    <div class="info-cell label">কল্যাণ</div>
+                    <div class="info-cell">{{ "{:,.0f}".format(welfare_fee) if welfare_fee else '০' }}</div>
+                    
+                    <div class="info-cell label">অভি:ফোন নং</div>
+                    <div class="info-cell">{{ customer.guardian_phone or '' }}</div>
+                    <div class="info-cell label">আবেদন ফি</div>
+                    <div class="info-cell">{{ "{:,.0f}".format(application_fee) if application_fee else '০' }}</div>
+                    
+                    <div class="info-cell label">লোন বিতরণ তারিখ</div>
+                    <div class="info-cell">{{ loan_date }}</div>
+                    <div class="info-cell label">মোট টাকা</div>
+                    <div class="info-cell">{{ "{:,.0f}".format(loan_principal) }}{% if interest_rate > 0 %} ({{ "{:.0f}".format(interest_rate) }}%){% endif %}{% if interest_amount + service_charge_total > 0 %} = {{ "{:,.0f}".format(loan_principal + interest_amount + service_charge_total) }}{% endif %}</div>
+                    
+                    <div class="info-cell label">কিস্তি ধরন</div>
+                    <div class="info-cell">সাপ্তাহিক</div>
+                    <div class="info-cell label">সঞ্চয়</div>
+                    <div class="info-cell">{{ "{:,.0f}".format(total_savings) }}</div>
+                    
+                    <div class="info-cell label">কিস্তি সংখ্যা</div>
+                    <div class="info-cell">{{ installment_count }}</div>
+                    <div class="info-cell label">কিস্তি নং</div>
+                    <div class="info-cell">{{ "{:,.0f}".format(weekly_installment) }}</div>
+                    
+                    <div class="info-cell label">শেষ তারিখ</div>
+                    <div class="info-cell">{{ loan_end_date }}</div>
+                    <div class="info-cell label">মোট বকেয়া</div>
+                    <div class="info-cell">{{ "{:,.0f}".format(customer.remaining_loan) }}</div>
+                    
+                    <div class="info-cell label">ঋণের উদ্দেশ্য</div>
+                    <div class="info-cell" style="grid-column: span 3;">{{ customer.loan_purpose or '' }}</div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Staff & Photo -->
+            <div class="right-panel">
+                <div class="section-title">স্টাফ</div>
+                <div class="staff-section">
+                    <div class="staff-row">
+                        <label>কর্মকর্তা:</label>
+                        <span>{{ staff.name if staff else '' }}</span>
+                    </div>
+                    <div class="staff-row">
+                        <label>শাখা:</label>
+                        <span>প্রধান শাখা</span>
+                    </div>
+                    <div class="staff-row">
+                        <label>তারিখ:</label>
+                        <span>{{ now.strftime('%d-%m-%Y') }}</span>
+                    </div>
+                </div>
+                <div class="section-title">ছবি</div>
+                <div class="photo-section">
+                    <div class="photo-box">
+                        {% if customer.photo %}
+                        <img src="{{ url_for('static', filename='uploads/' + customer.photo) }}" alt="ছবি">
+                        {% else %}
+                        <span style="color: #999;">ছবি নেই</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Section -->
+        <div class="summary-section">
+            <div class="summary-box">
+                <div class="summary-label">মোট ঋণ</div>
+                <div class="summary-value">{{ "{:,.0f}".format(total_loan) }}</div>
+            </div>
+            <div class="summary-box">
+                <div class="summary-label">মোট আদায়</div>
+                <div class="summary-value">{{ "{:,.0f}".format(total_collected) }}</div>
+            </div>
+            <div class="summary-box">
+                <div class="summary-label">মোট কিস্তি আদায়</div>
+                <div class="summary-value">{{ loan_collections|length }}</div>
+            </div>
+            <div class="summary-box">
+                <div class="summary-label">মোট বকেয়া</div>
+                <div class="summary-value">{{ "{:,.0f}".format(customer.remaining_loan) }}</div>
+            </div>
+            <div class="summary-box">
+                <div class="summary-label">সঞ্চয় উত্তোলন</div>
+                <div class="summary-value">০</div>
+            </div>
+        </div>
+
+        <!-- Collection History -->
+        <div class="collection-section">
+            <div class="collection-header">
+                কালেকশন হিস্ট্রি
+            </div>
+            <table class="collection-table">
+                <thead>
+                    <tr>
+                        <th>তারিখ</th>
+                        <th>ঋণ</th>
+                        <th>সঞ্চয়</th>
+                        <th>মোট কিস্তি</th>
+                        <th>মোট সঞ্চয়</th>
+                        <th>সঞ্চয় উত্তোলন</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if loan_collections %}
+                        {% set running_total = namespace(value=0) %}
+                        {% for lc in loan_collections %}
+                        {% set running_total.value = running_total.value + lc.amount %}
+                        <tr>
+                            <td>{{ lc.collection_date.strftime('%d-%m-%y') }}</td>
+                            <td>{{ "{:,.0f}".format(lc.amount) }}</td>
+                            <td>০</td>
+                            <td>{{ "{:,.0f}".format(running_total.value) }}</td>
+                            <td>০</td>
+                            <td></td>
+                        </tr>
+                        {% endfor %}
+                        {% for i in range(10 - loan_collections|length) %}
+                        <tr>
+                            <td style="height: 28px;">&nbsp;</td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        {% for i in range(10) %}
+                        <tr>
+                            <td style="height: 28px;">&nbsp;</td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        {% endfor %}
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
