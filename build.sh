@@ -1,63 +1,63 @@
 #!/usr/bin/env bash
-# exit on error
 set -o errexit
 
-echo "=== Starting Build Process ==="
+echo "=== Build Started ==="
 
-echo "Step 1: Upgrading pip..."
+echo "Installing dependencies..."
 pip install --upgrade pip
-
-echo "Step 2: Installing dependencies..."
 pip install -r requirements.txt
 
-echo "Step 3: Creating instance directory..."
+echo "Creating instance directory..."
 mkdir -p instance
 
-echo "Step 4: Setting up database..."
-python -c "
-from app import app, db
-with app.app_context():
-    print('Creating database tables...')
-    db.create_all()
-    print('Database tables created successfully!')
-"
+echo "Initializing database..."
+python << 'PYTHON_SCRIPT'
+import sys
+sys.path.insert(0, '.')
 
-echo "Step 5: Creating default users..."
-python -c "
-from app import app, db, bcrypt, User, CashBalance
-with app.app_context():
-    # Check and create admin
-    if not User.query.filter_by(email='admin@example.com').first():
-        admin = User(
-            name='Admin',
-            email='admin@example.com',
-            password=bcrypt.generate_password_hash('admin123').decode('utf-8'),
-            role='admin',
-            is_office_staff=False
-        )
-        db.session.add(admin)
-        print('Created admin user')
+try:
+    from app import app, db, bcrypt, User, CashBalance
     
-    # Check and create staff
-    if not User.query.filter_by(email='staff@example.com').first():
-        staff = User(
-            name='Staff',
-            email='staff@example.com',
-            password=bcrypt.generate_password_hash('staff123').decode('utf-8'),
-            role='staff',
-            is_office_staff=False
-        )
-        db.session.add(staff)
-        print('Created staff user')
-    
-    # Check and create cash balance
-    if not CashBalance.query.first():
-        cash = CashBalance(balance=0)
-        db.session.add(cash)
-        print('Created cash balance')
-    
-    db.session.commit()
-    print('Default data setup completed!')
-"
+    with app.app_context():
+        print("Creating tables...")
+        db.create_all()
+        print("Tables created!")
+        
+        if not User.query.filter_by(email='admin@example.com').first():
+            admin = User(
+                name='Admin',
+                email='admin@example.com',
+                password=bcrypt.generate_password_hash('admin123').decode('utf-8'),
+                role='admin',
+                is_office_staff=False
+            )
+            db.session.add(admin)
+            print("Admin created")
+        
+        if not User.query.filter_by(email='staff@example.com').first():
+            staff = User(
+                name='Staff',
+                email='staff@example.com',
+                password=bcrypt.generate_password_hash('staff123').decode('utf-8'),
+                role='staff',
+                is_office_staff=False
+            )
+            db.session.add(staff)
+            print("Staff created")
+        
+        if not CashBalance.query.first():
+            cash = CashBalance(balance=0)
+            db.session.add(cash)
+            print("Cash balance created")
+        
+        db.session.commit()
+        print("Database setup complete!")
+        
+except Exception as e:
+    print(f"Error: {e}")
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+PYTHON_SCRIPT
 
-echo "=== Build Completed Successfully! ==="
+echo "=== Build Complete ==="
