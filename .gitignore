@@ -27,14 +27,14 @@ wheels/
 instance/
 .webassets-cache
 
+# Environment variables
+.env
+.env.local
+
 # Database
 *.db
 *.sqlite
 *.sqlite3
-
-# Environment
-.env
-.env.local
 
 # IDE
 .vscode/
@@ -47,19 +47,9 @@ instance/
 .DS_Store
 Thumbs.db
 
-# Logs
-*.log
-
-# Uploads (keep folder structure but not files)
+# Uploads
 static/uploads/*
 !static/uploads/.gitkeep
 
-# Backup files
-*.bak
-*.backup
-*_backup.*
-*_old.*
-
-# Test files
-test_*.py
-*_test.py
+# Logs
+*.log
