@@ -133,6 +133,53 @@ python create_db.py
 3. Repository select করো
 4. Automatic deploy হবে!
 
+### DigitalOcean App Platform এ Deploy
+
+#### ১. Account তৈরি করো
+- [DigitalOcean.com](https://www.digitalocean.com) এ যাও
+- Sign up করো (প্রথম $200 credit পাবে)
+
+#### ২. App তৈরি করো
+- Dashboard > "Create" > "Apps"
+- GitHub repository connect করো
+- Repository select করো: `Al-insaf`
+- Branch select করো: `main` বা `master`
+
+#### ৩. App Configuration
+- **Name:** al-insaf-ngo (বা যেকোনো নাম)
+- **Region:** New York (বা কাছের region)
+- **Plan:** Basic ($5/month) বা Dev ($0 - শুধু static sites)
+
+#### ৪. Environment Variables (Optional)
+```
+FLASK_ENV=production
+SECRET_KEY=your-secret-key-here
+```
+
+#### ৫. Build & Deploy Settings
+- **Build Command:** `pip install -r requirements.txt && python create_db.py`
+- **Run Command:** `python run.py`
+- **HTTP Port:** 5000
+
+#### ৬. Deploy করো
+- "Next" > "Create Resources"
+- Deploy শুরু হবে (5-10 মিনিট লাগবে)
+- URL পাবে: `https://al-insaf-ngo-xxxxx.ondigitalocean.app`
+
+#### 🔧 Troubleshooting
+
+**Build failed হলে:**
+- Runtime logs check করো
+- Python version check করো (3.10 recommended)
+
+**Database reset করতে:**
+- Console tab > "Run command"
+- Command: `python create_db.py`
+
+**Code update করতে:**
+- GitHub এ push করলে automatic deploy হবে
+- অথবা manually "Deploy" button ক্লিক করো
+
 ### PythonAnywhere এ Deploy (Free - সবচেয়ে সহজ)
 
 #### ১. Account তৈরি করো

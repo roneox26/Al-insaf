@@ -1,10 +1,20 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 import sys
 import os
 
-# Add your project directory to the sys.path
-project_home = '/home/yourusername/Al-insaf'
-if project_home not in sys.path:
-    sys.path = [project_home] + sys.path
+# Add project directory to path
+sys.path.insert(0, os.path.dirname(__file__))
 
-# Import flask app
+# Import the Flask app
 from app import app as application
+
+# Initialize database on first run
+try:
+    from app import init_db
+    init_db()
+except Exception as e:
+    print(f"Database initialization: {e}")
+
+if __name__ == "__main__":
+    application.run()
