@@ -37,6 +37,33 @@ bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
+# Auto-initialize database on startup
+with app.app_context():
+    try:
+        db.create_all()
+        
+        # Create default admin if not exists
+        if not User.query.filter_by(email='admin@example.com').first():
+            hashed_pw = bcrypt.generate_password_hash('admin123').decode('utf-8')
+            admin = User(name='Admin', email='admin@example.com', password=hashed_pw, role='admin')
+            db.session.add(admin)
+        
+        # Create default staff if not exists
+        if not User.query.filter_by(email='staff@example.com').first():
+            hashed_pw = bcrypt.generate_password_hash('staff123').decode('utf-8')
+            staff = User(name='Staff', email='staff@example.com', password=hashed_pw, role='staff')
+            db.session.add(staff)
+        
+        db.session.commit()
+        
+        # Initialize cash balance
+        if not CashBalance.query.first():
+            initial_balance = CashBalance(balance=0)
+            db.session.add(initial_balance)
+            db.session.commit()
+    except Exception as e:
+        print(f"Database initialization: {e}")
+
 # Bangladesh timezone
 BD_TZ = pytz.timezone('Asia/Dhaka')
 
