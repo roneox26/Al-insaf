@@ -2266,6 +2266,62 @@ def withdrawal_report():
     to_date = request.args.get('to_date', '')
     return render_template('withdrawal_report.html', withdrawals=withdrawals, total=total, savings_total=savings_total, investment_total=investment_total, from_date=from_date, to_date=to_date)
 
+@app.route('/api/search_customers')
+@login_required
+def search_customers():
+    query = request.args.get('q', '').strip()
+    if len(query) < 2:
+        return {'customers': []}
+    customers = Customer.query.filter(
+        Customer.is_active == True,
+        (Customer.name.like(f'%{query}%')) | 
+        (Customer.member_no.like(f'%{query}%')) | 
+        (Customer.phone.like(f'%{query}%'))
+    ).limit(20).all()
+    return {'customers': [{
+        'id': c.id,
+        'name': c.name,
+        'member_no': c.member_no or 'N/A',
+        'phone': c.phone or 'N/A',
+        'village': c.village or 'N/A',
+        'remaining_loan': float(c.remaining_loan),
+        'savings_balance': float(c.savings_balance),
+        'staff_name': c.staff.name if c.staff else 'N/A'
+    } for c in customers]}
+
+@app.route('/api/get_customer_by_nid')
+@login_required
+def get_customer_by_nid():
+    nid = request.args.get('nid', '').strip()
+    if not nid:
+        return {'found': False}
+    customer = Customer.query.filter_by(nid_no=nid).first()
+    if customer:
+        return {
+            'found': True,
+            'name': customer.name,
+            'phone': customer.phone or '',
+            'father_husband': customer.father_husband or '',
+            'village': customer.village or '',
+            'post': customer.post or '',
+            'thana': customer.thana or '',
+            'district': customer.district or '',
+            'granter': customer.granter or '',
+            'profession': customer.profession or '',
+            'address': customer.address or ''
+        }
+    return {'found': False}
+
+@app.route('/customer_search')
+@login_required
+def customer_search():
+    return render_template('customer_search.html')
+
+@app.route('/customer_search_advanced')
+@login_required
+def customer_search_advanced():
+    return render_template('customer_search_advanced.html')
+
 @app.route('/fee_history/<fee_type>')
 @login_required
 def fee_history(fee_type):

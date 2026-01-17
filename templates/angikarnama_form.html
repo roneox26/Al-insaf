@@ -102,32 +102,32 @@
 
     <div class="content-box">
         <p style="text-indent: 50px;">
-            আমি <strong>{{ customer.name if customer else '___________________________' }}</strong> 
-            পিতা/স্বামী/অভিভাবক <strong>{{ customer.father_husband if customer else '___________________________' }}</strong> 
-            গ্রাম: <strong>{{ customer.village if customer else '___________' }}</strong> 
-            পোস্ট: <strong>{{ customer.post if customer else '___________' }}</strong> 
-            থানা: <strong>{{ customer.thana if customer else '___________' }}</strong> 
-            জেলা: <strong>{{ customer.district if customer else 'যশোর' }}</strong>। 
+            আমি <strong contenteditable="true">{{ customer.name if customer else '___________________________' }}</strong> 
+            পিতা/স্বামী/অভিভাবক <strong contenteditable="true">{{ customer.father_husband if customer else '___________________________' }}</strong> 
+            গ্রাম: <strong contenteditable="true">{{ customer.village if customer else '___________' }}</strong> 
+            পোস্ট: <strong contenteditable="true">{{ customer.post if customer else '___________' }}</strong> 
+            থানা: <strong contenteditable="true">{{ customer.thana if customer else '___________' }}</strong> 
+            জেলা: <strong contenteditable="true">{{ customer.district if customer else 'যশোর' }}</strong>। 
             "আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ" এর একজন সদস্য।
         </p>
         
         <p style="text-indent: 50px;">
-            আমি <strong>{{ customer.name if customer else '___________________________' }}</strong> 
+            আমি <strong contenteditable="true">{{ customer.name if customer else '___________________________' }}</strong> 
             উপশহর/প্রোগ্রামে "আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ" আঞ্চলিক কার্যালয় হইতে 
-            <span class="info-highlight">____/____/________</span> তারিখে 
-            <span class="info-highlight">_______________</span> টাকা 
-            (কথায়: <span class="info-highlight">_________________________________</span> টাকা মাত্র) 
+            <input type="text" class="info-highlight" style="border:none; border-bottom:1px solid #000; width:120px; background:#fff3cd; padding:3px 10px; border-radius:4px;" placeholder="____/____/________"> তারিখে 
+            <input type="text" class="info-highlight" style="border:none; border-bottom:1px solid #000; width:120px; background:#fff3cd; padding:3px 10px; border-radius:4px;" placeholder="_______________"> টাকা 
+            (কথায়: <input type="text" class="info-highlight" style="border:none; border-bottom:1px solid #000; width:250px; background:#fff3cd; padding:3px 10px; border-radius:4px;" placeholder="_________________________________"> টাকা মাত্র) 
             নগদ অর্থ ঋণ হিসেবে গ্রহণ করিলাম এবং এক্ষেত্রে নিম্নরূপ অঙ্গীকার করিতেছি।
         </p>
     </div>
 
     <div class="terms-list">
-        <p><strong>১.</strong> আমি অদ্য <span class="info-highlight">____/____/________</span> তারিখ হইতে 
-        <strong>প্রতিদিন/সাপ্তাহিক/পাক্ষিক/মাসিক/একবারীন</strong> 
-        <span class="info-highlight">_______________</span> টাকা করিয়া 
-        <span class="info-highlight">_______________</span> কিস্তিতে 
-        <strong>২০____</strong> সনের <span class="info-highlight">____/____/________</span> তারিখের মধ্যে 
-        উপরোক্ত ঋণের সার্ভিস চার্জ সহ বাকি <span class="info-highlight">_____</span> শতাংশ হারে পরিশোধ করিব।</p>
+        <p><strong>১.</strong> আমি অদ্য <input type="text" class="info-highlight" style="border:none; border-bottom:1px solid #000; width:120px; background:#fff3cd; padding:3px 10px; border-radius:4px;" placeholder="____/____/________"> তারিখ হইতে 
+        <input type="text" style="border:none; border-bottom:1px solid #000; width:150px; font-weight:bold;" placeholder="প্রতিদিন/সাপ্তাহিক/মাসিক"> 
+        <input type="text" class="info-highlight" style="border:none; border-bottom:1px solid #000; width:100px; background:#fff3cd; padding:3px 10px; border-radius:4px;" placeholder="_______________"> টাকা করিয়া 
+        <input type="text" class="info-highlight" style="border:none; border-bottom:1px solid #000; width:80px; background:#fff3cd; padding:3px 10px; border-radius:4px;" placeholder="_______________"> কিস্তিতে 
+        <input type="text" style="border:none; border-bottom:1px solid #000; width:60px; font-weight:bold;" placeholder="২০____"> সনের <input type="text" class="info-highlight" style="border:none; border-bottom:1px solid #000; width:120px; background:#fff3cd; padding:3px 10px; border-radius:4px;" placeholder="____/____/________"> তারিখের মধ্যে 
+        উপরোক্ত ঋণের সার্ভিস চার্জ সহ বাকি <input type="text" class="info-highlight" style="border:none; border-bottom:1px solid #000; width:60px; background:#fff3cd; padding:3px 10px; border-radius:4px;" placeholder="_____"> শতাংশ হারে পরিশোধ করিব।</p>
         
         <p><strong>২.</strong> আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ এর যে আদর্শ ও কর্মসূচিতে উদ্বুদ্ধ হইয়া ঋণ গ্রহণ করিয়াছি, 
         আমি এই ঋণের অর্থ সেই উদ্দেশ্যেই এবং আমার সেই প্রোগ্রামের তাগিদেই উক্ত ঋণের কাজে লাগাইব। তাহার অন্যথা করিব না। 

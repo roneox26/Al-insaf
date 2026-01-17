@@ -1,0 +1,148 @@
+/* Mobile Responsive Styles for Al-Insaf NGO */
+
+/* Base Mobile Styles */
+@media (max-width: 768px) {
+    /* Container & Spacing */
+    .container { padding: 10px !important; }
+    body { font-size: 14px; }
+    
+    /* Headers */
+    h1 { font-size: 1.5rem !important; }
+    h2 { font-size: 1.3rem !important; }
+    h3 { font-size: 1.1rem !important; }
+    h4 { font-size: 1rem !important; }
+    h5 { font-size: 0.9rem !important; }
+    
+    /* Buttons */
+    .btn { font-size: 0.85rem; padding: 8px 12px; }
+    .btn-group { flex-wrap: wrap; }
+    .btn-group .btn { margin-bottom: 5px; }
+    
+    /* Cards */
+    .card { margin-bottom: 15px; }
+    .card-body { padding: 15px !important; }
+    
+    /* Tables */
+    .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .table { font-size: 0.75rem; }
+    .table th, .table td { padding: 6px !important; white-space: nowrap; }
+    
+    /* Forms */
+    .form-control, .form-select { font-size: 0.9rem; }
+    .form-label { font-size: 0.85rem; }
+    
+    /* Stats Cards */
+    .stat-card h3 { font-size: 1.5rem !important; }
+    .stat-card h6 { font-size: 0.8rem !important; }
+    .stat-card .fa-2x { font-size: 1.5em !important; }
+    
+    /* Navigation */
+    .d-flex.justify-content-between { flex-direction: column; gap: 10px; }
+    .d-flex.justify-content-between > div { width: 100%; }
+    .d-flex.justify-content-between .btn { width: 100%; margin: 3px 0; }
+    
+    /* Page Title */
+    .page-title { font-size: 1.3rem !important; text-align: center; margin-bottom: 15px; }
+    
+    /* Badges */
+    .badge { font-size: 0.7rem; padding: 3px 6px; }
+    
+    /* Modals */
+    .modal-dialog { margin: 10px; }
+    .modal-body { padding: 15px; }
+    
+    /* Dashboard Stats */
+    .row.g-3 { gap: 10px !important; }
+    .col-md-4, .col-md-3, .col-md-6 { margin-bottom: 10px; }
+    
+    /* Hide on mobile */
+    .hide-mobile { display: none !important; }
+    
+    /* Search Box */
+    .search-input { font-size: 1rem !important; padding: 12px 15px !important; }
+    
+    /* Customer Cards */
+    .customer-card { margin-bottom: 15px; }
+    .customer-card .card-body { padding: 12px !important; }
+    
+    /* Print Button Group */
+    .no-print .btn-group { display: flex; flex-direction: column; }
+    .no-print .btn-group .btn { width: 100%; margin: 2px 0; }
+}
+
+/* Small Mobile (< 576px) */
+@media (max-width: 576px) {
+    .container { padding: 5px !important; }
+    
+    /* Make all columns full width */
+    .col-md-1, .col-md-2, .col-md-3, .col-md-4, .col-md-5, .col-md-6,
+    .col-md-7, .col-md-8, .col-md-9, .col-md-10, .col-md-11, .col-md-12 {
+        width: 100% !important;
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+    
+    /* Tables - Stack on mobile */
+    .table thead { display: none; }
+    .table, .table tbody, .table tr, .table td {
+        display: block;
+        width: 100%;
+    }
+    .table tr {
+        margin-bottom: 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 10px;
+        background: white;
+    }
+    .table td {
+        text-align: right;
+        padding-left: 50%;
+        position: relative;
+        border: none !important;
+        padding: 8px;
+    }
+    .table td:before {
+        content: attr(data-label);
+        position: absolute;
+        left: 10px;
+        font-weight: bold;
+        text-align: left;
+    }
+    
+    /* Stat Cards - Full Width */
+    .stat-card { margin-bottom: 10px; }
+    
+    /* Forms - Stack */
+    .row.g-3 .col-md-4, .row.g-3 .col-md-6 {
+        margin-bottom: 10px;
+    }
+    
+    /* Customer Search Results */
+    .col-md-3.col-lg-3 { width: 100% !important; }
+}
+
+/* Tablet (768px - 992px) */
+@media (min-width: 768px) and (max-width: 992px) {
+    .container { max-width: 100%; padding: 15px; }
+    .col-md-4 { flex: 0 0 50%; max-width: 50%; }
+    .col-md-3 { flex: 0 0 50%; max-width: 50%; }
+}
+
+/* Touch Improvements */
+@media (hover: none) and (pointer: coarse) {
+    /* Larger touch targets */
+    .btn { min-height: 44px; }
+    a { min-height: 44px; display: inline-flex; align-items: center; }
+    .form-control, .form-select { min-height: 44px; }
+    
+    /* Remove hover effects on touch devices */
+    .stat-card:hover { transform: none; }
+    .customer-card:hover { transform: none; }
+}
+
+/* Landscape Mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+    .stat-card { padding: 10px !important; }
+    .stat-card h3 { font-size: 1.2rem !important; }
+}

@@ -6,9 +6,9 @@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <style>
         @page { size: A4; margin: 12mm; }
+        input, select { background: transparent; }
         @media print {
-            .no-print { display: none !important; }
-            body { margin: 0; padding: 12mm; }
+            input, select { border: none !important; border-bottom: 1px solid #000 !important; background: transparent !important; }
         }
         body { 
             font-family: 'Kalpurush', 'Nikosh', Arial, sans-serif; 
@@ -106,14 +106,14 @@
 
     <div class="form-section" style="background: #f8f9fa; padding: 10px; border-radius: 5px; border-left: 4px solid #007bff;">
         <h4 style="margin: 5px 0 10px 0; color: #0066cc;">ব্যক্তিগত তথ্যাবলী:</h4>
-        <div class="form-row"><strong>১.</strong> আবেদনকারীর নাম: <strong id="name">{{ customer.name if customer else '___________________________' }}</strong> | পিতা/স্বামী: <strong id="father">{{ customer.father_husband if customer else '___________________________' }}</strong></div>
-        <div class="form-row"><strong>২.</strong> মাতার নাম: ___________________________ | ধর্ম: ইসলাম/হিন্দু | জাতীয়তা: বাংলাদেশী</div>
-        <div class="form-row"><strong>৩.</strong> জন্ম তারিখ: ____/____/________ | পেশা: <strong id="profession">{{ customer.profession if customer else 'ব্যবসা/কৃষি/চাকুরীজীবি/অন্যান্য' }}</strong></div>
-        <div class="form-row"><strong>৪.</strong> জাতীয় পরিচয়পত্র/জন্ম নিবন্ধন নং: <strong id="nid">{{ customer.nid_no if customer else '___________________________' }}</strong> | লিঙ্গ: পুরুষ/মহিলা</div>
-        <div class="form-row"><strong>৫.</strong> বর্তমান ঠিকানা - গ্রাম: <strong id="village">{{ customer.village if customer else '________' }}</strong> | পোস্ট: <strong id="post">{{ customer.post if customer else '________' }}</strong> | থানা: <strong id="thana">{{ customer.thana if customer else '________' }}</strong> | জেলা: <strong id="district">{{ customer.district if customer else 'যশোর' }}</strong></div>
-        <div class="form-row"><strong>৬.</strong> স্থায়ী ঠিকানা - গ্রাম: __________ | পোস্ট: __________ | থানা: __________ | জেলা: যশোর</div>
-        <div class="form-row"><strong>৭.</strong> শিক্ষাগত যোগ্যতা: __________ | বৈবাহিক অবস্থা: বিবাহিত/অবিবাহিত | সন্তান সংখ্যা: ছেলে __টি, মেয়ে __টি</div>
-        <div class="form-row"><strong>৮.</strong> সদস্য হওয়ার তারিখ: <span id="joinDate" class="info-highlight"></span> | সদস্য নং: <strong id="memberNo">{{ customer.member_no if customer else '________' }}</strong> | ফোন: <strong id="phone">{{ customer.phone if customer else '___________________________' }}</strong></div>
+        <div class="form-row"><strong>১.</strong> আবেদনকারীর নাম: <strong><input type="text" id="name" value="{{ customer.name if customer else '' }}" style="border:none; border-bottom:1px solid #000; width:200px; font-weight:bold;"></strong> | পিতা/স্বামী: <strong><input type="text" id="father" value="{{ customer.father_husband if customer else '' }}" style="border:none; border-bottom:1px solid #000; width:200px; font-weight:bold;"></strong></div>
+        <div class="form-row"><strong>২.</strong> মাতার নাম: <input type="text" id="mother" style="border:none; border-bottom:1px solid #000; width:180px;"> | ধর্ম: <select id="religion" style="border:none; border-bottom:1px solid #000;"><option>ইসলাম</option><option>হিন্দু</option><option>বৌদ্ধ</option><option>খ্রিস্টান</option></select> | জাতীয়তা: বাংলাদেশী</div>
+        <div class="form-row"><strong>৩.</strong> জন্ম তারিখ: <input type="text" id="dob" placeholder="দিন/মাস/বছর" style="border:none; border-bottom:1px solid #000; width:120px;"> | পেশা: <strong><input type="text" id="profession" value="{{ customer.profession if customer else '' }}" style="border:none; border-bottom:1px solid #000; width:150px; font-weight:bold;"></strong></div>
+        <div class="form-row"><strong>৪.</strong> জাতীয় পরিচয়পত্র/জন্ম নিবন্ধন নং: <strong><input type="text" id="nid" value="{{ customer.nid_no if customer else '' }}" style="border:none; border-bottom:1px solid #000; width:180px; font-weight:bold;"></strong> | লিঙ্গ: <select id="gender" style="border:none; border-bottom:1px solid #000;"><option>পুরুষ</option><option>মহিলা</option></select></div>
+        <div class="form-row"><strong>৫.</strong> বর্তমান ঠিকানা - গ্রাম: <strong><input type="text" id="village" value="{{ customer.village if customer else '' }}" style="border:none; border-bottom:1px solid #000; width:100px; font-weight:bold;"></strong> | পোস্ট: <strong><input type="text" id="post" value="{{ customer.post if customer else '' }}" style="border:none; border-bottom:1px solid #000; width:100px; font-weight:bold;"></strong> | থানা: <strong><input type="text" id="thana" value="{{ customer.thana if customer else '' }}" style="border:none; border-bottom:1px solid #000; width:100px; font-weight:bold;"></strong> | জেলা: <strong><input type="text" id="district" value="{{ customer.district if customer else 'যশোর' }}" style="border:none; border-bottom:1px solid #000; width:80px; font-weight:bold;"></strong></div>
+        <div class="form-row"><strong>৬.</strong> স্থায়ী ঠিকানা - গ্রাম: <input type="text" id="p_village" style="border:none; border-bottom:1px solid #000; width:100px;"> | পোস্ট: <input type="text" id="p_post" style="border:none; border-bottom:1px solid #000; width:100px;"> | থানা: <input type="text" id="p_thana" style="border:none; border-bottom:1px solid #000; width:100px;"> | জেলা: <input type="text" id="p_district" value="যশোর" style="border:none; border-bottom:1px solid #000; width:80px;"></div>
+        <div class="form-row"><strong>৭.</strong> শিক্ষাগত যোগ্যতা: <input type="text" id="education" style="border:none; border-bottom:1px solid #000; width:120px;"> | বৈবাহিক অবস্থা: <select id="marital" style="border:none; border-bottom:1px solid #000;"><option>বিবাহিত</option><option>অবিবাহিত</option></select> | সন্তান সংখ্যা: ছেলে <input type="number" id="sons" value="0" style="border:none; border-bottom:1px solid #000; width:40px;">টি, মেয়ে <input type="number" id="daughters" value="0" style="border:none; border-bottom:1px solid #000; width:40px;">টি</div>
+        <div class="form-row"><strong>৮.</strong> সদস্য হওয়ার তারিখ: <span id="joinDate" class="info-highlight" contenteditable="true"></span> | সদস্য নং: <strong><input type="text" id="memberNo" value="{{ customer.member_no if customer else '' }}" style="border:none; border-bottom:1px solid #000; width:100px; font-weight:bold;"></strong> | ফোন: <strong><input type="text" id="phone" value="{{ customer.phone if customer else '' }}" style="border:none; border-bottom:1px solid #000; width:150px; font-weight:bold;"></strong></div>
     </div>
 
     <h4 style="margin: 15px 0 8px 0; color: #0066cc; text-align: center;">ঋণ গ্রহণের বিবরণ:</h4>
@@ -134,13 +134,13 @@
 
     <div class="form-section" style="background: #fff9e6; padding: 10px; border-radius: 5px; border-left: 4px solid #ffc107;">
         <h4 style="margin: 5px 0 10px 0; color: #f57c00;">অতিরিক্ত তথ্য:</h4>
-        <div class="form-row"><strong>৯.</strong> ব্যবসা প্রতিষ্ঠানের নাম ও ঠিকানা: _______________________________________________</div>
-        <div class="form-row"><strong>১০.</strong> সম্পদের বিবরণ - স্থাবর সম্পদ: __________ | অস্থাবর সম্পদ: __________ | অন্যান্য: __________ | মোট মূল্য: __________</div>
-        <div class="form-row"><strong>১১.</strong> ঋণের উদ্দেশ্য: _______________________________________________</div>
-        <div class="form-row"><strong>১২.</strong> ক) আবেদনকৃত ঋণের পরিমাণ: __________ টাকা | খ) ঋণের দফা: __________ | গ) মেয়াদ: __________ দিন/মাস</div>
-        <div class="form-row"><strong>১৩.</strong> ঋণ পরিশোধ পদ্ধতি: প্রতিদিন/সাপ্তাহিক/পাক্ষিক/মাসিক/একাকালীন</div>
-        <div class="form-row"><strong>১৪.</strong> সার্ভিস চার্জের হার: ____% | আদায় পদ্ধতি: প্রতিদিন/সাপ্তাহিক/পাক্ষিক/মাসিক/একাকালীন</div>
-        <div class="form-row"><strong>১৫.</strong> ব্যাংক হিসাব নং: ___________________________ | ব্যাংকের নাম: ___________________________</div>
+        <div class="form-row"><strong>৯.</strong> ব্যবসা প্রতিষ্ঠানের নাম ও ঠিকানা: <input type="text" id="business" style="border:none; border-bottom:1px solid #000; width:400px;"></div>
+        <div class="form-row"><strong>১০.</strong> সম্পদের বিবরণ - স্থাবর সম্পদ: <input type="text" id="immovable" style="border:none; border-bottom:1px solid #000; width:100px;"> | অস্থাবর সম্পদ: <input type="text" id="movable" style="border:none; border-bottom:1px solid #000; width:100px;"> | অন্যান্য: <input type="text" id="other_asset" style="border:none; border-bottom:1px solid #000; width:100px;"> | মোট মূল্য: <input type="text" id="total_value" style="border:none; border-bottom:1px solid #000; width:100px;"></div>
+        <div class="form-row"><strong>১১.</strong> ঋণের উদ্দেশ্য: <input type="text" id="loan_purpose" style="border:none; border-bottom:1px solid #000; width:450px;"></div>
+        <div class="form-row"><strong>১২.</strong> ক) আবেদনকৃত ঋণের পরিমাণ: <input type="number" id="loan_amount" style="border:none; border-bottom:1px solid #000; width:100px;"> টাকা | খ) ঋণের দফা: <input type="text" id="loan_phase" style="border:none; border-bottom:1px solid #000; width:80px;"> | গ) মেয়াদ: <input type="text" id="loan_duration" style="border:none; border-bottom:1px solid #000; width:100px;"> দিন/মাস</div>
+        <div class="form-row"><strong>১৩.</strong> ঋণ পরিশোধ পদ্ধতি: <select id="repayment" style="border:none; border-bottom:1px solid #000;"><option>প্রতিদিন</option><option>সাপ্তাহিক</option><option>পাক্ষিক</option><option>মাসিক</option><option>একাকালীন</option></select></div>
+        <div class="form-row"><strong>১৪.</strong> সার্ভিস চার্জের হার: <input type="number" id="service_rate" style="border:none; border-bottom:1px solid #000; width:60px;">% | আদায় পদ্ধতি: <select id="collection_method" style="border:none; border-bottom:1px solid #000;"><option>প্রতিদিন</option><option>সাপ্তাহিক</option><option>পাক্ষিক</option><option>মাসিক</option><option>একাকালীন</option></select></div>
+        <div class="form-row"><strong>১৫.</strong> ব্যাংক হিসাব নং: <input type="text" id="bank_account" style="border:none; border-bottom:1px solid #000; width:200px;"> | ব্যাংকের নাম: <input type="text" id="bank_name" style="border:none; border-bottom:1px solid #000; width:200px;"></div>
     </div>
 
     <div class="signature-section" style="margin-top: 40px;">
