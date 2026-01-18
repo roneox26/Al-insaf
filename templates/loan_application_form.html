@@ -8,50 +8,55 @@
         @page { size: A4; margin: 12mm; }
         input, select { background: transparent; }
         @media print {
+            .no-print { display: none !important; }
             input, select { border: none !important; border-bottom: 1px solid #000 !important; background: transparent !important; }
+            body { margin: 0; padding: 12mm; }
         }
         body { 
             font-family: 'Kalpurush', 'Nikosh', Arial, sans-serif; 
-            margin: 0; padding: 20px; font-size: 13px; line-height: 1.7;
+            margin: 0; padding: 20px; font-size: 11px; line-height: 1.4;
             width: 210mm; min-height: 297mm; background: white;
         }
-        .header { text-align: center; margin-bottom: 10px; border-bottom: 3px double #000; padding-bottom: 8px; position: relative; }
-        .header h2 { margin: 2px; font-size: 24px; font-weight: bold; color: #1a1a1a; }
-        .header p { margin: 1px; font-size: 11px; color: #333; }
+        .header { text-align: center; margin-bottom: 6px; border-bottom: 2px double #000; padding-bottom: 5px; position: relative; }
+        .header h2 { margin: 1px; font-size: 18px; font-weight: bold; color: #1a1a1a; }
+        .header p { margin: 0; font-size: 9px; color: #333; }
         .header h3 { 
-            margin: 8px auto; font-size: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white; padding: 8px 25px; display: inline-block; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            margin: 4px auto; font-size: 13px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; padding: 5px 15px; display: inline-block; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
         }
         .photo-box { 
-            position: absolute; right: 10px; top: 5px; width: 95px; height: 115px;
-            border: 2px solid #000; display: flex; align-items: center; justify-content: center;
+            position: absolute; right: 10px; top: 5px; width: 75px; height: 90px;
+            border: 1.5px solid #000; display: flex; align-items: center; justify-content: center;
             background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
-            font-size: 11px; color: #666; font-weight: bold;
+            font-size: 9px; color: #666; font-weight: bold;
         }
-        .form-section { margin: 8px 0; }
-        .form-section p { margin: 4px 0; text-align: justify; line-height: 1.8; }
+        .form-section { margin: 4px 0; }
+        .form-section p { margin: 2px 0; text-align: justify; line-height: 1.4; }
         .form-row { 
-            margin: 5px 0; line-height: 2.3; border-bottom: 1px dotted #ccc;
-            padding: 3px 0; display: flex; align-items: center;
+            margin: 2px 0; line-height: 1.6; border-bottom: 1px dotted #ccc;
+            padding: 2px 0; display: flex; align-items: center;
         }
         .form-row strong { color: #0066cc; font-weight: 600; }
-        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        table { width: 100%; border-collapse: collapse; margin: 5px 0; }
         table td { 
-            border: 1.5px solid #333; padding: 10px 6px; font-size: 12px;
-            text-align: center; min-height: 35px; background: #fafafa;
+            border: 1px solid #333; padding: 4px 3px; font-size: 10px;
+            text-align: center; min-height: 20px; background: #fafafa;
         }
         table td:first-child { text-align: left; padding-left: 10px; font-weight: 600; background: #f0f0f0; }
         table tr:hover td { background: #e8f4f8; }
         .signature-section { 
-            margin-top: 35px; display: flex; justify-content: space-between;
-            font-size: 12px; padding-top: 15px; border-top: 1px solid #ddd;
+            margin-top: 15px; display: flex; justify-content: space-between;
+            font-size: 10px; padding-top: 8px; border-top: 1px solid #ddd;
         }
-        .signature-box { text-align: center; min-width: 140px; }
-        .signature-line { border-top: 1.5px solid #000; margin-top: 45px; padding-top: 5px; font-weight: 500; }
+        .signature-box { text-align: center; min-width: 100px; }
+        .signature-line { border-top: 1px solid #000; margin-top: 25px; padding-top: 3px; font-weight: 500; }
         .no-print { 
             position: fixed; top: 10px; right: 10px; z-index: 1000;
             background: white; padding: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            border-radius: 10px; border: 2px solid #007bff;
+            border-radius: 10px; border: 2px solid #007bff; max-width: 350px;
+        }
+        @media print {
+            .no-print { display: none !important; }
         }
         .customer-select {
             margin-bottom: 12px; padding: 10px; background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
@@ -104,8 +109,8 @@
         </p>
     </div>
 
-    <div class="form-section" style="background: #f8f9fa; padding: 10px; border-radius: 5px; border-left: 4px solid #007bff;">
-        <h4 style="margin: 5px 0 10px 0; color: #0066cc;">ব্যক্তিগত তথ্যাবলী:</h4>
+    <div class="form-section" style="background: #f8f9fa; padding: 5px; border-radius: 3px; border-left: 3px solid #007bff;">
+        <h4 style="margin: 3px 0 5px 0; color: #0066cc; font-size: 12px;">ব্যক্তিগত তথ্যাবলী:</h4>
         <div class="form-row"><strong>১.</strong> আবেদনকারীর নাম: <strong><input type="text" id="name" value="{{ customer.name if customer else '' }}" style="border:none; border-bottom:1px solid #000; width:200px; font-weight:bold;"></strong> | পিতা/স্বামী: <strong><input type="text" id="father" value="{{ customer.father_husband if customer else '' }}" style="border:none; border-bottom:1px solid #000; width:200px; font-weight:bold;"></strong></div>
         <div class="form-row"><strong>২.</strong> মাতার নাম: <input type="text" id="mother" style="border:none; border-bottom:1px solid #000; width:180px;"> | ধর্ম: <select id="religion" style="border:none; border-bottom:1px solid #000;"><option>ইসলাম</option><option>হিন্দু</option><option>বৌদ্ধ</option><option>খ্রিস্টান</option></select> | জাতীয়তা: বাংলাদেশী</div>
         <div class="form-row"><strong>৩.</strong> জন্ম তারিখ: <input type="text" id="dob" placeholder="দিন/মাস/বছর" style="border:none; border-bottom:1px solid #000; width:120px;"> | পেশা: <strong><input type="text" id="profession" value="{{ customer.profession if customer else '' }}" style="border:none; border-bottom:1px solid #000; width:150px; font-weight:bold;"></strong></div>
@@ -116,7 +121,7 @@
         <div class="form-row"><strong>৮.</strong> সদস্য হওয়ার তারিখ: <span id="joinDate" class="info-highlight" contenteditable="true"></span> | সদস্য নং: <strong><input type="text" id="memberNo" value="{{ customer.member_no if customer else '' }}" style="border:none; border-bottom:1px solid #000; width:100px; font-weight:bold;"></strong> | ফোন: <strong><input type="text" id="phone" value="{{ customer.phone if customer else '' }}" style="border:none; border-bottom:1px solid #000; width:150px; font-weight:bold;"></strong></div>
     </div>
 
-    <h4 style="margin: 15px 0 8px 0; color: #0066cc; text-align: center;">ঋণ গ্রহণের বিবরণ:</h4>
+    <h4 style="margin: 8px 0 4px 0; color: #0066cc; text-align: center; font-size: 12px;">ঋণ গ্রহণের বিবরণ:</h4>
     <table>
         <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
             <td style="font-weight: bold; color: white; background: transparent;">বিবরণ</td>
@@ -132,8 +137,8 @@
         <tr><td>পরিশোধের মেয়াদ</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
     </table>
 
-    <div class="form-section" style="background: #fff9e6; padding: 10px; border-radius: 5px; border-left: 4px solid #ffc107;">
-        <h4 style="margin: 5px 0 10px 0; color: #f57c00;">অতিরিক্ত তথ্য:</h4>
+    <div class="form-section" style="background: #fff9e6; padding: 5px; border-radius: 3px; border-left: 3px solid #ffc107;">
+        <h4 style="margin: 3px 0 5px 0; color: #f57c00; font-size: 12px;">অতিরিক্ত তথ্য:</h4>
         <div class="form-row"><strong>৯.</strong> ব্যবসা প্রতিষ্ঠানের নাম ও ঠিকানা: <input type="text" id="business" style="border:none; border-bottom:1px solid #000; width:400px;"></div>
         <div class="form-row"><strong>১০.</strong> সম্পদের বিবরণ - স্থাবর সম্পদ: <input type="text" id="immovable" style="border:none; border-bottom:1px solid #000; width:100px;"> | অস্থাবর সম্পদ: <input type="text" id="movable" style="border:none; border-bottom:1px solid #000; width:100px;"> | অন্যান্য: <input type="text" id="other_asset" style="border:none; border-bottom:1px solid #000; width:100px;"> | মোট মূল্য: <input type="text" id="total_value" style="border:none; border-bottom:1px solid #000; width:100px;"></div>
         <div class="form-row"><strong>১১.</strong> ঋণের উদ্দেশ্য: <input type="text" id="loan_purpose" style="border:none; border-bottom:1px solid #000; width:450px;"></div>
@@ -143,7 +148,7 @@
         <div class="form-row"><strong>১৫.</strong> ব্যাংক হিসাব নং: <input type="text" id="bank_account" style="border:none; border-bottom:1px solid #000; width:200px;"> | ব্যাংকের নাম: <input type="text" id="bank_name" style="border:none; border-bottom:1px solid #000; width:200px;"></div>
     </div>
 
-    <div class="signature-section" style="margin-top: 40px;">
+    <div class="signature-section" style="margin-top: 15px;">
         <div class="signature-box">
             <div style="font-weight: 600; color: #333;">পারিবারিক গ্যারান্টি</div>
             <div class="signature-line">স্বাক্ষর ও সীল</div>
@@ -154,7 +159,7 @@
         </div>
     </div>
 
-    <div class="signature-section" style="margin-top: 25px; border-top: 2px solid #007bff; padding-top: 20px;">
+    <div class="signature-section" style="margin-top: 10px; border-top: 1px solid #007bff; padding-top: 8px;">
         <div class="signature-box">
             <div style="font-weight: 600; color: #0066cc;">ফিল্ড অফিসার</div>
             <div class="signature-line">স্বাক্ষর ও সীল</div>

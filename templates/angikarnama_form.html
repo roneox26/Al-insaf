@@ -12,45 +12,48 @@
         }
         body { 
             font-family: 'Kalpurush', 'Nikosh', Arial, sans-serif; 
-            margin: 0; padding: 20px; font-size: 13.5px; line-height: 1.9;
+            margin: 0; padding: 20px; font-size: 10px; line-height: 1.3;
             width: 210mm; min-height: 297mm; background: white;
         }
-        .header { text-align: center; margin-bottom: 12px; border-bottom: 3px double #000; padding-bottom: 10px; position: relative; }
-        .header h2 { margin: 3px; font-size: 26px; font-weight: bold; color: #1a1a1a; }
-        .header p { margin: 2px; font-size: 11px; color: #333; }
+        .header { text-align: center; margin-bottom: 5px; border-bottom: 2px double #000; padding-bottom: 4px; position: relative; }
+        .header h2 { margin: 1px; font-size: 17px; font-weight: bold; color: #1a1a1a; }
+        .header p { margin: 0; font-size: 8px; color: #333; }
         .header h3 { 
-            margin: 10px auto; font-size: 17px; background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
-            color: #000; padding: 10px 30px; display: inline-block; border-radius: 5px; 
-            box-shadow: 0 3px 8px rgba(255,193,7,0.4); font-weight: bold;
+            margin: 3px auto; font-size: 12px; background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+            color: #000; padding: 4px 12px; display: inline-block; border-radius: 3px; 
+            box-shadow: 0 1px 3px rgba(255,193,7,0.4); font-weight: bold;
         }
         .photo-box { 
-            position: absolute; right: 10px; top: 5px; width: 100px; height: 120px;
-            border: 2.5px solid #000; display: flex; align-items: center; justify-content: center;
+            position: absolute; right: 10px; top: 5px; width: 70px; height: 85px;
+            border: 1.5px solid #000; display: flex; align-items: center; justify-content: center;
             background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
-            font-size: 12px; color: #666; font-weight: bold;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            font-size: 8px; color: #666; font-weight: bold;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
         }
-        .form-section { margin: 10px 0; }
-        .form-section p { margin: 6px 0; text-align: justify; line-height: 2; }
+        .form-section { margin: 3px 0; }
+        .form-section p { margin: 2px 0; text-align: justify; line-height: 1.3; }
         .content-box {
             background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%);
-            border: 2.5px solid #ffc107; padding: 20px; margin: 18px 0;
-            border-radius: 10px; text-align: justify; line-height: 2.2;
-            box-shadow: 0 3px 10px rgba(255,193,7,0.3);
+            border: 1.5px solid #ffc107; padding: 6px; margin: 4px 0;
+            border-radius: 4px; text-align: justify; line-height: 1.3;
+            box-shadow: 0 1px 4px rgba(255,193,7,0.3);
         }
-        .content-box p { margin: 8px 0; }
+        .content-box p { margin: 3px 0; }
         .content-box strong { color: #f57c00; font-weight: 700; }
         .signature-section { 
-            margin-top: 50px; display: flex; justify-content: space-between;
-            font-size: 13px; padding-top: 20px; border-top: 2px solid #ddd;
+            margin-top: 12px; display: flex; justify-content: space-between;
+            font-size: 9px; padding-top: 6px; border-top: 1px solid #ddd;
         }
-        .signature-box { text-align: center; min-width: 120px; }
-        .signature-box > div:first-child { font-weight: 600; color: #333; margin-bottom: 5px; }
-        .signature-line { border-top: 1.5px solid #000; margin-top: 50px; padding-top: 6px; font-weight: 500; }
+        .signature-box { text-align: center; min-width: 70px; }
+        .signature-box > div:first-child { font-weight: 600; color: #333; margin-bottom: 2px; }
+        .signature-line { border-top: 1px solid #000; margin-top: 20px; padding-top: 2px; font-weight: 500; }
         .no-print { 
             position: fixed; top: 10px; right: 10px; z-index: 1000;
             background: white; padding: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            border-radius: 10px; border: 2px solid #ffc107;
+            border-radius: 10px; border: 2px solid #ffc107; max-width: 350px;
+        }
+        @media print {
+            .no-print { display: none !important; }
         }
         .customer-select {
             margin-bottom: 12px; padding: 10px; background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%);
@@ -63,8 +66,8 @@
         .btn-warning:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255,193,7,0.5); }
         .btn-secondary { background: #6c757d; color: white; text-decoration: none; display: inline-block; }
         .info-highlight { background: #fff3cd; padding: 3px 10px; border-radius: 4px; font-weight: 600; border: 1px solid #ffc107; }
-        .terms-list { background: white; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #ffc107; }
-        .terms-list p { margin: 10px 0; padding-left: 10px; }
+        .terms-list { background: white; padding: 6px; border-radius: 4px; margin: 4px 0; border-left: 2px solid #ffc107; }
+        .terms-list p { margin: 3px 0; padding-left: 4px; }
     </style>
 </head>
 <body>
@@ -142,13 +145,13 @@
     </div>
 
     <div class="content-box" style="background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border-color: #28a745;">
-        <p style="text-align: center; font-weight: 600; font-size: 14px; color: #155724;">
+        <p style="text-align: center; font-weight: 600; font-size: 10px; color: #155724;">
             এতদ্বারা ঋণের টাকা বুঝিয়া পাইয়া এবং অত্র অঙ্গীকারনামার মর্মে সম্মত হইয়া স্বেচ্ছায় ও সম্পূর্ণ সচেতনভাবে 
             এই অঙ্গীকারনামা পাঠ করিয়া সম্পাদন করিয়া দিলাম।
         </p>
     </div>
 
-    <div class="signature-section" style="margin-top: 50px;">
+    <div class="signature-section" style="margin-top: 12px;">
         <div class="signature-box">
             <div>দায় দেনা বহনকারী</div>
             <div class="signature-line">স্বামী/মনিটরের স্বাক্ষর</div>
@@ -171,8 +174,8 @@
         </div>
     </div>
 
-    <div style="margin-top: 30px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
-        <p style="text-align: center; font-size: 11px; color: #6c757d; margin: 0;">
+    <div style="margin-top: 8px; padding: 6px; background: #f8f9fa; border-radius: 4px; border: 1px solid #dee2e6;">
+        <p style="text-align: center; font-size: 8px; color: #6c757d; margin: 0;">
             <strong>দ্রষ্টব্য:</strong> এই অঙ্গীকারনামা আইনগতভাবে বাধ্যতামূলক এবং সমিতির নিয়ম-কানুন অনুযায়ী কার্যকর থাকিবে।
         </p>
     </div>
