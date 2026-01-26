@@ -1,6 +1,7 @@
 ﻿<!doctype html>
 <html lang="en">
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   <meta charset="utf-8">
   <title>Manage Staff</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -10,6 +11,8 @@
     .staff-card.monitor { border-left-color: #17a2b8; }
     .staff-card.inactive { opacity: 0.6; background-color: #f8f9fa; }
   </style>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
 </head>
 
 <body class="container mt-5">

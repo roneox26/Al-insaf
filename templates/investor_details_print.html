@@ -1,6 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="bn">
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   <meta charset="UTF-8">
   <title>Investor Details - {{ investor.name }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/print-watermark.css') }}">
@@ -66,6 +67,8 @@
     .print-btn { position: fixed; top: 20px; right: 20px; padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12pt; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
     .print-btn:hover { background: #2980b9; }
   </style>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
 </head>
 <body>
   <button class="print-btn no-print" onclick="window.print()">🖨️ প্রিন্ট করুন</button>

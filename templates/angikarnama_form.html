@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <meta charset="UTF-8">
     <title>অঙ্গীকারনামা</title>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -69,6 +70,8 @@
         .terms-list { background: white; padding: 6px; border-radius: 4px; margin: 4px 0; border-left: 2px solid #ffc107; }
         .terms-list p { margin: 3px 0; padding-left: 4px; }
     </style>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
 </head>
 <body>
     <div class="no-print">

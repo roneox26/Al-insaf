@@ -1,6 +1,7 @@
 ﻿<!doctype html>
 <html lang="bn">
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   <meta charset="utf-8">
   <title>সকল স্টাফ রিপোর্ট</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/print-watermark.css') }}">
@@ -49,6 +50,8 @@
       tr { page-break-inside: avoid; page-break-after: auto; }
     }
   </style>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
 </head>
 <body>
   <button onclick="window.print()" class="no-print" style="margin-bottom: 20px; padding: 10px 20px; cursor: pointer;">🖨️ প্রিন্ট করুন</button>

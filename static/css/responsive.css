@@ -1,0 +1,428 @@
+/* Mobile Responsive CSS for Al-Insaf NGO System */
+
+/* Base Mobile Styles */
+@media (max-width: 768px) {
+  /* Container & Spacing */
+  .container {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  /* Navbar */
+  .navbar {
+    padding: 0.5rem !important;
+  }
+
+  .navbar-brand {
+    font-size: 1rem !important;
+  }
+
+  .navbar img {
+    width: 30px !important;
+    height: 30px !important;
+  }
+
+  /* Cards */
+  .stat-card, .action-card, .main-card {
+    margin-bottom: 1rem !important;
+  }
+
+  .stat-card h3, .action-card h3 {
+    font-size: 1.5rem !important;
+  }
+
+  .stat-card p, .action-card p {
+    font-size: 0.85rem !important;
+  }
+
+  .stat-icon {
+    font-size: 1.8rem !important;
+  }
+
+  /* Buttons */
+  .btn {
+    font-size: 0.85rem !important;
+    padding: 8px 12px !important;
+  }
+
+  .btn-action {
+    padding: 10px 15px !important;
+  }
+
+  .btn-group {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 5px !important;
+  }
+
+  .btn-group .btn {
+    flex: 1 1 auto !important;
+    min-width: 60px !important;
+  }
+
+  /* Tables */
+  .table-responsive {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  table {
+    font-size: 0.75rem !important;
+    min-width: 800px !important;
+  }
+
+  table th, table td {
+    padding: 0.5rem !important;
+    white-space: nowrap !important;
+  }
+
+  /* Forms */
+  .form-label {
+    font-size: 0.9rem !important;
+    margin-bottom: 0.3rem !important;
+  }
+
+  .form-control, .form-select {
+    font-size: 0.9rem !important;
+    padding: 0.5rem !important;
+  }
+
+  /* Titles */
+  h1 {
+    font-size: 1.5rem !important;
+  }
+
+  h2 {
+    font-size: 1.3rem !important;
+  }
+
+  h3 {
+    font-size: 1.1rem !important;
+  }
+
+  h4 {
+    font-size: 1rem !important;
+  }
+
+  h5 {
+    font-size: 0.9rem !important;
+  }
+
+  .page-title {
+    font-size: 1.3rem !important;
+  }
+
+  .section-title {
+    font-size: 1.1rem !important;
+  }
+
+  /* Grid Columns */
+  .row.g-4 {
+    gap: 1rem !important;
+  }
+
+  /* Dashboard Stats */
+  .col-md-2, .col-md-3, .col-md-4, .col-md-6 {
+    margin-bottom: 1rem !important;
+  }
+
+  /* Make stat cards 2 columns on mobile */
+  .col-md-2 {
+    flex: 0 0 50% !important;
+    max-width: 50% !important;
+  }
+
+  /* Make important stat cards bigger on mobile */
+  .stat-card.bg-success h3,
+  .stat-card.bg-danger h3,
+  .stat-card.bg-warning h3 {
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+  }
+
+  .stat-card.bg-success,
+  .stat-card.bg-danger,
+  .stat-card.bg-warning {
+    padding: 1.25rem !important;
+  }
+
+  .stat-card.bg-success .stat-icon,
+  .stat-card.bg-danger .stat-icon,
+  .stat-card.bg-warning .stat-icon {
+    font-size: 2.2rem !important;
+  }
+
+  .stat-card.bg-success p,
+  .stat-card.bg-danger p,
+  .stat-card.bg-warning p {
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+  }
+
+  /* Welcome Card */
+  .welcome-card h2 {
+    font-size: 1.3rem !important;
+  }
+
+  .welcome-card p {
+    font-size: 0.85rem !important;
+  }
+
+  /* Alerts */
+  .alert {
+    font-size: 0.85rem !important;
+    padding: 0.75rem !important;
+  }
+
+  /* Badges */
+  .badge {
+    font-size: 0.7rem !important;
+    padding: 0.3rem 0.5rem !important;
+  }
+
+  /* Action Buttons in Cards */
+  .action-card .btn {
+    font-size: 0.8rem !important;
+  }
+
+  /* Print Buttons - Hide on Mobile */
+  .print-btn {
+    display: none !important;
+  }
+
+  /* Navbar Buttons */
+  .navbar .btn {
+    font-size: 0.75rem !important;
+    padding: 5px 10px !important;
+  }
+
+  .navbar .d-flex {
+    gap: 5px !important;
+  }
+
+  /* Modal */
+  .modal-dialog {
+    margin: 0.5rem !important;
+  }
+
+  .modal-content {
+    font-size: 0.9rem !important;
+  }
+
+  /* Customer Details */
+  .customer-info {
+    font-size: 0.85rem !important;
+  }
+
+  /* Collection Forms */
+  .collection-form .row {
+    margin-bottom: 0.5rem !important;
+  }
+
+  /* Search Box */
+  .search-box {
+    width: 100% !important;
+    margin-bottom: 1rem !important;
+  }
+
+  /* Dropdown Menu */
+  .dropdown-menu {
+    font-size: 0.85rem !important;
+  }
+
+  /* Pagination */
+  .pagination {
+    font-size: 0.85rem !important;
+  }
+
+  /* Card Padding */
+  .card-body {
+    padding: 1rem !important;
+  }
+
+  /* Text Truncate for Mobile */
+  .mobile-truncate {
+    max-width: 150px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  /* Hide Less Important Columns on Mobile */
+  .hide-mobile {
+    display: none !important;
+  }
+
+  /* Stack Buttons Vertically */
+  .btn-stack-mobile {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+
+  /* Reduce Logo Size */
+  body::before {
+    width: 300px !important;
+    height: 300px !important;
+  }
+
+  /* Fix Overflow */
+  body {
+    overflow-x: hidden !important;
+  }
+
+  /* Improve Touch Targets */
+  a, button, .btn {
+    min-height: 44px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  /* Better Spacing */
+  .mt-4 {
+    margin-top: 1rem !important;
+  }
+
+  .mb-4 {
+    margin-bottom: 1rem !important;
+  }
+
+  .p-4 {
+    padding: 1rem !important;
+  }
+
+  /* Input Groups */
+  .input-group {
+    flex-wrap: wrap !important;
+  }
+
+  /* Date Picker */
+  input[type="date"] {
+    font-size: 0.9rem !important;
+  }
+
+  /* Select Dropdown */
+  select.form-select {
+    background-size: 12px !important;
+  }
+}
+
+/* Extra Small Devices (phones, less than 576px) */
+@media (max-width: 576px) {
+  .container {
+    padding-left: 5px !important;
+    padding-right: 5px !important;
+  }
+
+  table {
+    font-size: 0.7rem !important;
+  }
+
+  .btn {
+    font-size: 0.75rem !important;
+    padding: 6px 10px !important;
+  }
+
+  h1 {
+    font-size: 1.2rem !important;
+  }
+
+  h2 {
+    font-size: 1.1rem !important;
+  }
+
+  .stat-card h3 {
+    font-size: 1.2rem !important;
+  }
+
+  .navbar-brand {
+    font-size: 0.9rem !important;
+  }
+
+  /* Stack Everything */
+  .row > div {
+    margin-bottom: 0.75rem !important;
+  }
+}
+
+/* Landscape Mode for Mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  .navbar {
+    padding: 0.3rem !important;
+  }
+
+  .stat-card, .action-card {
+    padding: 0.75rem !important;
+  }
+
+  .welcome-card {
+    padding: 1rem !important;
+  }
+}
+
+/* Tablet Optimization (768px - 992px) */
+@media (min-width: 768px) and (max-width: 992px) {
+  .col-md-2 {
+    flex: 0 0 50% !important;
+    max-width: 50% !important;
+  }
+
+  .col-md-3 {
+    flex: 0 0 50% !important;
+    max-width: 50% !important;
+  }
+
+  .col-md-4 {
+    flex: 0 0 50% !important;
+    max-width: 50% !important;
+  }
+
+  table {
+    font-size: 0.85rem !important;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .navbar, .btn, .alert, .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+  }
+
+  .main-card, .stat-card, .action-card {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
+}
+
+/* Utility Classes for Mobile */
+.mobile-only {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .mobile-only {
+    display: block !important;
+  }
+
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+/* Smooth Scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Better Touch Feedback */
+@media (hover: none) {
+  .btn:active, a:active {
+    opacity: 0.7;
+    transform: scale(0.98);
+  }
+}
