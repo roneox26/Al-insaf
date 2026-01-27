@@ -7,12 +7,14 @@
   <style>
     @media print {
       .no-print { display: none; }
-      body { font-size: 11px; }
+      body { font-size: 11px; color: #000 !important; }
       table { font-size: 10px; page-break-inside: auto; }
       thead { display: table-header-group; }
       tbody { display: table-row-group; }
       tr { page-break-inside: avoid; page-break-after: auto; }
-      th, td { padding: 5px !important; }
+      th, td { padding: 5px !important; color: #000 !important; }
+      .text-success, .text-info, .text-danger, .text-primary { color: #000 !important; font-weight: bold; }
+      span, strong { color: #000 !important; }
     }
   </style>
 
