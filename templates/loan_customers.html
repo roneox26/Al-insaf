@@ -117,13 +117,13 @@
             {% for customer in customers %}
             <tr>
               <td><strong>{{ loop.index }}</strong></td>
-              <td><span class="badge bg-secondary">{{ customer.member_no }}</span></td>
+              <td><span class="badge bg-secondary member-no">{{ customer.member_no }}</span></td>
               <td><strong>{{ customer.name }}</strong></td>
               <td><i class="fas fa-phone"></i> {{ customer.phone }}</td>
-              <td><span class="text-primary">৳{{ "{:,.0f}".format(customer.total_loan) }}</span></td>
-              <td><span class="badge bg-danger">৳{{ "{:,.0f}".format(customer.remaining_loan) }}</span></td>
-              <td><span class="badge bg-success">৳{{ "{:,.0f}".format(customer.savings_balance) }}</span></td>
-              <td><span class="badge bg-info">{{ customer.staff.name if customer.staff else 'N/A' }}</span></td>
+              <td><span class="text-primary loan-amount">৳{{ "{:,.0f}".format(customer.total_loan) }}</span></td>
+              <td><span class="badge bg-danger remaining-loan">৳{{ "{:,.0f}".format(customer.remaining_loan) }}</span></td>
+              <td><span class="badge bg-success savings-amount">৳{{ "{:,.0f}".format(customer.savings_balance) }}</span></td>
+              <td><span class="badge bg-info staff-name">{{ customer.staff.name if customer.staff else 'N/A' }}</span></td>
               <td class="no-print">
                 <a href="{{ url_for('customer_details', id=customer.id) }}" class="btn btn-sm btn-info"><i class="fas fa-eye"></i> Details</a>
               </td>
@@ -189,11 +189,13 @@
         border: 1px solid #000; 
         font-weight: bold;
         text-align: center;
+        color: #000 !important;
       }
       
       td { 
         padding: 6px !important; 
         border: 1px solid #000; 
+        color: #000 !important;
       }
       
       td:first-child {
@@ -205,14 +207,23 @@
         text-align: right;
       }
       
-      .text-danger { 
+      /* Remove all badge colors and make text black */
+      .badge, .member-no, .remaining-loan, .savings-amount, .staff-name { 
+        background-color: transparent !important;
+        color: #000 !important; 
+        font-weight: bold;
+        border: none !important;
+        padding: 0 !important;
+      }
+      
+      .text-primary, .text-danger, .text-success, .loan-amount { 
         color: #000 !important; 
         font-weight: bold; 
       }
       
-      .text-success { 
+      /* Make all text black */
+      span, strong, i { 
         color: #000 !important; 
-        font-weight: bold; 
       }
       
       tbody tr:nth-child(even) {
