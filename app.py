@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import os
 from flask import Flask, render_template, redirect, url_for, flash, request, make_response
 from flask_sqlalchemy import SQLAlchemy
@@ -90,7 +90,7 @@ def login():
         password = request.form.get('password', '').strip()
         
         if not email or not password:
-            flash('????? ??? ?????????? ??????!', 'danger')
+            flash('লগইন করা প্রয়োজন!', 'danger')
             return render_template('login.html')
 
         user = User.query.filter_by(email=email).first()
@@ -218,7 +218,7 @@ def add_staff():
         staff_type = request.form.get('staff_type', 'field')
         
         if not name or not email or not password:
-            flash('?? ???? ???? ????!', 'danger')
+            flash('সব তথ্য দিন!', 'danger')
             return redirect(url_for('add_staff'))
         
         if User.query.filter_by(email=email).first():
@@ -266,7 +266,7 @@ def edit_staff(id):
         email = request.form.get('email', '').strip()
         
         if not name or not email:
-            flash('??? ??? ????? ??????!', 'danger')
+            flash('নাম খুব ছোট হয়েছে!', 'danger')
             return redirect(url_for('edit_staff', id=id))
         
         if request.form.get('remove_photo'):
@@ -439,11 +439,11 @@ def delete_staff(id):
     
     password = request.form.get('password', '').strip()
     if not password:
-        flash('?????????? ??????!', 'danger')
+        flash('অনুমতি নেই!', 'danger')
         return redirect(url_for('manage_staff'))
     
     if not bcrypt.check_password_hash(current_user.password, password):
-        flash('?????????? ???! Staff ????? ??? ???????', 'danger')
+        flash('অনুমতি নেই! Staff মুছতে পারবেন না', 'danger')
         return redirect(url_for('manage_staff'))
     
     staff = User.query.get_or_404(id)
@@ -453,7 +453,7 @@ def delete_staff(id):
     
     db.session.delete(staff)
     db.session.commit()
-    flash('Staff ??????? ????? ??????!', 'success')
+    flash('Staff সফলভাবে মুছে ফেলা হয়েছে!', 'success')
     return redirect(url_for('manage_staff'))
 
 @app.route('/admin/staff/view/<int:id>')
@@ -576,7 +576,7 @@ def loan_collections_history():
 @login_required
 def add_loan():
     if current_user.role != 'admin':
-        flash('????????? Admin ??? ???? ?????!', 'danger')
+        flash('সর্বশেষ Admin মুছে ফেলা যাবে না!', 'danger')
         return redirect(url_for('dashboard'))
     
     if request.method == 'POST':
@@ -586,7 +586,7 @@ def add_loan():
             interest_rate = request.form.get('interest', type=float, default=0)
             
             if not customer_id or amount <= 0:
-                flash('?? ???? ???????? ???? ????!', 'danger')
+                flash('সব তথ্য সঠিকভাবে দিন!', 'danger')
                 return redirect(url_for('add_loan'))
             customer = Customer.query.get_or_404(customer_id)
             
@@ -596,7 +596,7 @@ def add_loan():
                 db.session.add(cash_balance_record)
             
             if cash_balance_record.balance < amount:
-                flash(f'???????? ???? ???! ??????? ?????????: ?{cash_balance_record.balance}', 'danger')
+                flash(f'পর্যাপ্ত টাকা নেই! বর্তমান ব্যালেন্স: ৳{cash_balance_record.balance}', 'danger')
                 return redirect(url_for('add_loan'))
             
             interest_amount = (amount * interest_rate) / 100
@@ -668,7 +668,7 @@ def add_loan():
                     db.session.add(schedule)
             
             db.session.commit()
-            flash(f'?? ??? ???! ??????: ?{amount}, ???: ?{interest_amount}, ??????? ?????: ?{service_charge}, ?????? ??: ?{welfare_fee}, ????? ??: ?{application_fee}, ???: ?{total_with_interest}', 'success')
+            flash(f'লোন দেওয়া হয়েছে! পরিমাণ: ৳{amount}, মোট: ৳{interest_amount}, কালেকশন ৳বাকি: ৳{service_charge}, কল্যাণ ফি: ৳{welfare_fee}, আবেদন ফি: ৳{application_fee}, মোট: ৳{total_with_interest}', 'success')
             return redirect(url_for('manage_loans'))
         except Exception as e:
             db.session.rollback()
@@ -694,7 +694,7 @@ def edit_loan(id):
             status = request.form.get('status', '')
             
             if not customer_name or amount <= 0 or not due_date_str:
-                flash('?? ???? ???????? ???? ????!', 'danger')
+                flash('সব তথ্য সঠিকভাবে দিন!', 'danger')
                 return redirect(url_for('edit_loan', id=id))
             
             loan.customer_name = customer_name
@@ -765,7 +765,7 @@ def add_saving():
         amount = request.form.get('amount', type=float, default=0)
         
         if not customer_id or amount <= 0:
-            flash('?? ???? ???????? ???? ????!', 'danger')
+            flash('সব তথ্য সঠিকভাবে দিন!', 'danger')
             return redirect(url_for('add_saving'))
         
         customer = Customer.query.get_or_404(customer_id)
@@ -1080,11 +1080,11 @@ def edit_customer(id):
         customer.address = request.form.get('address', '')
         
         if not customer.name or not customer.phone:
-            flash('??? ??? ??? ????? ??????!', 'danger')
+            flash('নাম নাম খুব ছোট হয়েছে!', 'danger')
             return redirect(url_for('edit_customer', id=id))
         
         db.session.commit()
-        flash('???????? ????? ??? ??????!', 'success')
+        flash('সফলভাবে যোগ করা হয়েছে!', 'success')
         return redirect(url_for('manage_customers'))
     
     return render_template('edit_customer.html', customer=customer)
@@ -1098,17 +1098,17 @@ def delete_customer(id):
     
     password = request.form.get('password', '').strip()
     if not password:
-        flash('?????????? ??????!', 'danger')
+        flash('অনুমতি নেই!', 'danger')
         return redirect(url_for('manage_customers'))
     
     if not bcrypt.check_password_hash(current_user.password, password):
-        flash('?????????? ???! Customer ????? ??? ???????', 'danger')
+        flash('অনুমতি নেই! Customer মুছতে পারবেন না', 'danger')
         return redirect(url_for('manage_customers'))
     
     customer = Customer.query.get_or_404(id)
     customer.is_active = False
     db.session.commit()
-    flash('Customer ??????? Deactivate ??????!', 'success')
+    flash('Customer সফলভাবে Deactivate করা হয়েছে!', 'success')
     return redirect(url_for('manage_customers'))
 
 @app.route('/customer/activate/<int:id>', methods=['POST'])
@@ -1121,7 +1121,7 @@ def activate_customer(id):
     customer = Customer.query.get_or_404(id)
     customer.is_active = True
     db.session.commit()
-    flash('Customer ??????? Activate ??????!', 'success')
+    flash('Customer সফলভাবে Activate করা হয়েছে!', 'success')
     return redirect(url_for('inactive_customers'))
 
 @app.route('/inactive_customers')
@@ -1143,12 +1143,12 @@ def add_customer():
             member_no = request.form.get('member_no', '').strip()
             
             if not name or not phone:
-                flash('??? ??? ??? ????? ??????!', 'danger')
+                flash('নাম নাম খুব ছোট হয়েছে!', 'danger')
                 return redirect(url_for('add_customer'))
             
             # Check if member_no already exists
             if member_no and Customer.query.filter_by(member_no=member_no).first():
-                flash(f'????? ?? "{member_no}" ???????? ??????? ??????!', 'danger')
+                flash(f'সদস্য নং "{member_no}" ইতিমধ্যে বিদ্যমান রয়েছে!', 'danger')
                 return redirect(url_for('add_customer'))
             
             admission_fee_str = request.form.get('admission_fee', '0').strip()
@@ -1200,7 +1200,7 @@ def add_customer():
                 db.session.add(fee_col)
             
             db.session.commit()
-            flash(f'????? ??????? ??? ??????! ????? ??: ?{admission_fee}', 'success')
+            flash(f'নামসব যোগ করা হয়েছে! আবেদন ফি: ৳{admission_fee}', 'success')
             return redirect(url_for('manage_customers'))
         except Exception as e:
             db.session.rollback()
@@ -1247,7 +1247,7 @@ def manage_collections():
         start_date = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         query_loan = query_loan.filter(LoanCollection.collection_date >= start_date)
         query_saving = query_saving.filter(SavingCollection.collection_date >= start_date)
-        month_names = ['?????????', '???????????', '?????', '??????', '??', '???', '?????', '?????', '??????????', '???????', '???????', '????????']
+        month_names = ['সক্রিয়সব', 'নিষ্ক্রিয়?', 'নামসব', 'নামনাম', 'সব', 'নাম', 'নামসব', 'নামসব', 'নিষ্ক্রিয়', 'সক্রিয়', 'সক্রিয়', 'সক্রিয়?']
         period_info['month'] = month_names[today.month - 1]
         period_info['year'] = today.year
     elif period == 'yearly':
@@ -1301,7 +1301,7 @@ def add_collection():
         amount = request.form.get('amount', type=float, default=0)
         
         if not loan_id or amount <= 0:
-            flash('?? ???? ???????? ???? ????!', 'danger')
+            flash('সব তথ্য সঠিকভাবে দিন!', 'danger')
             return redirect(url_for('add_collection'))
         
         collection = Collection(
@@ -1324,7 +1324,7 @@ def add_collection():
 @login_required
 def collection():
     if current_user.role == 'staff' and hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff ??????? ???? ????? ??!', 'danger')
+        flash('Monitor staff কালেকশন করতে পারবে না!', 'danger')
         return redirect(url_for('dashboard'))
     
     if request.method == 'POST':
@@ -1333,11 +1333,11 @@ def collection():
         saving_amount = request.form.get('saving_amount', type=float, default=0)
         
         if not customer_id:
-            flash('?????? ???????? ????!', 'danger')
+            flash('কাস্টমার খুঁজে পাওয়া যায়নি!', 'danger')
             return redirect(url_for('collection'))
         
         if loan_amount <= 0 and saving_amount <= 0:
-            flash('????? ???? ??????? ?????? ???!', 'danger')
+            flash('লোন নেই বা সম্পূর্ণ পরিশোধ হয়েছে!', 'danger')
             return redirect(url_for('collection'))
         
         customer = Customer.query.get_or_404(customer_id)
@@ -1350,7 +1350,7 @@ def collection():
         # Process loan collection
         if loan_amount > 0:
             if loan_amount > customer.remaining_loan:
-                flash(f'??? ???? ???? ??? (?{customer.remaining_loan}) ???? ???? ??? ????? ??!', 'danger')
+                flash(f'এই মাসে ইতিমধ্যে ফি (৳{customer.remaining_loan}) নেওয়া হয়েছে, আবার নেওয়া যাবে না!', 'danger')
                 return redirect(url_for('collection'))
             
             loan_collection = LoanCollection(
@@ -1377,10 +1377,10 @@ def collection():
         
         msg = []
         if loan_amount > 0:
-            msg.append(f'???: ?{loan_amount}')
+            msg.append(f'মোট: ৳{loan_amount}')
         if saving_amount > 0:
-            msg.append(f'??????: ?{saving_amount}')
-        flash(f'??????? ??????? ??????? ??????! {" | ".join(msg)}', 'success')
+            msg.append(f'সেভিংস: ৳{saving_amount}')
+        flash(f'কালেকশন সফলভাবে সংরক্ষণ করা হয়েছে! {" | ".join(msg)}', 'success')
         return redirect(url_for('collection'))
     
     if current_user.role == 'staff' and (not hasattr(current_user, 'is_office_staff') or not current_user.is_office_staff):
@@ -1393,7 +1393,7 @@ def collection():
 @login_required
 def loan_collection():
     if current_user.role == 'staff' and hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff ??????? ???? ????? ??!', 'danger')
+        flash('Monitor staff কালেকশন করতে পারবে না!', 'danger')
         return redirect(url_for('dashboard'))
     
     if current_user.role == 'staff' and (not hasattr(current_user, 'is_office_staff') or not current_user.is_office_staff):
@@ -1406,7 +1406,7 @@ def loan_collection():
 @login_required
 def saving_collection():
     if current_user.role == 'staff' and hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff ??????? ???? ????? ??!', 'danger')
+        flash('Monitor staff কালেকশন করতে পারবে না!', 'danger')
         return redirect(url_for('dashboard'))
     
     if current_user.role == 'staff' and (not hasattr(current_user, 'is_office_staff') or not current_user.is_office_staff):
@@ -1419,7 +1419,7 @@ def saving_collection():
 @login_required
 def collect_loan():
     if current_user.role == 'staff' and hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff ??????? ???? ????? ??!', 'danger')
+        flash('Monitor staff কালেকশন করতে পারবে না!', 'danger')
         return redirect(url_for('dashboard'))
     
     try:
@@ -1427,17 +1427,17 @@ def collect_loan():
         amount = request.form.get('amount', type=float, default=0)
         
         if not customer_id or amount <= 0:
-            flash('?? ???? ???????? ???? ????!', 'danger')
+            flash('সব তথ্য সঠিকভাবে দিন!', 'danger')
             return redirect(url_for('loan_collection'))
         
         customer = Customer.query.get_or_404(customer_id)
         
         if amount <= 0:
-            flash('????? ?????? ? ?? ???? ??? ???!', 'danger')
+            flash('নামসব নামনাম ? সব নাম? নাম নাম!', 'danger')
             return redirect(url_for('loan_collection'))
         
         if amount > customer.remaining_loan:
-            flash(f'???? ???? ??? (?{customer.remaining_loan}) ???? ???? ??? ????? ??!', 'danger')
+            flash(f'নাম? নাম? নাম (?{customer.remaining_loan}) নেওয়া হয়েছে, আবার নেওয়া যাবে না!', 'danger')
             return redirect(url_for('loan_collection'))
         
         collection = LoanCollection(
@@ -1469,7 +1469,7 @@ def collect_loan():
         
         db.session.commit()
         
-        flash(f'??????? ?{amount} ??????? ??????? ??????! ????: ?{customer.remaining_loan}', 'success')
+        flash(f'কালেকশন ৳{amount} সংরক্ষণ করা? নামনাম! বাকি: ৳{customer.remaining_loan}', 'success')
         return redirect(url_for('loan_collection'))
     except Exception as e:
         db.session.rollback()
@@ -1480,7 +1480,7 @@ def collect_loan():
 @login_required
 def collect_saving():
     if current_user.role == 'staff' and hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff ??????? ???? ????? ??!', 'danger')
+        flash('Monitor staff কালেকশন করতে পারবে না!', 'danger')
         return redirect(url_for('dashboard'))
     
     try:
@@ -1488,7 +1488,7 @@ def collect_saving():
         amount = request.form.get('amount', type=float, default=0)
         
         if not customer_id or amount <= 0:
-            flash('?? ???? ???????? ???? ????!', 'danger')
+            flash('সব তথ্য সঠিকভাবে দিন!', 'danger')
             return redirect(url_for('saving_collection'))
         
         customer = Customer.query.get_or_404(customer_id)
@@ -1510,7 +1510,7 @@ def collect_saving():
         db.session.add(collection)
         db.session.commit()
         
-        flash(f'??????? ?{amount} ?????? ??? ??????!', 'success')
+        flash(f'কালেকশন ৳{amount} সংগ্রহ করা হয়েছে!', 'success')
         return redirect(url_for('saving_collection'))
     except Exception as e:
         db.session.rollback()
@@ -1592,7 +1592,7 @@ def manage_cash_balance():
             amount = request.form.get('amount', type=float, default=0)
             
             if not action or amount <= 0:
-                flash('?? ???? ???????? ???? ????!', 'danger')
+                flash('সব তথ্য সঠিকভাবে দিন!', 'danger')
                 return redirect(url_for('manage_cash_balance'))
             
             cash_balance_record = CashBalance.query.first()
@@ -1605,7 +1605,7 @@ def manage_cash_balance():
                 note = request.form.get('note', '')
                 
                 if not investor_name:
-                    flash('Investor ??? ??????!', 'danger')
+                    flash('Investor খুঁজে পাওয়া যায়নি!', 'danger')
                     return redirect(url_for('manage_cash_balance'))
                 
                 # Find or create investor
@@ -1635,29 +1635,29 @@ def manage_cash_balance():
                 investor.current_balance += amount
                 cash_balance_record.balance += amount
                 db.session.add(investment)
-                flash(f'Investor ID: {investor.investor_id} | ?{amount} ??? ??? ??????! Balance: ?{investor.current_balance}', 'success')
+                flash(f'Investor ID: {investor.investor_id} | ?{amount} জমা করা হয়েছে! Balance: ৳{investor.current_balance}', 'success')
             elif action == 'subtract':
                 if cash_balance_record.balance >= amount:
                     cash_balance_record.balance -= amount
-                    flash(f'?{amount} ?????? ??? ??????!', 'success')
+                    flash(f'?{amount} সংগ্রহ করা হয়েছে!', 'success')
                 else:
-                    flash('???????? ???? ???!', 'danger')
+                    flash('?যোগ করা? নাম!', 'danger')
             elif action == 'withdraw':
                 investor_name = request.form.get('investor_name', '').strip()
                 note = request.form.get('note', '')
                 
                 if not investor_name:
-                    flash('Investor ??? ??????!', 'danger')
+                    flash('Investor খুঁজে পাওয়া যায়নি!', 'danger')
                     return redirect(url_for('manage_cash_balance'))
                 
                 if cash_balance_record.balance >= amount:
                     investor = Investor.query.filter_by(name=investor_name).first()
                     if not investor:
-                        flash('Investor ????? ?????? ??????!', 'danger')
+                        flash('Investor এর ব্যালেন্স খুঁজে পাওয়া যায়নি!', 'danger')
                         return redirect(url_for('manage_cash_balance'))
                     
                     if investor.current_balance < amount:
-                        flash(f'Investor ?? balance (?{investor.current_balance}) ?????? ???!', 'danger')
+                        flash(f'Investor এর balance (৳{investor.current_balance}) কম রয়েছে!', 'danger')
                         return redirect(url_for('manage_cash_balance'))
                     
                     withdrawal = Withdrawal(
@@ -1670,9 +1670,9 @@ def manage_cash_balance():
                     investor.current_balance -= amount
                     cash_balance_record.balance -= amount
                     db.session.add(withdrawal)
-                    flash(f'Investor ID: {investor.investor_id} | ?{amount} Withdrawal ??? ??????! Balance: ?{investor.current_balance}', 'success')
+                    flash(f'Investor ID: {investor.investor_id} | ?{amount} Withdrawal করা হয়েছে! Balance: ৳{investor.current_balance}', 'success')
                 else:
-                    flash('???????? ???? ???!', 'danger')
+                    flash('?যোগ করা? নাম!', 'danger')
             
             db.session.commit()
             return redirect(url_for('manage_cash_balance'))
@@ -1705,7 +1705,7 @@ def manage_expenses():
             expense_date_str = request.form.get('expense_date')
             
             if not category or amount <= 0:
-                flash('?? ???? ???????? ???? ????!', 'danger')
+                flash('সব তথ্য সঠিকভাবে দিন!', 'danger')
                 return redirect(url_for('manage_expenses'))
             
             cash_balance_record = CashBalance.query.first()
@@ -1724,9 +1724,9 @@ def manage_expenses():
                 cash_balance_record.balance -= amount
                 db.session.add(expense)
                 db.session.commit()
-                flash(f'{category} - ?{amount} ????? ??? ??????!', 'success')
+                flash(f'{category} - ?{amount} খরচ করা হয়েছে!', 'success')
             else:
-                flash('???????? ???? ???!', 'danger')
+                flash('?যোগ করা? নাম!', 'danger')
             
             return redirect(url_for('manage_expenses'))
         except Exception as e:
@@ -1960,7 +1960,7 @@ def send_message():
                 file_type = 'file'
             
             if not content:
-                content = f"?? {filename}"
+                content = f"সব {filename}"
     
     if not content and not file_path:
         return {'success': False, 'error': 'Empty message'}, 400
@@ -2045,18 +2045,18 @@ def manage_withdrawals():
             note = request.form.get('note', '')
             
             if not customer_id or amount <= 0:
-                flash('?? ???? ???????? ???? ????!', 'danger')
+                flash('সব তথ্য সঠিকভাবে দিন!', 'danger')
                 return redirect(url_for('manage_withdrawals'))
             
             customer = Customer.query.get_or_404(customer_id)
             
             if customer.savings_balance < amount:
-                flash(f'???????? ?????? ???! ???????: ?{customer.savings_balance}', 'danger')
+                flash(f'?সংরক্ষণ করা নাম! ?সেভিংস: ৳{customer.savings_balance}', 'danger')
                 return redirect(url_for('manage_withdrawals'))
             
             cash_balance_record = CashBalance.query.first()
             if not cash_balance_record or cash_balance_record.balance < amount:
-                flash('???????? ????? ???!', 'danger')
+                flash('?যোগ করাসব নাম!', 'danger')
                 return redirect(url_for('manage_withdrawals'))
             
             withdrawal = Withdrawal(
@@ -2069,7 +2069,7 @@ def manage_withdrawals():
             cash_balance_record.balance -= amount
             db.session.add(withdrawal)
             db.session.commit()
-            flash(f'?{amount} ??????? ??? ??????!', 'success')
+            flash(f'?{amount} যোগ করা হয়েছে!', 'success')
             return redirect(url_for('manage_withdrawals'))
         except Exception as e:
             db.session.rollback()
@@ -2141,7 +2141,7 @@ def monthly_report():
     month = int(request.args.get('month', today.month))
     year = int(request.args.get('year', today.year))
     
-    month_names = ['', '?????????', '???????????', '?????', '??????', '??', '???', '?????', '?????', '??????????', '???????', '???????', '????????']
+    month_names = ['', 'সক্রিয়সব', 'নিষ্ক্রিয়?', 'নামসব', 'নামনাম', 'সব', 'নাম', 'নামসব', 'নামসব', 'নিষ্ক্রিয়', 'সক্রিয়', 'সক্রিয়', 'সক্রিয়?']
     month_name = month_names[month]
     last_day = calendar.monthrange(year, month)[1]
     
@@ -2654,8 +2654,8 @@ def due_report_export():
     writer = csv.writer(output)
     
     # Write header
-    writer.writerow(['??????', '????? ??', '???', '???', '??????', '?????? ????', '??? ??????', 
-                     '????????', '?????? ??????', '??? ???????', '??????? ?????', '??? ????', '????? ????'])
+    writer.writerow(['নামনাম', 'নামসব সব', 'নাম', 'নাম', 'নামনাম', 'নামনাম নাম?', 'নাম নামনাম', 
+                     'সক্রিয়?', 'নামনাম নামনাম', 'নাম সক্রিয়', 'যোগ করাসব', 'নাম নাম?', 'নামসব নাম?'])
     
     for idx, customer in enumerate(customers, 1):
         loans = Loan.query.filter_by(customer_name=customer.name).all()
@@ -2772,7 +2772,7 @@ def add_followup(customer_id):
     db.session.add(followup)
     db.session.commit()
     
-    flash('???-?? ??? ??????!', 'success')
+    flash('ফি-টি দেওয়া হয়েছে!', 'success')
     return redirect(url_for('customer_details', id=customer_id))
 
 @app.route('/followup/complete/<int:id>', methods=['POST'])
@@ -2787,7 +2787,7 @@ def complete_followup(id):
     followup.amount_collected = amount_collected
     
     db.session.commit()
-    flash('???-?? ??????? ??????!', 'success')
+    flash('নাম-সব সংরক্ষণ করা!', 'success')
     return redirect(url_for('customer_details', id=followup.customer_id))
 
 @app.route('/followup/list')
@@ -2822,7 +2822,7 @@ def manage_notes():
         reminder_date_str = request.form.get('reminder_date', '').strip()
         
         if not title or not content:
-            flash('??????? ??? ?????????? ??????!', 'danger')
+            flash('সবলগইন করা প্রয়োজন!', 'danger')
             return redirect(url_for('manage_notes'))
         
         reminder_date = None
@@ -2832,7 +2832,7 @@ def manage_notes():
         note = Note(title=title, content=content, priority=priority, reminder_date=reminder_date, created_by=current_user.id)
         db.session.add(note)
         db.session.commit()
-        flash('??? ??????? ??? ??????!', 'success')
+        flash('নাম যোগ করা হয়েছে!', 'success')
         return redirect(url_for('manage_notes'))
     
     # Get today's reminders
@@ -2867,11 +2867,11 @@ def edit_note(id):
         note.priority = request.form.get('priority', 'normal')
         
         if not note.title or not note.content:
-            flash('??????? ??? ?????????? ??????!', 'danger')
+            flash('সবলগইন করা প্রয়োজন!', 'danger')
             return redirect(url_for('edit_note', id=id))
         
         db.session.commit()
-        flash('??? ????? ???!', 'success')
+        flash('নাম খালি আছে!', 'success')
         return redirect(url_for('manage_notes'))
     
     return render_template('edit_note.html', note=note)
@@ -2886,7 +2886,7 @@ def delete_note(id):
     note = Note.query.get_or_404(id)
     db.session.delete(note)
     db.session.commit()
-    flash('??? ????? ???!', 'success')
+    flash('নাম খালি আছে!', 'success')
     return redirect(url_for('manage_notes'))
 
 @app.route('/admin/settings', methods=['GET', 'POST'])
@@ -2904,20 +2904,20 @@ def admin_settings():
             password = request.form.get('password', '').strip()
             
             if not new_email or not password:
-                flash('?? ???? ???? ????!', 'danger')
+                flash('সব তথ্য দিন!', 'danger')
                 return redirect(url_for('admin_settings'))
             
             if not bcrypt.check_password_hash(current_user.password, password):
-                flash('?????????? ???!', 'danger')
+                flash('নামযোগ করা!', 'danger')
                 return redirect(url_for('admin_settings'))
             
             if User.query.filter(User.email == new_email, User.id != current_user.id).first():
-                flash('?? ????? ???????? ??????? ?????!', 'danger')
+                flash('সব নামসব ?সংরক্ষণ করা? নামসব!', 'danger')
                 return redirect(url_for('admin_settings'))
             
             current_user.email = new_email
             db.session.commit()
-            flash('????? ??????? ???????? ??????!', 'success')
+            flash('নামসব কালেকশন ৳সংরক্ষণ করা!', 'success')
             return redirect(url_for('admin_settings'))
         
         elif action == 'change_password':
@@ -2926,24 +2926,24 @@ def admin_settings():
             confirm_password = request.form.get('confirm_password', '').strip()
             
             if not current_password or not new_password or not confirm_password:
-                flash('?? ???? ???? ????!', 'danger')
+                flash('সব তথ্য দিন!', 'danger')
                 return redirect(url_for('admin_settings'))
             
             if not bcrypt.check_password_hash(current_user.password, current_password):
-                flash('??????? ?????????? ???!', 'danger')
+                flash('যোগ করাযোগ করা!', 'danger')
                 return redirect(url_for('admin_settings'))
             
             if new_password != confirm_password:
-                flash('???? ?????????? ????? ??!', 'danger')
+                flash('নাম? নামযোগ করাসব সব!', 'danger')
                 return redirect(url_for('admin_settings'))
             
             if len(new_password) < 6:
-                flash('?????????? ??????? ? ??????? ??? ???!', 'danger')
+                flash('নামসংরক্ষণ করা? ? যোগ করা নাম!', 'danger')
                 return redirect(url_for('admin_settings'))
             
             current_user.password = bcrypt.generate_password_hash(new_password).decode('utf-8')
             db.session.commit()
-            flash('?????????? ??????? ???????? ??????!', 'success')
+            flash('নামসংরক্ষণ করা? ?সংরক্ষণ করা!', 'success')
             return redirect(url_for('admin_settings'))
     
     return render_template('admin_settings.html')
@@ -2964,7 +2964,7 @@ def manage_scheduled_expenses():
             start_date_str = request.form.get('start_date')
             
             if not category or amount <= 0 or not frequency:
-                flash('?? ???? ???????? ???? ????!', 'danger')
+                flash('সব তথ্য সঠিকভাবে দিন!', 'danger')
                 return redirect(url_for('manage_scheduled_expenses'))
             
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d') if start_date_str else datetime.now()
@@ -2989,7 +2989,7 @@ def manage_scheduled_expenses():
             )
             db.session.add(scheduled_expense)
             db.session.commit()
-            flash(f'?????? ????? ??? ??????! {frequency} - ?{amount}', 'success')
+            flash(f'নামনাম খরচ করা হয়েছে! {frequency} - ?{amount}', 'success')
             return redirect(url_for('manage_scheduled_expenses'))
         except Exception as e:
             db.session.rollback()
@@ -3009,8 +3009,8 @@ def toggle_scheduled_expense(id):
     scheduled_expense = ScheduledExpense.query.get_or_404(id)
     scheduled_expense.is_active = not scheduled_expense.is_active
     db.session.commit()
-    status = '???????' if scheduled_expense.is_active else '??????????'
-    flash(f'?????? ????? {status} ??? ??????!', 'success')
+    status = 'সক্রিয়' if scheduled_expense.is_active else 'নিষ্ক্রিয়'
+    flash(f'নিয়মিত খরচ {status} করা হয়েছে!', 'success')
     return redirect(url_for('manage_scheduled_expenses'))
 
 @app.route('/scheduled_expense/delete/<int:id>', methods=['POST'])
@@ -3023,7 +3023,7 @@ def delete_scheduled_expense(id):
     scheduled_expense = ScheduledExpense.query.get_or_404(id)
     db.session.delete(scheduled_expense)
     db.session.commit()
-    flash('?????? ????? ????? ??????!', 'success')
+    flash('নিয়মিত খরচ মুছে ফেলা হয়েছে!', 'success')
     return redirect(url_for('manage_scheduled_expenses'))
 
 @app.route('/investor_details/<int:id>')
@@ -3278,7 +3278,7 @@ def import_old_data():
                 created_date_str = request.form.get('created_date', '')
                 
                 if not name:
-                    flash('??? ????????!', 'danger')
+                    flash('নাম সক্রিয়?!', 'danger')
                     return redirect(url_for('import_old_data'))
                 
                 created_date = datetime.strptime(created_date_str, '%Y-%m-%d') if created_date_str else datetime.now()
@@ -3304,7 +3304,7 @@ def import_old_data():
                     cash_balance_record.balance += savings_balance
                     db.session.commit()
                 
-                flash(f'?????? Customer "{name}" ??????? ??? ??? ??????!', 'success')
+                flash(f'নতুন Customer "{name}" যোগ করা করা হয়েছে!', 'success')
                 return redirect(url_for('import_old_data'))
             
             elif action == 'add_collection':
@@ -3315,7 +3315,7 @@ def import_old_data():
                 staff_id = request.form.get('staff_id', type=int) or current_user.id
                 
                 if not customer_id:
-                    flash('Customer ???????? ????!', 'danger')
+                    flash('Customer ?যোগ করা?!', 'danger')
                     return redirect(url_for('import_old_data'))
                 
                 collection_date = datetime.strptime(collection_date_str, '%Y-%m-%d') if collection_date_str else datetime.now()
@@ -3339,7 +3339,7 @@ def import_old_data():
                     db.session.add(saving_col)
                 
                 db.session.commit()
-                flash(f'?????? Collection ??? ??? ??????! ???: ?{loan_amount}, ??????: ?{saving_amount}', 'success')
+                flash(f'নামনাম Collection নাম করা হয়েছে! মোট: ৳{loan_amount}, সেভিংস: ৳{saving_amount}', 'success')
                 return redirect(url_for('import_old_data'))
         
         except Exception as e:
@@ -3379,6 +3379,7 @@ def init_db():
 if __name__ == '__main__':
     init_db()
     app.run(debug=True, host='0.0.0.0', port=5000)
+
 
 
 
