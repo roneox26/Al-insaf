@@ -4,7 +4,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   <meta charset="UTF-8">
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <title>All Collections</title>
+  <title>সকল কালেকশন</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
   <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
@@ -19,7 +19,7 @@
     {% endif %}
   {% endwith %}
 
-  <h2 class="mb-4">💰 All Collections</h2>
+  <h2 class="mb-4">💰 সকল কালেকশন</h2>
   <h3 class="d-none d-print-block text-center" style="margin: 0;">আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h3>
   <p class="d-none d-print-block text-center" style="margin: 5px 0 15px 0;">
     সকল কালেকশন রিপোর্ট
@@ -37,9 +37,9 @@
   <div class="no-print mb-3">
     <form method="GET" class="row g-3">
       <div class="col-md-3">
-        <label class="form-label">Staff Select</label>
+        <label class="form-label">স্টাফ সিলেক্ট</label>
         <select name="staff_id" class="form-control">
-          <option value="">All Staff</option>
+          <option value="">সকল স্টাফ</option>
           {% for staff in staffs %}
           <option value="{{ staff.id }}" {% if staff.id == selected_staff %}selected{% endif %}>{{ staff.name }}</option>
           {% endfor %}
@@ -51,27 +51,27 @@
       </div>
       <div class="col-md-3">
         <label class="form-label">&nbsp;</label>
-        <button type="submit" class="btn btn-primary w-100">Filter</button>
+        <button type="submit" class="btn btn-primary w-100">ফিল্টার</button>
       </div>
       <div class="col-md-3">
         <label class="form-label">&nbsp;</label>
-        <a href="{{ url_for('manage_collections') }}" class="btn btn-outline-secondary w-100">🔄 Reset</a>
+        <a href="{{ url_for('manage_collections') }}" class="btn btn-outline-secondary w-100">🔄 রিসেট</a>
       </div>
     </form>
   </div>
 
   <div class="btn-group mb-3 no-print" role="group">
-    <a href="{{ url_for('manage_collections', period='all', staff_id=selected_staff) }}" class="btn btn-{{ 'primary' if period == 'all' else 'outline-primary' }}">📋 All</a>
-    <a href="{{ url_for('manage_collections', period='daily', staff_id=selected_staff) }}" class="btn btn-{{ 'primary' if period == 'daily' else 'outline-primary' }}">📅 Daily</a>
-    <a href="{{ url_for('manage_collections', period='monthly', staff_id=selected_staff) }}" class="btn btn-{{ 'primary' if period == 'monthly' else 'outline-primary' }}">📆 Monthly</a>
-    <a href="{{ url_for('manage_collections', period='yearly', staff_id=selected_staff) }}" class="btn btn-{{ 'primary' if period == 'yearly' else 'outline-primary' }}">📊 Yearly</a>
+    <a href="{{ url_for('manage_collections', period='all', staff_id=selected_staff) }}" class="btn btn-{{ 'primary' if period == 'all' else 'outline-primary' }}">📋 সকল</a>
+    <a href="{{ url_for('manage_collections', period='daily', staff_id=selected_staff) }}" class="btn btn-{{ 'primary' if period == 'daily' else 'outline-primary' }}">📅 দৈনিক</a>
+    <a href="{{ url_for('manage_collections', period='monthly', staff_id=selected_staff) }}" class="btn btn-{{ 'primary' if period == 'monthly' else 'outline-primary' }}">📆 মাসিক</a>
+    <a href="{{ url_for('manage_collections', period='yearly', staff_id=selected_staff) }}" class="btn btn-{{ 'primary' if period == 'yearly' else 'outline-primary' }}">📊 বার্ষিক</a>
   </div>
 
   <div class="row mb-3 summary-cards">
     <div class="col-4">
       <div class="card bg-success text-white" style="border: 2px solid #28a745;">
         <div class="card-body p-2">
-          <small>💰 Loan Collections</small>
+          <small>💰 লোন কালেকশন</small>
           <h5 class="mb-0">৳{{ "{:,.2f}".format(total_loan) }}</h5>
         </div>
       </div>
@@ -79,7 +79,7 @@
     <div class="col-4">
       <div class="card bg-info text-white" style="border: 2px solid #17a2b8;">
         <div class="card-body p-2">
-          <small>🏦 Saving Collections</small>
+          <small>🏦 সঞ্চয় কালেকশন</small>
           <h5 class="mb-0">৳{{ "{:,.2f}".format(total_saving) }}</h5>
         </div>
       </div>
@@ -87,7 +87,7 @@
     <div class="col-4">
       <div class="card bg-primary text-white" style="border: 2px solid #0d6efd;">
         <div class="card-body p-2">
-          <small>📊 Grand Total</small>
+          <small>📊 সর্বমোট</small>
           <h5 class="mb-0">৳{{ "{:,.2f}".format(total_loan + total_saving) }}</h5>
         </div>
       </div>
@@ -112,12 +112,13 @@
       </tr>
     </thead>
     <tbody>
-      {% set chunk_size = ((all_collections|length + 2) // 3)|int %}
+      {% set total_items = all_collections|length %}
+      {% set chunk_size = ((total_items + 2) // 3)|int %}
       {% for i in range(chunk_size) %}
       <tr>
-        {% for col in range(3) %}
-          {% set idx = i + (col * chunk_size) %}
-          {% if idx < all_collections|length %}
+        {% for col_num in range(3) %}
+          {% set idx = i + (col_num * chunk_size) %}
+          {% if idx < total_items %}
             {% set item = all_collections[idx] %}
             <td>{{ item.customer.member_no or '-' }}</td>
             <td>{{ item.customer.name }}</td>
@@ -133,12 +134,12 @@
   </table>
 
   {% if not all_collections %}
-  <p class="text-center">No collections found</p>
+  <p class="text-center">কোনো কালেকশন পাওয়া যায়নি</p>
   {% endif %}
 
   <div class="no-print mt-3">
-    <button onclick="window.print()" class="btn btn-primary">🖨️ Print</button>
-    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">⬅️ Back</a>
+    <button onclick="window.print()" class="btn btn-primary">🖨️ প্রিন্ট</button>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">⬅️ ফিরে যান</a>
   </div>
 
   <style>
@@ -146,58 +147,65 @@
     th, td { padding: 2px !important; }
     
     @media print {
-      @page { size: A4 portrait; margin: 10mm 8mm; }
-      * { box-sizing: border-box; }
+      @page { size: A4 portrait; margin: 8mm 5mm; }
+      * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
       .no-print { display: none !important; }
-      body { font-family: 'SutonnyMJ', Arial, sans-serif; width: 100%; margin: 0; padding: 0; }
+      body { font-family: Arial, sans-serif; width: 100%; margin: 0; padding: 0; color: #000 !important; }
+      .container { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
       h2 { display: none; }
-      h3 { font-size: 18px; margin: 0 0 3px 0; font-weight: bold; text-align: center; }
-      p { font-size: 11px; margin: 0 0 8px 0; text-align: center; }
+      h3 { font-size: 16px; margin: 0 0 2px 0; font-weight: bold; text-align: center; color: #000 !important; }
+      p { font-size: 10px; margin: 0 0 5px 0; text-align: center; color: #000 !important; }
       
       .summary-cards { 
-        margin-bottom: 8px; 
+        margin-bottom: 5px !important; 
         display: flex !important; 
-        gap: 6px; 
+        gap: 4px; 
         width: 100%;
+        page-break-inside: avoid;
       }
-      .summary-cards .col-4 { flex: 1; }
+      .summary-cards .col-4 { flex: 1; padding: 0 2px !important; }
       .summary-cards .card { 
         page-break-inside: avoid;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-        color-adjust: exact !important;
+        border: 1px solid #000 !important;
+        margin-bottom: 0 !important;
       }
-      .summary-cards .bg-success, 
-      .summary-cards .bg-info,
-      .summary-cards .bg-primary { 
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-        color-adjust: exact !important;
-      }
-      .summary-cards .bg-success {
-        background-color: #28a745 !important;
-        border-color: #28a745 !important;
-      }
-      .summary-cards .bg-info {
-        background-color: #17a2b8 !important;
-        border-color: #17a2b8 !important;
-      }
-      .summary-cards .bg-primary {
-        background-color: #0d6efd !important;
-        border-color: #0d6efd !important;
-      }
-      .summary-cards .card-body { padding: 6px !important; text-align: center; }
-      .summary-cards small { font-size: 10px; display: block; font-weight: bold; margin-bottom: 3px; }
-      .summary-cards h5 { font-size: 14px; margin: 0; font-weight: bold; }
+      .summary-cards .bg-success { background-color: #28a745 !important; border-color: #28a745 !important; }
+      .summary-cards .bg-info { background-color: #17a2b8 !important; border-color: #17a2b8 !important; }
+      .summary-cards .bg-primary { background-color: #0d6efd !important; border-color: #0d6efd !important; }
+      .summary-cards .text-white { color: #fff !important; }
+      .summary-cards .card-body { padding: 4px !important; text-align: center; }
+      .summary-cards small { font-size: 8px; display: block; font-weight: bold; margin-bottom: 2px; color: #fff !important; }
+      .summary-cards h5 { font-size: 12px; margin: 0; font-weight: bold; color: #fff !important; }
       
-      table { font-size: 6px; page-break-inside: auto; }
+      table { 
+        font-size: 7px !important; 
+        page-break-inside: auto; 
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin-top: 5px !important;
+      }
       thead { display: table-header-group; }
       tbody { display: table-row-group; }
       tr { page-break-inside: avoid; page-break-after: auto; }
-      th, td { padding: 0.5px 1px !important; line-height: 1.1; color: #000 !important; }
-      .table-sm th, .table-sm td { padding: 0.5px 1px !important; color: #000 !important; }
+      th { 
+        padding: 2px 1px !important; 
+        line-height: 1.2; 
+        color: #fff !important; 
+        background-color: #000 !important;
+        font-weight: bold;
+        text-align: center;
+        border: 1px solid #000 !important;
+      }
+      td { 
+        padding: 1px !important; 
+        line-height: 1.2; 
+        color: #000 !important;
+        border: 1px solid #000 !important;
+      }
+      .table-bordered { border: 1px solid #000 !important; }
+      .table-bordered th, .table-bordered td { border: 1px solid #000 !important; }
       span, strong { color: #000 !important; }
-      .text-end { color: #000 !important; }
+      .text-end { text-align: right !important; color: #000 !important; }
     }
     
     @media screen {

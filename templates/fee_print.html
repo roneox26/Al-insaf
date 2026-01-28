@@ -1,10 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ফি রিপোর্ট - Al-Insaf</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/print-watermark.css') }}">
+    <title>{{ fee_name }} রিপোর্ট - আল-ইনসাফ</title>
     <style>
         @page { size: A4; margin: 10mm; }
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -13,10 +12,9 @@
         .header h1 { font-size: 20pt; color: #000; margin-bottom: 3px; font-weight: bold; }
         .header h2 { font-size: 16pt; color: #000; margin-bottom: 3px; font-weight: bold; }
         .header p { font-size: 9pt; color: #000; }
-        .summary { background: #f0f0f0; padding: 10px; margin: 10px 0; border: 2px solid #000; display: flex; justify-content: space-around; }
-        .summary-item { text-align: center; }
-        .summary-item .label { font-size: 9pt; color: #000; margin-bottom: 3px; font-weight: bold; }
-        .summary-item .value { font-size: 14pt; font-weight: bold; color: #000; }
+        .summary { background: #f0f0f0; padding: 15px; margin: 10px 0; border: 2px solid #000; text-align: center; }
+        .summary .label { font-size: 11pt; color: #000; margin-bottom: 5px; font-weight: bold; }
+        .summary .value { font-size: 18pt; font-weight: bold; color: #000; }
         table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 9pt; }
         thead { background: #000; color: #fff; }
         th, td { padding: 5px 3px; text-align: left; border: 1px solid #000; }
@@ -44,7 +42,7 @@
 
     <div class="header">
         <h2>আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h2>
-        <h2>💰 ফি রিপোর্ট</h2>
+        <h2>{{ fee_name }} রিপোর্ট</h2>
         <p>
             {% if from_date and to_date %}
                 তারিখ: {{ from_date }} থেকে {{ to_date }}
@@ -53,29 +51,15 @@
             {% elif to_date %}
                 তারিখ: শুরু থেকে {{ to_date }}
             {% else %}
-                সকল ফি
+                সকল {{ fee_name }}
             {% endif %}
             | প্রিন্ট: {{ now.strftime('%d-%m-%Y %I:%M %p') }}
         </p>
     </div>
 
     <div class="summary">
-        <div class="summary-item">
-            <div class="label">🎫 ভর্তি ফি</div>
-            <div class="value">৳{{ "{:,.2f}".format(admission_total) }}</div>
-        </div>
-        <div class="summary-item">
-            <div class="label">❤️ কল্যাণ ফি</div>
-            <div class="value">৳{{ "{:,.2f}".format(welfare_total) }}</div>
-        </div>
-        <div class="summary-item">
-            <div class="label">📝 আবেদন ফি</div>
-            <div class="value">৳{{ "{:,.2f}".format(application_total) }}</div>
-        </div>
-        <div class="summary-item">
-            <div class="label">💰 মোট ফি</div>
-            <div class="value">৳{{ "{:,.2f}".format(total) }}</div>
-        </div>
+        <div class="label">মোট {{ fee_name }}</div>
+        <div class="value">৳{{ "{:,.2f}".format(total) }}</div>
     </div>
 
     {% if fees %}
@@ -85,12 +69,10 @@
                 <th class="text-center">ক্রমিক</th>
                 <th class="text-center">সদস্যা নং</th>
                 <th>সদস্যা নাম</th>
-                <th class="text-right">ভর্তি ফি</th>
-                <th class="text-right">কল্যাণ ফি</th>
-                <th class="text-right">আবেদন ফি</th>
-                <th class="text-right">টাকা</th>
+                <th class="text-right">পরিমাণ</th>
                 <th class="text-center">তারিখ</th>
-                <th>কালেক্টর</th>
+                <th>সংগ্রহকারী</th>
+                <th>নোট</th>
             </tr>
         </thead>
         <tbody>
@@ -99,26 +81,24 @@
                 <td class="text-center">{{ loop.index }}</td>
                 <td class="text-center">{{ fee.customer.member_no if fee.customer and fee.customer.member_no else '-' }}</td>
                 <td>{{ fee.customer.name if fee.customer else 'N/A' }}</td>
-                <td class="text-right">{% if fee.admission > 0 %}<strong>৳{{ "{:,.2f}".format(fee.admission) }}</strong>{% else %}-{% endif %}</td>
-                <td class="text-right">{% if fee.welfare > 0 %}<strong>৳{{ "{:,.2f}".format(fee.welfare) }}</strong>{% else %}-{% endif %}</td>
-                <td class="text-right">{% if fee.application > 0 %}<strong>৳{{ "{:,.2f}".format(fee.application) }}</strong>{% else %}-{% endif %}</td>
-                <td class="text-right"><strong>৳{{ "{:,.2f}".format(fee.admission + fee.welfare + fee.application) }}</strong></td>
-                <td class="text-center">{{ fee.date.strftime('%d-%m-%Y') }}</td>
+                <td class="text-right"><strong>৳{{ "{:,.2f}".format(fee.amount) }}</strong></td>
+                <td class="text-center">{{ fee.collection_date.strftime('%d-%m-%Y') }}</td>
                 <td>{{ fee.collector.name if fee.collector else 'N/A' }}</td>
+                <td>{{ fee.note or '-' }}</td>
             </tr>
             {% endfor %}
         </tbody>
         <tfoot>
             <tr>
-                <td colspan="6" class="text-right">সর্বমোট:</td>
+                <td colspan="3" class="text-right">সর্বমোট:</td>
                 <td class="text-right">৳{{ "{:,.2f}".format(total) }}</td>
-                <td colspan="2"></td>
+                <td colspan="3"></td>
             </tr>
         </tfoot>
     </table>
     {% else %}
     <div style="text-align: center; padding: 40px; color: #27ae60; font-size: 14pt;">
-        <p>✅ কোনো ফি নেই!</p>
+        <p>✅ কোনো {{ fee_name }} নেই!</p>
     </div>
     {% endif %}
 

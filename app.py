@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 import os
 from flask import Flask, render_template, redirect, url_for, flash, request, make_response
 from flask_sqlalchemy import SQLAlchemy
@@ -2344,7 +2344,7 @@ def fee_history(fee_type):
         flash('Access denied!', 'danger')
         return redirect(url_for('dashboard'))
     
-    fee_types = {'admission': '????? ??', 'welfare': '?????? ??', 'application': '????? ??'}
+    fee_types = {'admission': 'ভর্তি ফি', 'welfare': 'কল্যাণ ফি', 'application': 'আবেদন ফি'}
     if fee_type not in fee_types:
         flash('Invalid fee type!', 'danger')
         return redirect(url_for('dashboard'))
@@ -2369,6 +2369,39 @@ def fee_history(fee_type):
     fees = query.order_by(FeeCollection.collection_date.desc()).all()
     total = sum(f.amount for f in fees)
     return render_template('fee_history.html', fees=fees, total=total, fee_type=fee_type, fee_name=fee_types[fee_type], from_date=from_date, to_date=to_date)
+
+@app.route('/fee_print/<fee_type>')
+@login_required
+def fee_print(fee_type):
+    if current_user.role != 'admin':
+        flash('Access denied!', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    fee_types = {'admission': 'ভর্তি ফি', 'welfare': 'কল্যাণ ফি', 'application': 'আবেদন ফি'}
+    if fee_type not in fee_types:
+        flash('Invalid fee type!', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    from_date = request.args.get('from_date', '')
+    to_date = request.args.get('to_date', '')
+    
+    query = FeeCollection.query.filter_by(fee_type=fee_type)
+    if from_date:
+        try:
+            from_datetime = datetime.strptime(from_date, '%Y-%m-%d')
+            query = query.filter(FeeCollection.collection_date >= from_datetime)
+        except ValueError:
+            pass
+    if to_date:
+        try:
+            to_datetime = datetime.strptime(to_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+            query = query.filter(FeeCollection.collection_date <= to_datetime)
+        except ValueError:
+            pass
+    
+    fees = query.order_by(FeeCollection.collection_date.desc()).all()
+    total = sum(f.amount for f in fees)
+    return render_template('fee_print.html', fees=fees, total=total, fee_type=fee_type, fee_name=fee_types[fee_type], from_date=from_date, to_date=to_date, now=datetime.now())
 
 @app.route('/all_fees_history')
 @login_required
@@ -3031,7 +3064,7 @@ def monthly_sheet():
     month = int(request.args.get('month', today.month))
     year = int(request.args.get('year', today.year))
     
-    month_names = ['', '?????????', '???????????', '?????', '??????', '??', '???', '?????', '?????', '??????????', '???????', '???????', '????????']
+    month_names = ['', 'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
     month_name = month_names[month]
     last_day = calendar.monthrange(year, month)[1]
     
@@ -3245,7 +3278,7 @@ def import_old_data():
                 created_date_str = request.form.get('created_date', '')
                 
                 if not name:
-                    flash('নাম প্রয়োজন!', 'danger')
+                    flash('??? ????????!', 'danger')
                     return redirect(url_for('import_old_data'))
                 
                 created_date = datetime.strptime(created_date_str, '%Y-%m-%d') if created_date_str else datetime.now()
@@ -3271,7 +3304,7 @@ def import_old_data():
                     cash_balance_record.balance += savings_balance
                     db.session.commit()
                 
-                flash(f'পুরাতন Customer "{name}" সফলভাবে যোগ করা হয়েছে!', 'success')
+                flash(f'?????? Customer "{name}" ??????? ??? ??? ??????!', 'success')
                 return redirect(url_for('import_old_data'))
             
             elif action == 'add_collection':
@@ -3282,7 +3315,7 @@ def import_old_data():
                 staff_id = request.form.get('staff_id', type=int) or current_user.id
                 
                 if not customer_id:
-                    flash('Customer নির্বাচন করুন!', 'danger')
+                    flash('Customer ???????? ????!', 'danger')
                     return redirect(url_for('import_old_data'))
                 
                 collection_date = datetime.strptime(collection_date_str, '%Y-%m-%d') if collection_date_str else datetime.now()
@@ -3306,7 +3339,7 @@ def import_old_data():
                     db.session.add(saving_col)
                 
                 db.session.commit()
-                flash(f'পুরাতন Collection যোগ করা হয়েছে! লোন: ৳{loan_amount}, সঞ্চয়: ৳{saving_amount}', 'success')
+                flash(f'?????? Collection ??? ??? ??????! ???: ?{loan_amount}, ??????: ?{saving_amount}', 'success')
                 return redirect(url_for('import_old_data'))
         
         except Exception as e:
@@ -3346,5 +3379,9 @@ def init_db():
 if __name__ == '__main__':
     init_db()
     app.run(debug=True, host='0.0.0.0', port=5000)
+
+
+
+
 
 

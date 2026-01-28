@@ -3,7 +3,7 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   <meta charset="utf-8">
-  <title>All Fees History - Al-Insaf NGO</title>
+  <title>সব ফি হিস্ট্রি - আল-ইনসাফ NGO</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -21,10 +21,10 @@
 <body>
   <div class="container mt-4 pb-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
-      <h2 class="page-title"><i class="fas fa-receipt"></i> সব ফি হিস্ট্রি / All Fees History</h2>
+      <h2 class="page-title"><i class="fas fa-receipt"></i> সব ফি হিস্ট্রি</h2>
       <div>
-        <a href="{{ url_for('all_fees_print') }}?from_date={{ from_date }}&to_date={{ to_date }}" class="btn btn-light me-2" target="_blank"><i class="fas fa-print"></i> Print</a>
-        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+        <a href="{{ url_for('all_fees_print') }}?from_date={{ from_date }}&to_date={{ to_date }}" class="btn btn-light me-2" target="_blank"><i class="fas fa-print"></i> প্রিন্ট করুন</a>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> ফিরে যান</a>
       </div>
     </div>
 
@@ -60,27 +60,27 @@
     </div>
 
     <div class="main-card p-4 mb-4">
-      <h5 class="mb-3"><i class="fas fa-filter"></i> Filter by Date</h5>
+      <h5 class="mb-3"><i class="fas fa-filter"></i> তারিখ অনুযায়ী ফিল্টার</h5>
       <form method="GET" class="row g-3">
         <div class="col-md-4">
-          <label class="form-label"><i class="fas fa-calendar-alt"></i> From Date</label>
+          <label class="form-label"><i class="fas fa-calendar-alt"></i> শুরুর তারিখ</label>
           <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
         </div>
         <div class="col-md-4">
-          <label class="form-label"><i class="fas fa-calendar-alt"></i> To Date</label>
+          <label class="form-label"><i class="fas fa-calendar-alt"></i> শেষ তারিখ</label>
           <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
         </div>
         <div class="col-md-4">
           <label class="form-label">&nbsp;</label>
-          <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search"></i> Filter</button>
-          <a href="{{ url_for('all_fees_history') }}" class="btn btn-outline-secondary w-100 mt-2"><i class="fas fa-redo"></i> Reset</a>
+          <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search"></i> ফিল্টার করুন</button>
+          <a href="{{ url_for('all_fees_history') }}" class="btn btn-outline-secondary w-100 mt-2"><i class="fas fa-redo"></i> রিসেট</a>
         </div>
       </form>
     </div>
 
     <div class="table-container shadow">
       <div class="p-3 bg-light border-bottom">
-        <h5 class="mb-0"><i class="fas fa-list"></i> Fee Records</h5>
+        <h5 class="mb-0"><i class="fas fa-list"></i> ফি রেকর্ড</h5>
       </div>
       <div class="table-responsive">
         <table class="table table-hover table-striped mb-0">

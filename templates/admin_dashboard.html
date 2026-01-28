@@ -206,6 +206,7 @@
           <h5>ভর্তি ফি</h5>
           <h4 class="text-primary">৳{{ "{:,.0f}".format(admission_fee_total) }}</h4>
           <a href="{{ url_for('fee_history', fee_type='admission') }}" class="btn btn-action w-100 mt-2" style="background: #667eea; color: white;"><i class="fas fa-history"></i> History</a>
+          <a href="{{ url_for('fee_print', fee_type='admission') }}" class="btn btn-outline-primary btn-action w-100 mt-2" target="_blank"><i class="fas fa-print"></i> প্রিন্ট</a>
         </div>
       </div>
       <div class="col-md-3">
@@ -214,6 +215,7 @@
           <h5>কল্যাণ ফি</h5>
           <h4 class="text-success">৳{{ "{:,.0f}".format(welfare_fee_total) }}</h4>
           <a href="{{ url_for('fee_history', fee_type='welfare') }}" class="btn btn-success btn-action w-100 mt-2"><i class="fas fa-history"></i> History</a>
+          <a href="{{ url_for('fee_print', fee_type='welfare') }}" class="btn btn-outline-success btn-action w-100 mt-2" target="_blank"><i class="fas fa-print"></i> প্রিন্ট</a>
         </div>
       </div>
       <div class="col-md-3">
@@ -222,6 +224,7 @@
           <h5>আবেদন ফি</h5>
           <h4 class="text-info">৳{{ "{:,.0f}".format(application_fee_total) }}</h4>
           <a href="{{ url_for('fee_history', fee_type='application') }}" class="btn btn-info btn-action w-100 mt-2"><i class="fas fa-history"></i> History</a>
+          <a href="{{ url_for('fee_print', fee_type='application') }}" class="btn btn-outline-info btn-action w-100 mt-2" target="_blank"><i class="fas fa-print"></i> প্রিন্ট</a>
         </div>
       </div>
       <div class="col-md-3">
@@ -230,6 +233,7 @@
           <h5>সব ফি</h5>
           <h4 class="text-warning">৳{{ "{:,.0f}".format(admission_fee_total + welfare_fee_total + application_fee_total) }}</h4>
           <a href="{{ url_for('all_fees_history') }}" class="btn btn-warning btn-action w-100 mt-2"><i class="fas fa-list"></i> View All</a>
+          <a href="{{ url_for('all_fees_print') }}" class="btn btn-outline-warning btn-action w-100 mt-2" target="_blank"><i class="fas fa-print"></i> প্রিন্ট</a>
         </div>
       </div>
     </div>

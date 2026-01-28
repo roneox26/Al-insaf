@@ -3,14 +3,20 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   <meta charset="utf-8">
-  <title>{{ fee_name }} History</title>
+  <title>{{ fee_name }} হিস্ট্রি</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
   <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
 </head>
 
 <body class="container mt-5">
-  <h2 class="mb-4">📋 {{ fee_name }} History</h2>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>📋 {{ fee_name }} হিস্ট্রি</h2>
+    <div>
+      <a href="{{ url_for('fee_print', fee_type=fee_type) }}?from_date={{ from_date }}&to_date={{ to_date }}" class="btn btn-primary me-2" target="_blank"><i class="fas fa-print"></i> প্রিন্ট</a>
+      <a href="{{ url_for('dashboard') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> ফিরে যান</a>
+    </div>
+  </div>
 
   <div class="alert alert-info">
     <strong>মোট {{ fee_name }}:</strong> ৳{{ "%.2f"|format(total) }}
@@ -18,17 +24,17 @@
 
   <form method="GET" class="row g-3 mb-3">
     <div class="col-md-4">
-      <label class="form-label">From Date</label>
+      <label class="form-label">শুরুর তারিখ</label>
       <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
     </div>
     <div class="col-md-4">
-      <label class="form-label">To Date</label>
+      <label class="form-label">শেষ তারিখ</label>
       <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
     </div>
     <div class="col-md-4">
       <label class="form-label">&nbsp;</label>
-      <button type="submit" class="btn btn-primary w-100">🔍 Filter</button>
-      <a href="{{ url_for('fee_history', fee_type=fee_type) }}" class="btn btn-secondary w-100 mt-2">🔄 Reset</a>
+      <button type="submit" class="btn btn-primary w-100">🔍 ফিল্টার</button>
+      <a href="{{ url_for('fee_history', fee_type=fee_type) }}" class="btn btn-secondary w-100 mt-2">🔄 রিসেট</a>
     </div>
   </form>
 
@@ -62,7 +68,5 @@
   {% if not fees %}
   <div class="alert alert-warning">কোন {{ fee_name }} পাওয়া যায়নি।</div>
   {% endif %}
-
-  <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-3">⬅️ Back to Dashboard</a>
 </body>
 </html>
