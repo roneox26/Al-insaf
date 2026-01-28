@@ -3278,7 +3278,7 @@ def import_old_data():
                 created_date_str = request.form.get('created_date', '')
                 
                 if not name:
-                    flash('নাম সক্রিয়?!', 'danger')
+                    flash('নাম প্রয়োজন!', 'danger')
                     return redirect(url_for('import_old_data'))
                 
                 created_date = datetime.strptime(created_date_str, '%Y-%m-%d') if created_date_str else datetime.now()
@@ -3304,7 +3304,7 @@ def import_old_data():
                     cash_balance_record.balance += savings_balance
                     db.session.commit()
                 
-                flash(f'নতুন Customer "{name}" যোগ করা করা হয়েছে!', 'success')
+                flash(f'নতুন Customer "{name}" যোগ করা হয়েছে!', 'success')
                 return redirect(url_for('import_old_data'))
             
             elif action == 'add_collection':
@@ -3315,7 +3315,7 @@ def import_old_data():
                 staff_id = request.form.get('staff_id', type=int) or current_user.id
                 
                 if not customer_id:
-                    flash('Customer ?যোগ করা?!', 'danger')
+                    flash('Customer খুঁজে পাওয়া যায়নি!', 'danger')
                     return redirect(url_for('import_old_data'))
                 
                 collection_date = datetime.strptime(collection_date_str, '%Y-%m-%d') if collection_date_str else datetime.now()
@@ -3339,7 +3339,7 @@ def import_old_data():
                     db.session.add(saving_col)
                 
                 db.session.commit()
-                flash(f'নামনাম Collection নাম করা হয়েছে! মোট: ৳{loan_amount}, সেভিংস: ৳{saving_amount}', 'success')
+                flash(f'নতুন Collection যোগ করা হয়েছে! মোট: ৳{loan_amount}, সেভিংস: ৳{saving_amount}', 'success')
                 return redirect(url_for('import_old_data'))
         
         except Exception as e:
