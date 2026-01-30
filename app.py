@@ -380,13 +380,15 @@ def staff_collection_report(id):
     # Format dates for display
     period_display = ''
     if from_date and to_date:
-        period_display = f"{datetime.strptime(from_date, '%Y-%m-%d').strftime('%d %B %Y')} to {datetime.strptime(to_date, '%Y-%m-%d').strftime('%d %B %Y')}"
+        from_dt = datetime.strptime(from_date, '%Y-%m-%d')
+        to_dt = datetime.strptime(to_date, '%Y-%m-%d')
+        period_display = f"{from_dt.strftime('%d-%m-%Y')} থেকে {to_dt.strftime('%d-%m-%Y')}"
     elif period == 'daily':
-        period_display = f"Today ({today.strftime('%d %B %Y')})"
+        period_display = f"দৈনিক রিপোর্ট - {today.strftime('%d-%m-%Y')}"
     elif period == 'monthly':
-        period_display = f"{today.strftime('%B %Y')}"
+        period_display = f"মাসিক রিপোর্ট - {today.strftime('%B %Y')}"
     else:
-        period_display = f"Year {today.year}"
+        period_display = f"বার্ষিক রিপোর্ট - {today.year}"
     
     return render_template('staff_collection_report.html', staff=staff, daily_collections=daily_collections, total_loan=total_loan, total_saving=total_saving, period=period, from_date=from_date, to_date=to_date, period_display=period_display)
 
@@ -398,20 +400,33 @@ def all_staff_report_print():
         return redirect(url_for('dashboard'))
     
     period = request.args.get('period', 'daily')
+    from_date = request.args.get('from_date', '')
+    to_date = request.args.get('to_date', '')
     
     today = datetime.now()
-    if period == 'daily':
+    
+    if from_date and to_date:
+        try:
+            start_date = datetime.strptime(from_date, '%Y-%m-%d').replace(hour=0, minute=0, second=0, microsecond=0)
+            end_date = datetime.strptime(to_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59, microsecond=999999)
+        except:
+            start_date = today.replace(hour=0, minute=0, second=0, microsecond=0)
+            end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
+    elif period == 'daily':
         start_date = today.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
     elif period == 'monthly':
         start_date = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
     else:
         start_date = today.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
     
     staffs = User.query.filter_by(role='staff').all()
     staff_data = []
     
-    query_loan = LoanCollection.query.filter(LoanCollection.collection_date >= start_date)
-    query_saving = SavingCollection.query.filter(SavingCollection.collection_date >= start_date)
+    query_loan = LoanCollection.query.filter(LoanCollection.collection_date >= start_date, LoanCollection.collection_date <= end_date)
+    query_saving = SavingCollection.query.filter(SavingCollection.collection_date >= start_date, SavingCollection.collection_date <= end_date)
     
     for staff in staffs:
         customers = Customer.query.filter_by(staff_id=staff.id).count()
@@ -428,7 +443,7 @@ def all_staff_report_print():
             'total_collection': total_loan + total_saving
         })
     
-    return render_template('all_staff_report_print.html', staff_data=staff_data, period=period)
+    return render_template('all_staff_report_print.html', staff_data=staff_data, period=period, from_date=from_date, to_date=to_date)
 
 @app.route('/admin/staff/delete/<int:id>', methods=['POST'])
 @login_required
@@ -907,8 +922,8 @@ def all_customers_print():
 @app.route('/loan_customers')
 @login_required
 def loan_customers():
-    from_date = request.args.get('from_date', '')
-    to_date = request.args.get('to_date', '')
+    from_date = request.args.get('from_date', '').strip()
+    to_date = request.args.get('to_date', '').strip()
     
     if current_user.role == 'staff' and not current_user.is_office_staff and not current_user.is_monitor:
         query = Customer.query.filter_by(staff_id=current_user.id).filter(Customer.total_loan > 0)
@@ -918,47 +933,47 @@ def loan_customers():
     from_date_display = ''
     to_date_display = ''
     
-    if from_date and to_date:
+    if from_date or to_date:
         try:
-            start = datetime.strptime(from_date, '%Y-%m-%d')
-            end = datetime.strptime(to_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
-            from_date_display = start.strftime('%d %B %Y')
-            to_date_display = end.strftime('%d %B %Y')
-            
-            customer_ids = db.session.query(Customer.id).join(
-                Loan, Customer.name == Loan.customer_name
-            ).filter(
-                Loan.loan_date >= start,
-                Loan.loan_date <= end
-            ).distinct().all()
+            if from_date and to_date:
+                start = datetime.strptime(from_date, '%Y-%m-%d').replace(hour=0, minute=0, second=0)
+                end = datetime.strptime(to_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+                from_date_display = start.strftime('%d %B %Y')
+                to_date_display = end.strftime('%d %B %Y')
+                
+                customer_ids = db.session.query(Customer.id).join(
+                    Loan, Customer.name == Loan.customer_name
+                ).filter(
+                    Loan.loan_date >= start,
+                    Loan.loan_date <= end
+                ).distinct().all()
+            elif from_date:
+                start = datetime.strptime(from_date, '%Y-%m-%d').replace(hour=0, minute=0, second=0)
+                from_date_display = start.strftime('%d %B %Y')
+                
+                customer_ids = db.session.query(Customer.id).join(
+                    Loan, Customer.name == Loan.customer_name
+                ).filter(
+                    Loan.loan_date >= start
+                ).distinct().all()
+            elif to_date:
+                end = datetime.strptime(to_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+                to_date_display = end.strftime('%d %B %Y')
+                
+                customer_ids = db.session.query(Customer.id).join(
+                    Loan, Customer.name == Loan.customer_name
+                ).filter(
+                    Loan.loan_date <= end
+                ).distinct().all()
             
             ids = [cid[0] for cid in customer_ids]
-            
             if ids:
                 query = query.filter(Customer.id.in_(ids))
             else:
                 query = query.filter(Customer.id == -1)
         except Exception as e:
             print(f"Date filter error: {e}")
-    elif from_date:
-        try:
-            start = datetime.strptime(from_date, '%Y-%m-%d')
-            from_date_display = start.strftime('%d %B %Y')
-            
-            customer_ids = db.session.query(Customer.id).join(
-                Loan, Customer.name == Loan.customer_name
-            ).filter(
-                Loan.loan_date >= start
-            ).distinct().all()
-            
-            ids = [cid[0] for cid in customer_ids]
-            
-            if ids:
-                query = query.filter(Customer.id.in_(ids))
-            else:
-                query = query.filter(Customer.id == -1)
-        except Exception as e:
-            print(f"Date filter error: {e}")
+            flash(f'তারিখ ফিল্টার এ সমস্যা হয়েছে!', 'danger')
     
     customers = query.all()
     return render_template('loan_customers.html', customers=customers, from_date=from_date, to_date=to_date, from_date_display=from_date_display, to_date_display=to_date_display, now=datetime.now())
@@ -2141,7 +2156,7 @@ def monthly_report():
     month = int(request.args.get('month', today.month))
     year = int(request.args.get('year', today.year))
     
-    month_names = ['', 'সক্রিয়সব', 'নিষ্ক্রিয়?', 'নামসব', 'নামনাম', 'সব', 'নাম', 'নামসব', 'নামসব', 'নিষ্ক্রিয়', 'সক্রিয়', 'সক্রিয়', 'সক্রিয়?']
+    month_names = ['', 'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর']
     month_name = month_names[month]
     last_day = calendar.monthrange(year, month)[1]
     
@@ -2273,13 +2288,40 @@ def withdrawal_report():
     if current_user.role != 'admin':
         flash('Access denied!', 'danger')
         return redirect(url_for('dashboard'))
-    withdrawals = Withdrawal.query.order_by(Withdrawal.date.desc()).all()
+    
+    from_date = request.args.get('from_date', '').strip()
+    to_date = request.args.get('to_date', '').strip()
+    
+    query = Withdrawal.query
+    from_date_display = ''
+    to_date_display = ''
+    
+    if from_date or to_date:
+        try:
+            if from_date and to_date:
+                start = datetime.strptime(from_date, '%Y-%m-%d').replace(hour=0, minute=0, second=0)
+                end = datetime.strptime(to_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+                from_date_display = start.strftime('%d-%m-%Y')
+                to_date_display = end.strftime('%d-%m-%Y')
+                query = query.filter(Withdrawal.date >= start, Withdrawal.date <= end)
+            elif from_date:
+                start = datetime.strptime(from_date, '%Y-%m-%d').replace(hour=0, minute=0, second=0)
+                from_date_display = start.strftime('%d-%m-%Y')
+                query = query.filter(Withdrawal.date >= start)
+            elif to_date:
+                end = datetime.strptime(to_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+                to_date_display = end.strftime('%d-%m-%Y')
+                query = query.filter(Withdrawal.date <= end)
+        except Exception as e:
+            print(f"Date filter error: {e}")
+            flash('তারিখ ফিল্টার এ সমস্যা হয়েছে!', 'danger')
+    
+    withdrawals = query.order_by(Withdrawal.date.desc()).all()
     total = sum(w.amount for w in withdrawals)
     savings_total = sum(w.amount for w in withdrawals if hasattr(w, 'withdrawal_type') and w.withdrawal_type == 'savings')
     investment_total = total - savings_total
-    from_date = request.args.get('from_date', '')
-    to_date = request.args.get('to_date', '')
-    return render_template('withdrawal_report.html', withdrawals=withdrawals, total=total, savings_total=savings_total, investment_total=investment_total, from_date=from_date, to_date=to_date)
+    
+    return render_template('withdrawal_report.html', withdrawals=withdrawals, total=total, savings_total=savings_total, investment_total=investment_total, from_date=from_date, to_date=to_date, from_date_display=from_date_display, to_date_display=to_date_display, now=datetime.now())
 
 @app.route('/api/search_customers')
 @login_required

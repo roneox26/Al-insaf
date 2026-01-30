@@ -49,11 +49,11 @@
       <div class="row g-2">
         <div class="col-md-4">
           <label class="form-label">শুরুর তারিখ</label>
-          <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
+          <input type="date" name="from_date" class="form-control" value="{{ from_date }}" id="from_date_staff">
         </div>
         <div class="col-md-4">
           <label class="form-label">শেষ তারিখ</label>
-          <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
+          <input type="date" name="to_date" class="form-control" value="{{ to_date }}" id="to_date_staff">
         </div>
         <div class="col-md-4">
           <label class="form-label">&nbsp;</label>
@@ -65,6 +65,21 @@
       {% endif %}
     </form>
   </div>
+
+  <script>
+  // Clear date inputs when period buttons are clicked
+  document.addEventListener('DOMContentLoaded', function() {
+    const periodButtons = document.querySelectorAll('.btn-group a');
+    periodButtons.forEach(button => {
+      button.addEventListener('click', function(e) {
+        const fromDate = document.getElementById('from_date_staff');
+        const toDate = document.getElementById('to_date_staff');
+        if (fromDate) fromDate.value = '';
+        if (toDate) toDate.value = '';
+      });
+    });
+  });
+  </script>
 
   <div class="card mb-4">
     <div class="card-body">

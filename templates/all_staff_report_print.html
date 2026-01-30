@@ -58,7 +58,17 @@
   
   <h3 style="text-align: center;">আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h3>
   <h3 style="text-align: center;">সকল স্টাফ রিপোর্ট</h3>
+  {% if from_date and to_date %}
+  <p style="text-align: center;">তারিখ: {{ from_date.split('-')[2] }}-{{ from_date.split('-')[1] }}-{{ from_date.split('-')[0] }} থেকে {{ to_date.split('-')[2] }}-{{ to_date.split('-')[1] }}-{{ to_date.split('-')[0] }}</p>
+  {% elif period == 'daily' %}
+  <p style="text-align: center;">দৈনিক রিপোর্ট - তারিখ: {{ now.strftime('%d-%m-%Y') }}</p>
+  {% elif period == 'monthly' %}
+  <p style="text-align: center;">মাসিক রিপোর্ট - {{ now.strftime('%B %Y') }}</p>
+  {% elif period == 'yearly' %}
+  <p style="text-align: center;">বার্ষিক রিপোর্ট - {{ now.strftime('%Y') }}</p>
+  {% else %}
   <p style="text-align: center;">তারিখ: {{ now.strftime('%d-%m-%Y') }}</p>
+  {% endif %}
 
   <table>
     <thead>

@@ -12,8 +12,8 @@
             .section-title { background: #4facfe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .collection-header { background: #fa709a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .collection-table th { background: #667eea !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .info-cell.label { background: #e3f2fd !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .summary-box:nth-child(1) { background: #28a745 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .info-cell.label { background: #0790f1 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .summary-box:nth-child(1) { background: #29d351 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .summary-box:nth-child(2) { background: #17a2b8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .summary-box:nth-child(3) { background: #0d6efd !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .summary-box:nth-child(4) { background: #dc3545 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -152,7 +152,7 @@
         }
         
         .summary-box:nth-child(1) {
-            background: c;
+            background: #28a745;
             color: white;
         }
         
@@ -259,9 +259,11 @@
         function printHistory() {
             document.querySelector('.main-section').style.display = 'none';
             document.querySelector('.summary-section').style.display = 'none';
+            document.querySelector('.customer-info-header').style.display = 'block';
             window.print();
             document.querySelector('.main-section').style.display = 'grid';
             document.querySelector('.summary-section').style.display = 'grid';
+            document.querySelector('.customer-info-header').style.display = 'none';
         }
     </script>
 
@@ -269,6 +271,10 @@
         <!-- Header -->
         <div class="header">
             <h2>গ্রাহক বিবরণ</h2>
+            <div class="customer-info-header" style="display: none; font-size: 14px; margin-top: 5px;">
+                <span>সদস্যের নাম: <strong>{{ customer.name }}</strong></span> | 
+                <span>সদস্য নং: <strong>{{ customer.member_no or 'N/A' }}</strong></span>
+            </div>
         </div>
 
         <!-- Main Section -->

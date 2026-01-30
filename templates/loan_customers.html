@@ -29,10 +29,14 @@
     <h2 class="d-none print-only" style="text-align: center; margin-bottom: 5px;">আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h2>
     <h3 class="d-none print-only" style="text-align: center; margin: 0;">লোন গ্রাহক তালিকা</h3>
     <p class="d-none print-only" style="text-align: center; margin: 5px 0 15px 0;">
-      {% if from_date and to_date %}
+      {% if from_date_display and to_date_display %}
         Period: {{ from_date_display }} to {{ to_date_display }}
+      {% elif from_date_display %}
+        Period: From {{ from_date_display }}
+      {% elif to_date_display %}
+        Period: Up to {{ to_date_display }}
       {% else %}
-        Period: Today ({{ now.strftime('%d %B %Y') }})
+        Period: All Loan Customers
       {% endif %}
     </p>
 
@@ -42,11 +46,11 @@
           <form method="GET" action="{{ url_for('loan_customers') }}" class="row g-2 align-items-end">
             <div class="col-md-3">
               <label class="form-label"><i class="fas fa-calendar"></i> শুরুর তারিখ</label>
-              <input type="date" name="from_date" class="form-control" value="{{ from_date }}" required>
+              <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
             </div>
             <div class="col-md-3">
               <label class="form-label"><i class="fas fa-calendar"></i> শেষ তারিখ</label>
-              <input type="date" name="to_date" class="form-control" value="{{ to_date }}" required>
+              <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
             </div>
             <div class="col-md-6">
               <button type="submit" class="btn btn-primary me-2"><i class="fas fa-filter"></i> ফিল্টার করুন</button>

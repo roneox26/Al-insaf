@@ -76,7 +76,17 @@
         <div id="print-header" style="display:none;">
             <h2>আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h2>
             <h4>Withdrawal Report</h4>
-            <p>তারিখ: {{ now.strftime('%d-%m-%Y') }}</p>
+            <p>
+                {% if from_date_display and to_date_display %}
+                    তারিখ: {{ from_date_display }} থেকে {{ to_date_display }}
+                {% elif from_date_display %}
+                    তারিখ: {{ from_date_display }} থেকে
+                {% elif to_date_display %}
+                    তারিখ: {{ to_date_display }} পর্যন্ত
+                {% else %}
+                    তারিখ: {{ now.strftime('%d-%m-%Y') }}
+                {% endif %}
+            </p>
             
             <div class="print-stats">
                 <div class="stat-box">
@@ -146,12 +156,12 @@
                     <thead class="table-dark">
                         <tr>
                             <th style="width: 5%;">#</th>
-                            <th style="width: 10%;">Member No.</th>
-                            <th style="width: 12%;">Date</th>
-                            <th style="width: 13%;">Type</th>
-                            <th style="width: 25%;">Name</th>
-                            <th style="width: 15%;">Amount</th>
-                            <th style="width: 20%;">Note</th>
+                            <th style="width: 10%;">সদস্য নং</th>
+                            <th style="width: 12%;">তারিখ</th>
+                            <th style="width: 13%;">ধরন</th>
+                            <th style="width: 25%;">নাম</th>
+                            <th style="width: 15%;">পরিমাণ</th>
+                            <th style="width: 20%;">নোট</th>
                         </tr>
                     </thead>
                     <tbody>
