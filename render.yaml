@@ -2,10 +2,10 @@ services:
   - type: web
     name: al-insaf-ngo
     env: python
-    buildCommand: pip install -r requirements.txt && python create_db.py
-    startCommand: gunicorn app:app
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT run:application
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.0
-      - key: FLASK_ENV
-        value: production
+      - key: SECRET_KEY
+        generateValue: true
