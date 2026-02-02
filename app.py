@@ -617,16 +617,14 @@ def add_loan():
             interest_amount = (amount * interest_rate) / 100
             
             # Safe float conversion for fees
-            service_charge_str = request.form.get('service_charge', '0').strip()
-            service_charge = float(service_charge_str) if service_charge_str else 0.0
-            
             welfare_fee_str = request.form.get('welfare_fee', '0').strip()
             welfare_fee = float(welfare_fee_str) if welfare_fee_str else 0.0
             
             application_fee_str = request.form.get('application_fee', '0').strip()
             application_fee = float(application_fee_str) if application_fee_str else 0.0
             
-            total_with_interest = amount + interest_amount + service_charge
+            # Total loan amount = principal + interest
+            total_with_interest = amount + interest_amount
             
             loan_date_str = request.form.get('loan_date')
             loan_date = datetime.strptime(loan_date_str, '%Y-%m-%d') if loan_date_str else datetime.now()
@@ -639,15 +637,18 @@ def add_loan():
                 due_date=datetime.strptime(request.form['due_date'], '%Y-%m-%d'),
                 installment_count=int(request.form.get('installment_count', 0)),
                 installment_amount=float(request.form.get('installment_amount', '0') or 0),
-                service_charge=service_charge,
+                service_charge=0,
                 installment_type=request.form.get('installment_type', ''),
                 staff_id=customer.staff_id
             )
             
+            # Update customer loan amounts (principal + interest only)
             customer.total_loan += total_with_interest
             customer.remaining_loan += total_with_interest
+            
+            # Update cash balance: deduct loan amount, add fees
             cash_balance_record.balance -= amount
-            cash_balance_record.balance += service_charge + welfare_fee + application_fee
+            cash_balance_record.balance += welfare_fee + application_fee
             
             # Add fee collections
             if welfare_fee > 0:
@@ -683,7 +684,7 @@ def add_loan():
                     db.session.add(schedule)
             
             db.session.commit()
-            flash(f'লোন দেওয়া হয়েছে! পরিমাণ: ৳{amount}, মোট: ৳{interest_amount}, কালেকশন ৳বাকি: ৳{service_charge}, কল্যাণ ফি: ৳{welfare_fee}, আবেদন ফি: ৳{application_fee}, মোট: ৳{total_with_interest}', 'success')
+            flash(f'লোন দেওয়া হয়েছে! পরিমাণ: ৳{amount}, সুদ: ৳{interest_amount}, মোট: ৳{total_with_interest}, কল্যাণ ফি: ৳{welfare_fee}, আবেদন ফি: ৳{application_fee}', 'success')
             return redirect(url_for('manage_loans'))
         except Exception as e:
             db.session.rollback()
@@ -1043,7 +1044,7 @@ def customer_loan_sheet(id):
     customer = Customer.query.get_or_404(id)
     loans = Loan.query.filter_by(customer_name=customer.name).all()
     loan_collections = LoanCollection.query.filter_by(customer_id=id).order_by(LoanCollection.collection_date).all()
-    saving_collections = SavingCollection.query.filter_by(customer_id=id).all()
+    saving_collections = SavingCollection.query.filter_by(customer_id=id).order_by(SavingCollection.collection_date).all()
     withdrawals = Withdrawal.query.filter_by(customer_id=id).order_by(Withdrawal.date).all()
     from models.fee_model import FeeCollection
     admission_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=id, fee_type='admission').scalar() or 0
@@ -1052,11 +1053,26 @@ def customer_loan_sheet(id):
     
     loan_principal = sum(loan.amount for loan in loans)
     interest_amount = sum(loan.amount * loan.interest / 100 for loan in loans)
-    service_charge_total = sum(loan.service_charge for loan in loans)
-    total_loan = sum(loan.amount + (loan.amount * loan.interest / 100) + loan.service_charge for loan in loans)
+    total_loan = sum(loan.amount + (loan.amount * loan.interest / 100) for loan in loans)
     total_collected = sum(lc.amount for lc in loan_collections)
     total_savings = sum(sc.amount for sc in saving_collections)
     total_withdrawn = sum(w.amount for w in withdrawals)
+    
+    # Merge collections by date
+    collections_dict = {}
+    for lc in loan_collections:
+        date_key = lc.collection_date.date()
+        if date_key not in collections_dict:
+            collections_dict[date_key] = {'date': lc.collection_date, 'loan': 0, 'saving': 0}
+        collections_dict[date_key]['loan'] += lc.amount
+    
+    for sc in saving_collections:
+        date_key = sc.collection_date.date()
+        if date_key not in collections_dict:
+            collections_dict[date_key] = {'date': sc.collection_date, 'loan': 0, 'saving': 0}
+        collections_dict[date_key]['saving'] += sc.amount
+    
+    merged_collections = sorted(collections_dict.values(), key=lambda x: x['date'])
     
     installment_count = sum(loan.installment_count for loan in loans)
     weekly_installment = loans[0].installment_amount if loans else 0
@@ -1069,7 +1085,7 @@ def customer_loan_sheet(id):
     
     staff = User.query.get(customer.staff_id) if customer.staff_id else None
     
-    return render_template('customer_loan_sheet.html', customer=customer, loans=loans, loan_collections=loan_collections, withdrawals=withdrawals, total_loan=total_loan, total_collected=total_collected, total_withdrawn=total_withdrawn, installment_count=installment_count, weekly_installment=weekly_installment, staff=staff, loan_date=loan_date, loan_end_date=loan_end_date, interest_rate=interest_rate, loan_principal=loan_principal, interest_amount=interest_amount, service_charge_total=service_charge_total, total_savings=total_savings, admission_fee=admission_fee, welfare_fee=welfare_fee, application_fee=application_fee, now=datetime.now())
+    return render_template('customer_loan_sheet.html', customer=customer, loans=loans, merged_collections=merged_collections, withdrawals=withdrawals, total_loan=total_loan, total_collected=total_collected, total_withdrawn=total_withdrawn, installment_count=installment_count, weekly_installment=weekly_installment, staff=staff, loan_date=loan_date, loan_end_date=loan_end_date, interest_rate=interest_rate, loan_principal=loan_principal, interest_amount=interest_amount, total_savings=total_savings, admission_fee=admission_fee, welfare_fee=welfare_fee, application_fee=application_fee, now=datetime.now())
 
 @app.route('/customer/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -2117,32 +2133,33 @@ def daily_report():
     else:
         today = date.today()
     today_start = datetime.combine(today, datetime.min.time())
+    today_end = datetime.combine(today, datetime.max.time())
     
-    loan_collections = LoanCollection.query.filter(LoanCollection.collection_date >= today_start).all()
-    saving_collections = SavingCollection.query.filter(SavingCollection.collection_date >= today_start).all()
-    loans_given = Loan.query.filter(Loan.loan_date >= today_start).all()
-    withdrawals = Withdrawal.query.filter(Withdrawal.date >= today_start).all()
-    expenses = Expense.query.filter(Expense.date >= today_start).all()
-    customers_added_today = Customer.query.filter(Customer.created_date >= today_start).all()
+    loan_collections = LoanCollection.query.filter(LoanCollection.collection_date >= today_start, LoanCollection.collection_date <= today_end).all()
+    saving_collections = SavingCollection.query.filter(SavingCollection.collection_date >= today_start, SavingCollection.collection_date <= today_end).all()
+    loans_given = Loan.query.filter(Loan.loan_date >= today_start, Loan.loan_date <= today_end).all()
+    withdrawals = Withdrawal.query.filter(Withdrawal.date >= today_start, Withdrawal.date <= today_end).all()
+    expenses = Expense.query.filter(Expense.date >= today_start, Expense.date <= today_end).all()
+    customers_added_today = Customer.query.filter(Customer.created_date >= today_start, Customer.created_date <= today_end).all()
     
     total_installment = sum(lc.amount for lc in loan_collections)
     total_saving = sum(sc.amount for sc in saving_collections)
     total_loan_distributed = sum(l.amount for l in loans_given)
     total_withdrawal = sum(w.amount for w in withdrawals)
     total_expense = sum(e.amount for e in expenses)
-    total_application_fee = sum(l.service_charge for l in loans_given)
     total_welfare_fee = 0
     total_admission_fee = sum(c.admission_fee for c in customers_added_today)
     total_outflow = total_loan_distributed + total_withdrawal + total_expense
     
-    customers = Customer.query.order_by(Customer.member_no).all()
+    # Only show customers who have collections on this date
     collections = []
-    for customer in customers:
+    for customer in Customer.query.order_by(Customer.member_no).all():
         loan_amount = sum(lc.amount for lc in loan_collections if lc.customer_id == customer.id)
         saving_amount = sum(sc.amount for sc in saving_collections if sc.customer_id == customer.id)
-        collections.append({'customer': customer, 'loan_amount': loan_amount, 'saving_amount': saving_amount})
+        if loan_amount > 0 or saving_amount > 0:
+            collections.append({'customer': customer, 'loan_amount': loan_amount, 'saving_amount': saving_amount})
     
-    return render_template('daily_report.html', report_date=today.strftime('%d-%m-%Y'), selected_date=today.strftime('%Y-%m-%d'), total_installment=total_installment, total_saving=total_saving, total_welfare_fee=total_welfare_fee, total_admission_fee=total_admission_fee, total_application_fee=total_application_fee, total_expense=total_expense, collections=collections, total_loan_distributed=total_loan_distributed, total_withdrawal=total_withdrawal, total_outflow=total_outflow)
+    return render_template('daily_report.html', report_date=today.strftime('%d-%m-%Y'), selected_date=today.strftime('%Y-%m-%d'), total_installment=total_installment, total_saving=total_saving, total_welfare_fee=total_welfare_fee, total_admission_fee=total_admission_fee, total_expense=total_expense, collections=collections, total_loan_distributed=total_loan_distributed, total_withdrawal=total_withdrawal, total_outflow=total_outflow)
 
 @app.route('/monthly_report')
 @login_required
@@ -2207,7 +2224,6 @@ def monthly_report():
         savings = sum(sc.amount for sc in saving_collections)
         loan_given = sum(l.amount for l in loans_given)
         interest = sum((l.amount * l.interest / 100) for l in loans_given)
-        service_charge = sum(l.service_charge for l in loans_given)
         admission_fee = sum(c.admission_fee for c in customers_added)
         
         # Get actual fees from FeeCollection
@@ -2228,7 +2244,7 @@ def monthly_report():
         expenses_total = sum(e.amount for e in expenses)
         investment_amount = sum(inv.amount for inv in investments)
         
-        total_income = installments + savings + service_charge + admission_fee + welfare_fee + application_fee_actual + investment_amount
+        total_income = installments + savings + admission_fee + welfare_fee + application_fee_actual + investment_amount
         total_expense = loan_given + savings_return + expenses_total
         day_balance = total_income - total_expense
         running_balance += day_balance

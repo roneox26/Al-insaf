@@ -8,16 +8,12 @@
         @media print {
             .no-print { display: none; }
             body { margin: 0; padding: 5mm; }
-            .header { background: #28a745 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .section-title { background: #4facfe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .collection-header { background: #fa709a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .collection-table th { background: #667eea !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .info-cell.label { background: #0790f1 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .summary-box:nth-child(1) { background: #29d351 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .summary-box:nth-child(2) { background: #17a2b8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .summary-box:nth-child(3) { background: #0d6efd !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .summary-box:nth-child(4) { background: #dc3545 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .summary-box:nth-child(5) { background: #ffc107 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .header { background: #fff !important; color: #000 !important; border: 2px solid #000 !important; }
+            .section-title { background: #fff !important; color: #000 !important; border: 1px solid #000 !important; }
+            .collection-header { background: #fff !important; color: #000 !important; border: 1px solid #000 !important; }
+            .collection-table th { background: #fff !important; color: #000 !important; }
+            .info-cell.label { background: #fff !important; color: #000 !important; font-weight: bold !important; }
+            .summary-box { background: #fff !important; color: #000 !important; border: 2px solid #000 !important; }
         }
         
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -39,8 +35,8 @@
             text-align: center;
             padding: 15px;
             border-bottom: 3px solid #000;
-            background: #28a745;
-            color: white;
+            background: #fff;
+            color: #000;
         }
         
         .header h2 {
@@ -61,13 +57,12 @@
         }
         
         .section-title {
-            background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
-            color: white;
+            background: #fff;
+            color: #000;
             padding: 8px 10px;
             border-bottom: 2px solid #000;
             font-weight: bold;
             font-size: 14px;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
         }
         
         .info-grid {
@@ -88,9 +83,9 @@
         }
         
         .info-cell.label {
-            background: #e3f2fd;
+            background: #fff;
             font-weight: 600;
-            color: #1565c0;
+            color: #000;
         }
         
         .right-panel {
@@ -148,31 +143,16 @@
             border-right: 1px solid #000;
             padding: 12px;
             text-align: center;
-            transition: all 0.3s;
+            background: #fff;
+            color: #000;
         }
         
-        .summary-box:nth-child(1) {
-            background: #28a745;
-            color: white;
-        }
-        
-        .summary-box:nth-child(2) {
-            background: #17a2b8;
-            color: white;
-        }
-        
-        .summary-box:nth-child(3) {
-            background: #0d6efd;
-            color: white;
-        }
-        
-        .summary-box:nth-child(4) {
-            background: #dc3545;
-            color: white;
-        }
-        
+        .summary-box:nth-child(1),
+        .summary-box:nth-child(2),
+        .summary-box:nth-child(3),
+        .summary-box:nth-child(4),
         .summary-box:nth-child(5) {
-            background: #ffc107;
+            background: #fff;
             color: #000;
         }
         
@@ -196,13 +176,13 @@
         }
         
         .collection-header {
-            background: linear-gradient(to right, #fa709a 0%, #fee140 100%);
-            color: white;
+            background: #fff;
+            color: #000;
             padding: 8px 10px;
             margin-bottom: 8px;
             font-weight: bold;
             font-size: 14px;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+            border: 1px solid #000;
         }
         
         .collection-table {
@@ -211,8 +191,8 @@
         }
         
         .collection-table th {
-            background: linear-gradient(to bottom, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: #fff;
+            color: #000;
             border: 1px solid #000;
             padding: 8px;
             font-size: 11px;
@@ -329,7 +309,7 @@
                     <div class="info-cell label">লোন বিতরণ তারিখ</div>
                     <div class="info-cell">{{ loan_date }}</div>
                     <div class="info-cell label">মোট টাকা</div>
-                    <div class="info-cell">{{ "{:,.0f}".format(loan_principal) }}{% if interest_rate > 0 %} ({{ "{:.0f}".format(interest_rate) }}%){% endif %}{% if interest_amount + service_charge_total > 0 %} = {{ "{:,.0f}".format(loan_principal + interest_amount + service_charge_total) }}{% endif %}</div>
+                    <div class="info-cell">{{ "{:,.0f}".format(loan_principal) }}{% if interest_rate > 0 %} + {{ "{:.1f}".format(interest_rate) }}% ({{ "{:,.0f}".format(interest_amount) }}){% endif %} = {{ "{:,.0f}".format(loan_principal + interest_amount) }}</div>
                     
                     <div class="info-cell label">কিস্তি ধরন</div>
                     <div class="info-cell">সাপ্তাহিক</div>
@@ -393,7 +373,7 @@
             </div>
             <div class="summary-box">
                 <div class="summary-label">মোট কিস্তি আদায়</div>
-                <div class="summary-value">{{ loan_collections|length }}</div>
+                <div class="summary-value">{{ merged_collections|length }}</div>
             </div>
             <div class="summary-box">
                 <div class="summary-label">মোট বকেয়া</div>
@@ -401,7 +381,7 @@
             </div>
             <div class="summary-box">
                 <div class="summary-label">সঞ্চয় উত্তোলন</div>
-                <div class="summary-value">০</div>
+                <div class="summary-value">{{ "{:,.0f}".format(total_withdrawn) }}</div>
             </div>
         </div>
 
@@ -422,20 +402,22 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% if loan_collections %}
-                        {% set running_total = namespace(value=0) %}
-                        {% for lc in loan_collections %}
-                        {% set running_total.value = running_total.value + lc.amount %}
-                        <tr>
-                            <td>{{ lc.collection_date.strftime('%d-%m-%y') }}</td>
-                            <td>{{ "{:,.0f}".format(lc.amount) }}</td>
-                            <td>০</td>
-                            <td>{{ "{:,.0f}".format(running_total.value) }}</td>
-                            <td>০</td>
-                            <td></td>
-                        </tr>
+                    {% if merged_collections %}
+                        {% set running_loan_total = namespace(value=0) %}
+                        {% set running_saving_total = namespace(value=0) %}
+                        {% for item in merged_collections %}
+                            {% set running_loan_total.value = running_loan_total.value + item.loan %}
+                            {% set running_saving_total.value = running_saving_total.value + item.saving %}
+                            <tr>
+                                <td>{{ item.date.strftime('%d-%m-%y') }}</td>
+                                <td>{{ "{:,.0f}".format(item.loan) if item.loan > 0 else '' }}</td>
+                                <td>{{ "{:,.0f}".format(item.saving) if item.saving > 0 else '' }}</td>
+                                <td>{{ "{:,.0f}".format(running_loan_total.value) }}</td>
+                                <td>{{ "{:,.0f}".format(running_saving_total.value) }}</td>
+                                <td></td>
+                            </tr>
                         {% endfor %}
-                        {% for i in range(10 - loan_collections|length) %}
+                        {% for i in range(10 - merged_collections|length) %}
                         <tr>
                             <td style="height: 28px;">&nbsp;</td>
                             <td></td>
