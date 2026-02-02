@@ -2149,6 +2149,7 @@ def daily_report():
     total_expense = sum(e.amount for e in expenses)
     total_welfare_fee = 0
     total_admission_fee = sum(c.admission_fee for c in customers_added_today)
+    total_application_fee = 0
     total_outflow = total_loan_distributed + total_withdrawal + total_expense
     
     # Only show customers who have collections on this date
@@ -2159,7 +2160,7 @@ def daily_report():
         if loan_amount > 0 or saving_amount > 0:
             collections.append({'customer': customer, 'loan_amount': loan_amount, 'saving_amount': saving_amount})
     
-    return render_template('daily_report.html', report_date=today.strftime('%d-%m-%Y'), selected_date=today.strftime('%Y-%m-%d'), total_installment=total_installment, total_saving=total_saving, total_welfare_fee=total_welfare_fee, total_admission_fee=total_admission_fee, total_expense=total_expense, collections=collections, total_loan_distributed=total_loan_distributed, total_withdrawal=total_withdrawal, total_outflow=total_outflow)
+    return render_template('daily_report.html', report_date=today.strftime('%d-%m-%Y'), selected_date=today.strftime('%Y-%m-%d'), total_installment=total_installment, total_saving=total_saving, total_welfare_fee=total_welfare_fee, total_admission_fee=total_admission_fee, total_application_fee=total_application_fee, total_expense=total_expense, collections=collections, total_loan_distributed=total_loan_distributed, total_withdrawal=total_withdrawal, total_outflow=total_outflow)
 
 @app.route('/monthly_report')
 @login_required
