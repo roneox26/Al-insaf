@@ -2147,9 +2147,26 @@ def daily_report():
     total_loan_distributed = sum(l.amount for l in loans_given)
     total_withdrawal = sum(w.amount for w in withdrawals)
     total_expense = sum(e.amount for e in expenses)
-    total_welfare_fee = 0
-    total_admission_fee = sum(c.admission_fee for c in customers_added_today)
-    total_application_fee = 0
+    
+    # Get fees from FeeCollection table
+    total_welfare_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+        FeeCollection.fee_type == 'welfare',
+        FeeCollection.collection_date >= today_start,
+        FeeCollection.collection_date <= today_end
+    ).scalar() or 0
+    
+    total_admission_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+        FeeCollection.fee_type == 'admission',
+        FeeCollection.collection_date >= today_start,
+        FeeCollection.collection_date <= today_end
+    ).scalar() or 0
+    
+    total_application_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+        FeeCollection.fee_type == 'application',
+        FeeCollection.collection_date >= today_start,
+        FeeCollection.collection_date <= today_end
+    ).scalar() or 0
+    
     total_outflow = total_loan_distributed + total_withdrawal + total_expense
     
     # Only show customers who have collections on this date
@@ -2178,74 +2195,143 @@ def monthly_report():
     month_name = month_names[month]
     last_day = calendar.monthrange(year, month)[1]
     
-    month_start = datetime(year, month, 1)
+    month_start = datetime(year, month, 1, 0, 0, 0)
     month_end = datetime(year, month, last_day, 23, 59, 59)
     
-    daily_data = {}
-    running_balance = 0
-    
-    # Get opening balance (cash balance at start of month)
-    prev_month_end = month_start - timedelta(days=1)
+    # Get current cash balance
     cash_balance_record = CashBalance.query.first()
     current_cash = cash_balance_record.balance if cash_balance_record else 0
     
-    # Calculate opening balance by working backwards from current balance
-    future_income = 0
-    future_expense = 0
+    # For current month, calculate opening from month start transactions
+    # For past months, calculate from future transactions
+    is_current_month = (month == today.month and year == today.year)
     
-    if month_end < datetime.now():
-        # Past month - calculate from transactions after month end
-        after_month = datetime.now()
-        loan_after = LoanCollection.query.filter(LoanCollection.collection_date > month_end).all()
-        saving_after = SavingCollection.query.filter(SavingCollection.collection_date > month_end).all()
-        loans_after = Loan.query.filter(Loan.loan_date > month_end).all()
-        withdrawals_after = Withdrawal.query.filter(Withdrawal.date > month_end).all()
-        expenses_after = Expense.query.filter(Expense.date > month_end).all()
-        investments_after = Investment.query.filter(Investment.date > month_end).all()
+    if is_current_month:
+        # Current month - get transactions from start of month till now
+        month_income = (
+            (db.session.query(db.func.sum(LoanCollection.amount)).filter(
+                LoanCollection.collection_date >= month_start
+            ).scalar() or 0) +
+            (db.session.query(db.func.sum(SavingCollection.amount)).filter(
+                SavingCollection.collection_date >= month_start
+            ).scalar() or 0) +
+            (db.session.query(db.func.sum(FeeCollection.amount)).filter(
+                FeeCollection.collection_date >= month_start
+            ).scalar() or 0) +
+            (db.session.query(db.func.sum(Investment.amount)).filter(
+                Investment.date >= month_start
+            ).scalar() or 0)
+        )
         
-        future_income = sum(lc.amount for lc in loan_after) + sum(sc.amount for sc in saving_after) + sum(inv.amount for inv in investments_after)
-        future_expense = sum(l.amount for l in loans_after) + sum(w.amount for w in withdrawals_after) + sum(e.amount for e in expenses_after)
+        month_expense = (
+            (db.session.query(db.func.sum(Loan.amount)).filter(
+                Loan.loan_date >= month_start
+            ).scalar() or 0) +
+            (db.session.query(db.func.sum(Withdrawal.amount)).filter(
+                Withdrawal.date >= month_start
+            ).scalar() or 0) +
+            (db.session.query(db.func.sum(Expense.amount)).filter(
+                Expense.date >= month_start
+            ).scalar() or 0)
+        )
+        
+        # Opening = Current - Net change from start of month
+        opening_balance = current_cash - (month_income - month_expense)
+    else:
+        # Past month - calculate from future transactions
+        future_income = (
+            (db.session.query(db.func.sum(LoanCollection.amount)).filter(
+                LoanCollection.collection_date > month_end
+            ).scalar() or 0) +
+            (db.session.query(db.func.sum(SavingCollection.amount)).filter(
+                SavingCollection.collection_date > month_end
+            ).scalar() or 0) +
+            (db.session.query(db.func.sum(FeeCollection.amount)).filter(
+                FeeCollection.collection_date > month_end
+            ).scalar() or 0) +
+            (db.session.query(db.func.sum(Investment.amount)).filter(
+                Investment.date > month_end
+            ).scalar() or 0)
+        )
+        
+        future_expense = (
+            (db.session.query(db.func.sum(Loan.amount)).filter(
+                Loan.loan_date > month_end
+            ).scalar() or 0) +
+            (db.session.query(db.func.sum(Withdrawal.amount)).filter(
+                Withdrawal.date > month_end
+            ).scalar() or 0) +
+            (db.session.query(db.func.sum(Expense.amount)).filter(
+                Expense.date > month_end
+            ).scalar() or 0)
+        )
+        
+        opening_balance = current_cash - future_income + future_expense
     
-    opening_balance = current_cash - future_income + future_expense
     running_balance = opening_balance
+    daily_data = {}
     
+    # Process each day of the month
     for day in range(1, last_day + 1):
-        day_start = datetime(year, month, day)
+        day_start = datetime(year, month, day, 0, 0, 0)
         day_end = datetime(year, month, day, 23, 59, 59)
         
-        loan_collections = LoanCollection.query.filter(LoanCollection.collection_date >= day_start, LoanCollection.collection_date <= day_end).all()
-        saving_collections = SavingCollection.query.filter(SavingCollection.collection_date >= day_start, SavingCollection.collection_date <= day_end).all()
-        loans_given = Loan.query.filter(Loan.loan_date >= day_start, Loan.loan_date <= day_end).all()
-        withdrawals = Withdrawal.query.filter(Withdrawal.date >= day_start, Withdrawal.date <= day_end).all()
-        expenses = Expense.query.filter(Expense.date >= day_start, Expense.date <= day_end).all()
-        customers_added = Customer.query.filter(Customer.created_date >= day_start, Customer.created_date <= day_end).all()
-        investments = Investment.query.filter(Investment.date >= day_start, Investment.date <= day_end).all()
+        # Get daily transactions
+        installments = db.session.query(db.func.sum(LoanCollection.amount)).filter(
+            LoanCollection.collection_date >= day_start,
+            LoanCollection.collection_date <= day_end
+        ).scalar() or 0
         
-        installments = sum(lc.amount for lc in loan_collections)
-        savings = sum(sc.amount for sc in saving_collections)
-        loan_given = sum(l.amount for l in loans_given)
-        interest = sum((l.amount * l.interest / 100) for l in loans_given)
-        admission_fee = sum(c.admission_fee for c in customers_added)
+        savings = db.session.query(db.func.sum(SavingCollection.amount)).filter(
+            SavingCollection.collection_date >= day_start,
+            SavingCollection.collection_date <= day_end
+        ).scalar() or 0
         
-        # Get actual fees from FeeCollection
         welfare_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter(
             FeeCollection.fee_type == 'welfare',
             FeeCollection.collection_date >= day_start,
             FeeCollection.collection_date <= day_end
         ).scalar() or 0
         
-        application_fee_actual = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+        admission_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+            FeeCollection.fee_type == 'admission',
+            FeeCollection.collection_date >= day_start,
+            FeeCollection.collection_date <= day_end
+        ).scalar() or 0
+        
+        application_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter(
             FeeCollection.fee_type == 'application',
             FeeCollection.collection_date >= day_start,
             FeeCollection.collection_date <= day_end
         ).scalar() or 0
         
-        loan_with_interest = loan_given + interest
-        savings_return = sum(w.amount for w in withdrawals)
-        expenses_total = sum(e.amount for e in expenses)
-        investment_amount = sum(inv.amount for inv in investments)
+        capital_savings = db.session.query(db.func.sum(Investment.amount)).filter(
+            Investment.date >= day_start,
+            Investment.date <= day_end
+        ).scalar() or 0
         
-        total_income = installments + savings + admission_fee + welfare_fee + application_fee_actual + investment_amount
+        loan_given = db.session.query(db.func.sum(Loan.amount)).filter(
+            Loan.loan_date >= day_start,
+            Loan.loan_date <= day_end
+        ).scalar() or 0
+        
+        interest = db.session.query(db.func.sum(Loan.amount * Loan.interest / 100)).filter(
+            Loan.loan_date >= day_start,
+            Loan.loan_date <= day_end
+        ).scalar() or 0
+        
+        savings_return = db.session.query(db.func.sum(Withdrawal.amount)).filter(
+            Withdrawal.date >= day_start,
+            Withdrawal.date <= day_end
+        ).scalar() or 0
+        
+        expenses_total = db.session.query(db.func.sum(Expense.amount)).filter(
+            Expense.date >= day_start,
+            Expense.date <= day_end
+        ).scalar() or 0
+        
+        # Calculate daily totals
+        total_income = installments + savings + welfare_fee + admission_fee + application_fee + capital_savings
         total_expense = loan_given + savings_return + expenses_total
         day_balance = total_income - total_expense
         running_balance += day_balance
@@ -2255,49 +2341,116 @@ def monthly_report():
             'installments': installments,
             'welfare_fee': welfare_fee,
             'admission_fee': admission_fee,
-            'service_charge': application_fee_actual,
-            'capital_savings': investment_amount,
+            'service_charge': application_fee,
+            'capital_savings': capital_savings,
             'total_income': total_income,
             'loan_given': loan_given,
             'interest': interest,
-            'loan_with_interest': loan_with_interest,
+            'loan_with_interest': loan_given + interest,
             'savings_return': savings_return,
             'expenses': expenses_total,
             'total_expense': total_expense,
             'balance': running_balance
         }
     
+    # Calculate summary data
     total_capital_savings = sum(d['capital_savings'] for d in daily_data.values())
     total_loan_distributed = sum(d['loan_given'] for d in daily_data.values())
     total_interest = sum(d['interest'] for d in daily_data.values())
-    current_remaining = db.session.query(db.func.sum(Customer.remaining_loan)).scalar() or 0
-    prev_remaining = current_remaining + total_capital_savings - total_loan_distributed
     total_monthly_expenses = sum(d['expenses'] for d in daily_data.values())
-    
-    # Calculate monthly due (this month's expected collections that weren't collected)
-    total_installments_collected = sum(d['installments'] for d in daily_data.values())
-    
-    # Calculate expected installments for this month
-    expected_installments = 0
-    for customer in Customer.query.filter(Customer.total_loan > 0).all():
-        loans = Loan.query.filter_by(customer_name=customer.name).all()
-        for loan in loans:
-            if loan.loan_date <= month_end:
-                if loan.installment_type == 'Daily':
-                    days_in_month = min(last_day, (datetime.now() - month_start).days + 1) if month == today.month and year == today.year else last_day
-                    expected_installments += loan.installment_amount * days_in_month
-                elif loan.installment_type == 'Weekly':
-                    weeks_in_month = last_day // 7
-                    expected_installments += loan.installment_amount * weeks_in_month
-                elif loan.installment_type == 'Monthly':
-                    expected_installments += loan.installment_amount
-    
-    monthly_due = max(0, expected_installments - total_installments_collected)
-    
-    # Calculate closing balance (cash in hand at end of month)
+    current_remaining = db.session.query(db.func.sum(Customer.remaining_loan)).scalar() or 0
     closing_balance = running_balance
     
-    return render_template('monthly_report.html', month=month, month_name=month_name, year=year, daily_data=daily_data, last_day=last_day, total_capital_savings=total_capital_savings, total_loan_distributed=total_loan_distributed, total_interest=total_interest, prev_remaining=prev_remaining, current_remaining=current_remaining, total_monthly_expenses=total_monthly_expenses, opening_balance=opening_balance, closing_balance=closing_balance, monthly_due=monthly_due)
+    # Calculate monthly due - expected vs actual collections
+    monthly_due = 0
+    
+    # Get all customers with remaining loans
+    customers_with_loans = Customer.query.filter(Customer.remaining_loan > 0).all()
+    
+    print(f"\n=== Monthly Due Calculation for {month}/{year} ===")
+    print(f"Total customers with remaining loans: {len(customers_with_loans)}")
+    
+    for customer in customers_with_loans:
+        # Get loans given BEFORE this month starts
+        customer_loans = Loan.query.filter(
+            Loan.customer_name == customer.name,
+            Loan.loan_date < month_start
+        ).all()
+        
+        if not customer_loans:
+            print(f"Customer {customer.name}: No loans before {month_start.date()}")
+            continue
+        
+        print(f"\nCustomer: {customer.name} (ID: {customer.id})")
+        print(f"  Loans before month: {len(customer_loans)}")
+        
+        # Calculate total expected for this month
+        expected_amount = 0
+        
+        for loan in customer_loans:
+            print(f"  Loan ID {loan.id}: Type='{loan.installment_type}', Amount={loan.installment_amount}, Date={loan.loan_date.date()}")
+            
+            loan_expected = 0
+            # Support both English and Bengali installment types
+            loan_type = loan.installment_type.lower() if loan.installment_type else ''
+            
+            if loan_type in ['daily', 'দৈনিক']:
+                # Count days in month (or till today for current month)
+                if month == today.month and year == today.year:
+                    days = today.day
+                else:
+                    days = last_day
+                loan_expected = loan.installment_amount * days
+                print(f"    Daily: {loan.installment_amount} x {days} days = {loan_expected}")
+                
+            elif loan_type in ['weekly', 'সাপ্তাহিক']:
+                # 4 weeks per month
+                loan_expected = loan.installment_amount * 4
+                print(f"    Weekly: {loan.installment_amount} x 4 weeks = {loan_expected}")
+                
+            elif loan_type in ['monthly', 'মাসিক']:
+                loan_expected = loan.installment_amount
+                print(f"    Monthly: {loan.installment_amount}")
+            else:
+                print(f"    Unknown type: '{loan.installment_type}'")
+            
+            expected_amount += loan_expected
+        
+        # Get actual collections for this customer in this month
+        actual_amount = db.session.query(db.func.sum(LoanCollection.amount)).filter(
+            LoanCollection.customer_id == customer.id,
+            LoanCollection.collection_date >= month_start,
+            LoanCollection.collection_date <= month_end
+        ).scalar() or 0
+        
+        print(f"  Expected: {expected_amount}, Actual: {actual_amount}")
+        
+        # Calculate due for this customer
+        customer_due = expected_amount - actual_amount
+        
+        if customer_due > 0:
+            print(f"  Due: {customer_due}")
+            monthly_due += customer_due
+        else:
+            print(f"  No due (paid {actual_amount - expected_amount} extra)")
+    
+    print(f"\nTotal Monthly Due: {monthly_due}")
+    print("=" * 50)
+    
+    return render_template('monthly_report.html', 
+                         month=month, 
+                         month_name=month_name, 
+                         year=year, 
+                         daily_data=daily_data, 
+                         last_day=last_day, 
+                         total_capital_savings=total_capital_savings, 
+                         total_loan_distributed=total_loan_distributed, 
+                         total_interest=total_interest, 
+                         current_remaining=current_remaining, 
+                         total_monthly_expenses=total_monthly_expenses, 
+                         opening_balance=opening_balance, 
+                         closing_balance=closing_balance, 
+                         monthly_due=monthly_due)
 
 @app.route('/withdrawal_report')
 @login_required

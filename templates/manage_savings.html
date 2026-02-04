@@ -52,7 +52,23 @@
       </div>
     </div>
     <div class="print-only" style="display:none;">
+      <h2 class="text-center mb-3">আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h2>
+      <h3 class="text-center mb-3">Savings Collections History</h3>
+      {% if from_date or to_date %}
+      <p class="text-center mb-2">
+        {% if from_date and to_date %}
+        তারিখ: {{ from_date }} থেকে {{ to_date }}
+        {% elif from_date %}
+        তারিখ: {{ from_date }} থেকে
+        {% elif to_date %}
+        তারিখ: {{ to_date }} পর্যন্ত
+        {% endif %}
+      </p>
+      {% endif %}
       <h4 class="text-center">Total Collected: ৳{{ "{:,.2f}".format(total) }}</h4>
+      <p class="text-center" style="font-size: 11px; margin-top: 10px;">
+        <strong>প্রিন্ট তারিখ:</strong> <span id="printDate"></span>
+      </p>
     </div>
 
     <div class="main-card p-4 mb-4 no-print">
@@ -136,6 +152,18 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Set print date when page loads
+    window.addEventListener('DOMContentLoaded', function() {
+      const today = new Date();
+      const dateStr = today.getDate().toString().padStart(2, '0') + '-' + 
+                      (today.getMonth() + 1).toString().padStart(2, '0') + '-' + 
+                      today.getFullYear();
+      const timeStr = today.getHours().toString().padStart(2, '0') + ':' + 
+                      today.getMinutes().toString().padStart(2, '0');
+      document.getElementById('printDate').textContent = dateStr + ' ' + timeStr;
+    });
+  </script>
   <style>
     @media print {
       body { background: white !important; }
@@ -165,14 +193,17 @@
         width: 100%;
         border-collapse: collapse;
       }
-      th { 
-        background-color: #f0f0f0 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
       th, td { 
         padding: 5px !important;
         border: 1px solid #000 !important;
+        color: #000 !important;
+      }
+      thead th {
+        background-color: #000 !important;
+        color: #fff !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        font-weight: bold !important;
       }
     }
   </style>
