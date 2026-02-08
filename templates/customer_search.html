@@ -87,7 +87,7 @@
                         let html = '';
                         data.customers.forEach(c => {
                             html += `
-                                <div class="col-md-4 col-lg-3">
+                                <div class="col-md-6 col-lg-4">
                                     <div class="card customer-card h-100">
                                         <div class="card-body">
                                             <div class="d-flex justify-content-between align-items-start mb-3">
@@ -114,22 +114,37 @@
                                                 <small class="text-muted d-block mb-1">
                                                     <i class="fas fa-map-marker-alt"></i> ${c.village}
                                                 </small>
-                                                <small class="text-muted d-block">
+                                                ${c.address !== 'N/A' ? `<small class="text-muted d-block mb-1"><i class="fas fa-home"></i> ${c.address}</small>` : ''}
+                                                ${c.father_husband !== 'N/A' ? `<small class="text-muted d-block mb-1"><i class="fas fa-male"></i> পিতা/স্বামী: ${c.father_husband}</small>` : ''}
+                                                ${c.profession !== 'N/A' ? `<small class="text-muted d-block mb-1"><i class="fas fa-briefcase"></i> ${c.profession}</small>` : ''}
+                                                ${c.nid_no !== 'N/A' ? `<small class="text-muted d-block mb-1"><i class="fas fa-id-card"></i> NID: ${c.nid_no}</small>` : ''}
+                                                <small class="text-muted d-block mb-1">
                                                     <i class="fas fa-user-tie"></i> ${c.staff_name}
+                                                </small>
+                                                <small class="text-muted d-block">
+                                                    <i class="fas fa-calendar"></i> যোগদান: ${c.created_date}
                                                 </small>
                                             </div>
                                             
-                                            <div class="row g-2">
+                                            <div class="row g-2 mb-2">
                                                 <div class="col-6">
-                                                    <div class="text-center p-2 bg-danger bg-opacity-10 rounded">
-                                                        <small class="text-muted d-block">বাকি লোন</small>
-                                                        <strong class="text-danger stat-badge">৳${c.remaining_loan.toLocaleString()}</strong>
+                                                    <div class="text-center p-2 bg-info bg-opacity-10 rounded">
+                                                        <small class="text-muted d-block">মোট লোন</small>
+                                                        <strong class="text-info">৳${c.total_loan.toLocaleString()}</strong>
                                                     </div>
                                                 </div>
                                                 <div class="col-6">
+                                                    <div class="text-center p-2 bg-danger bg-opacity-10 rounded">
+                                                        <small class="text-muted d-block">বাকি লোন</small>
+                                                        <strong class="text-danger">৳${c.remaining_loan.toLocaleString()}</strong>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row g-2">
+                                                <div class="col-12">
                                                     <div class="text-center p-2 bg-success bg-opacity-10 rounded">
                                                         <small class="text-muted d-block">সেভিংস</small>
-                                                        <strong class="text-success stat-badge">৳${c.savings_balance.toLocaleString()}</strong>
+                                                        <strong class="text-success">৳${c.savings_balance.toLocaleString()}</strong>
                                                     </div>
                                                 </div>
                                             </div>

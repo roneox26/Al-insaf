@@ -163,6 +163,8 @@ def manage_staff():
     period = request.args.get('period', 'daily')
     from_date = request.args.get('from_date', '')
     to_date = request.args.get('to_date', '')
+    month = request.args.get('month', type=int)
+    year = request.args.get('year', type=int)
     
     today = datetime.now()
     
@@ -177,8 +179,14 @@ def manage_staff():
         start_date = today.replace(hour=0, minute=0, second=0, microsecond=0)
         end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
     elif period == 'monthly':
-        start_date = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
+        if month and year:
+            import calendar
+            last_day = calendar.monthrange(year, month)[1]
+            start_date = datetime(year, month, 1, 0, 0, 0)
+            end_date = datetime(year, month, last_day, 23, 59, 59)
+        else:
+            start_date = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
     else:
         start_date = today.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
         end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
@@ -202,7 +210,7 @@ def manage_staff():
             'total_collection': total_collection
         })
     
-    return render_template('manage_staff.html', staff_data=staff_data, period=period, from_date=from_date, to_date=to_date)
+    return render_template('manage_staff.html', staff_data=staff_data, period=period, from_date=from_date, to_date=to_date, now=datetime.now())
 
 @app.route('/admin/staff/add', methods=['GET', 'POST'])
 @login_required
@@ -241,7 +249,7 @@ def add_staff():
         is_office_staff = staff_type == 'office'
         is_monitor = staff_type == 'monitor'
         salary = float(request.form.get('salary', 0) or 0)
-        new_staff = User(name=name, email=email, password=hashed_pw, role='staff', is_office_staff=is_office_staff, is_monitor=is_monitor, phone=request.form.get('phone', '').strip(), nid=request.form.get('nid', '').strip(), address=request.form.get('address', '').strip(), salary=salary, photo=photo_filename)
+        new_staff = User(name=name, email=email, password=hashed_pw, role='staff', is_office_staff=is_office_staff, is_monitor=is_monitor, phone=request.form.get('phone', '').strip(), nid=request.form.get('nid', '').strip(), address=request.form.get('address', '').strip(), salary=salary, photo=photo_filename, plain_password=password)
         db.session.add(new_staff)
         db.session.commit()
         flash('Staff added successfully!', 'success')
@@ -306,6 +314,7 @@ def edit_staff(id):
         
         if request.form.get('password'):
             staff.password = bcrypt.generate_password_hash(request.form['password']).decode('utf-8')
+            staff.plain_password = request.form['password']
         
         db.session.commit()
         flash('Staff updated successfully!', 'success')
@@ -1245,6 +1254,8 @@ def manage_collections():
     staff_id = request.args.get('staff_id', type=int)
     period = request.args.get('period', 'all')
     selected_date = request.args.get('date')
+    month = request.args.get('month', type=int)
+    year = request.args.get('year', type=int)
     
     if current_user.role == 'staff' and (not hasattr(current_user, 'is_office_staff') or not current_user.is_office_staff):
         query_loan = LoanCollection.query.filter_by(staff_id=current_user.id)
@@ -1258,6 +1269,7 @@ def manage_collections():
             query_saving = query_saving.filter_by(staff_id=staff_id)
     
     from datetime import date
+    import calendar
     today = datetime.now()
     period_info = {'type': period}
     
@@ -1275,12 +1287,20 @@ def manage_collections():
         query_saving = query_saving.filter(SavingCollection.collection_date >= start_date)
         period_info['date'] = today.strftime('%d-%m-%Y')
     elif period == 'monthly':
-        start_date = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        query_loan = query_loan.filter(LoanCollection.collection_date >= start_date)
-        query_saving = query_saving.filter(SavingCollection.collection_date >= start_date)
-        month_names = ['সক্রিয়সব', 'নিষ্ক্রিয়?', 'নামসব', 'নামনাম', 'সব', 'নাম', 'নামসব', 'নামসব', 'নিষ্ক্রিয়', 'সক্রিয়', 'সক্রিয়', 'সক্রিয়?']
-        period_info['month'] = month_names[today.month - 1]
-        period_info['year'] = today.year
+        if month and year:
+            last_day = calendar.monthrange(year, month)[1]
+            start_date = datetime(year, month, 1, 0, 0, 0)
+            end_date = datetime(year, month, last_day, 23, 59, 59)
+        else:
+            month = today.month
+            year = today.year
+            start_date = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
+        query_loan = query_loan.filter(LoanCollection.collection_date >= start_date, LoanCollection.collection_date <= end_date)
+        query_saving = query_saving.filter(SavingCollection.collection_date >= start_date, SavingCollection.collection_date <= end_date)
+        month_names = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর']
+        period_info['month'] = month_names[month - 1]
+        period_info['year'] = year
     elif period == 'yearly':
         start_date = today.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
         query_loan = query_loan.filter(LoanCollection.collection_date >= start_date)
@@ -1839,12 +1859,19 @@ def profit_loss():
         return redirect(url_for('dashboard'))
     
     from datetime import datetime
+    import calendar
     
     period = request.args.get('period', 'monthly')
+    month = request.args.get('month', type=int)
+    year = request.args.get('year', type=int)
     
     today = datetime.now()
     if period == 'monthly':
-        start_date = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        if month and year:
+            last_day = calendar.monthrange(year, month)[1]
+            start_date = datetime(year, month, 1, 0, 0, 0)
+        else:
+            start_date = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     else:  # yearly
         start_date = today.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
     
@@ -1873,6 +1900,20 @@ def profit_loss():
     transport_exp = sum(exp.amount for exp in expenses if exp.category == 'Transport')
     other_exp = sum(exp.amount for exp in expenses if exp.category == 'Other')
     
+    # Get month name and year for display
+    month_name = None
+    display_year = today.year
+    if period == 'monthly':
+        month_names = ['', 'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর']
+        if month and year:
+            month_name = month_names[month]
+            display_year = year
+        else:
+            month_name = month_names[today.month]
+            display_year = today.year
+    elif period == 'yearly':
+        display_year = today.year
+    
     return render_template('profit_loss.html', 
                          period=period,
                          total_income=total_income,
@@ -1884,7 +1925,10 @@ def profit_loss():
                          salary_exp=salary_exp,
                          office_exp=office_exp,
                          transport_exp=transport_exp,
-                         other_exp=other_exp)
+                         other_exp=other_exp,
+                         now=datetime.now(),
+                         month_name=month_name,
+                         year=display_year)
 
 @app.route('/messages')
 @login_required
@@ -2511,9 +2555,15 @@ def search_customers():
         'member_no': c.member_no or 'N/A',
         'phone': c.phone or 'N/A',
         'village': c.village or 'N/A',
+        'address': c.address or 'N/A',
+        'father_husband': c.father_husband or 'N/A',
+        'nid_no': c.nid_no or 'N/A',
+        'profession': c.profession or 'N/A',
+        'total_loan': float(c.total_loan),
         'remaining_loan': float(c.remaining_loan),
         'savings_balance': float(c.savings_balance),
-        'staff_name': c.staff.name if c.staff else 'N/A'
+        'staff_name': c.staff.name if c.staff else 'N/A',
+        'created_date': c.created_date.strftime('%d-%m-%Y') if c.created_date else 'N/A'
     } for c in customers]}
 
 @app.route('/api/get_customer_by_nid')

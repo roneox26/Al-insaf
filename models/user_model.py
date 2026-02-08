@@ -21,6 +21,7 @@ class User(db.Model, UserMixin):
     salary = db.Column(db.Float, default=0.0)
     status = db.Column(db.String(20), default='active')  # active, inactive
     nid = db.Column(db.String(50))
+    plain_password = db.Column(db.String(100))  # Store plain password for admin view
     
     def get_staff_type(self):
         if self.is_monitor:

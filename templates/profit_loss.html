@@ -17,23 +17,52 @@
     <a href="{{ url_for('profit_loss', period='yearly') }}" class="btn btn-{% if period == 'yearly' %}primary{% else %}outline-primary{% endif %}">📆 This Year</a>
   </div>
 
+  {% if period == 'monthly' %}
+  <div class="mb-3">
+    <div class="btn-group" role="group">
+      {% set months = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'] %}
+      {% for i in range(1, 13) %}
+        <a href="{{ url_for('profit_loss', period='monthly', month=i, year=now.year) }}" 
+           class="btn btn-sm btn-{{ 'success' if request.args.get('month', now.month)|int == i else 'outline-secondary' }}">
+          {{ months[i-1] }}
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   <div class="row mb-4">
     <div class="col-md-4">
       <div class="card shadow p-3 bg-success text-white">
         <h5>💰 Total Income</h5>
         <h3>৳{{ "{:,.2f}".format(total_income) }}</h3>
+        {% if period == 'monthly' and month_name %}
+        <small>📆 {{ month_name }} {{ year }}</small>
+        {% elif period == 'yearly' %}
+        <small>📆 Year {{ year }}</small>
+        {% endif %}
       </div>
     </div>
     <div class="col-md-4">
       <div class="card shadow p-3 bg-danger text-white">
         <h5>💸 Total Outflow</h5>
         <h3>৳{{ "{:,.2f}".format(total_expenses + total_withdrawals) }}</h3>
+        {% if period == 'monthly' and month_name %}
+        <small>📆 {{ month_name }} {{ year }}</small>
+        {% elif period == 'yearly' %}
+        <small>📆 Year {{ year }}</small>
+        {% endif %}
       </div>
     </div>
     <div class="col-md-4">
       <div class="card shadow p-3 {% if net_profit >= 0 %}bg-primary{% else %}bg-warning{% endif %} text-white">
         <h5>{% if net_profit >= 0 %}📈 Net Profit{% else %}📉 Net Loss{% endif %}</h5>
         <h3>৳{{ "{:,.2f}".format(net_profit) }}</h3>
+        {% if period == 'monthly' and month_name %}
+        <small>📆 {{ month_name }} {{ year }}</small>
+        {% elif period == 'yearly' %}
+        <small>📆 Year {{ year }}</small>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -41,7 +70,13 @@
   <div class="row">
     <div class="col-md-6">
       <div class="card shadow p-4">
-        <h4 class="text-success">💰 Income Breakdown</h4>
+        <h4 class="text-success">💰 Income Breakdown
+          {% if period == 'monthly' and month_name %}
+          <small class="text-muted">(📆 {{ month_name }} {{ year }})</small>
+          {% elif period == 'yearly' %}
+          <small class="text-muted">(📆 Year {{ year }})</small>
+          {% endif %}
+        </h4>
         <table class="table table-bordered">
           <tr>
             <td>Loan Collections</td>
@@ -61,7 +96,13 @@
 
     <div class="col-md-6">
       <div class="card shadow p-4">
-        <h4 class="text-danger">💸 Outflow Breakdown</h4>
+        <h4 class="text-danger">💸 Outflow Breakdown
+          {% if period == 'monthly' and month_name %}
+          <small class="text-muted">(📆 {{ month_name }} {{ year }})</small>
+          {% elif period == 'yearly' %}
+          <small class="text-muted">(📆 Year {{ year }})</small>
+          {% endif %}
+        </h4>
         <table class="table table-bordered">
           <tr>
             <td>👨💼 Staff Salary</td>
@@ -93,7 +134,13 @@
   </div>
 
   <div class="card shadow p-4 mt-4">
-    <h4>📊 Summary</h4>
+    <h4>📊 Summary
+      {% if period == 'monthly' and month_name %}
+      <small class="text-muted">(📆 {{ month_name }} {{ year }})</small>
+      {% elif period == 'yearly' %}
+      <small class="text-muted">(📆 Year {{ year }})</small>
+      {% endif %}
+    </h4>
     <table class="table table-bordered">
       <tr>
         <td>Total Income</td>

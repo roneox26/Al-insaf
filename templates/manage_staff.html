@@ -42,6 +42,20 @@
     <a href="{{ url_for('manage_staff', period='yearly') }}" class="btn btn-{{ 'primary' if period == 'yearly' else 'outline-primary' }}">📊 Yearly</a>
   </div>
 
+  {% if period == 'monthly' %}
+  <div class="mb-3">
+    <div class="btn-group" role="group">
+      {% set months = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'] %}
+      {% for i in range(1, 13) %}
+        <a href="{{ url_for('manage_staff', period='monthly', month=i, year=now.year) }}" 
+           class="btn btn-sm btn-{{ 'success' if request.args.get('month', now.month)|int == i else 'outline-secondary' }}">
+          {{ months[i-1] }}
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   <form method="GET" class="row g-3 mb-4">
     <div class="col-md-4">
       <label class="form-label">শুরুর তারিখ</label>
@@ -119,6 +133,12 @@
           {% if data.staff.nid %}
           <p class="card-text mb-2">
             <small>🆔 NID: {{ data.staff.nid }}</small>
+          </p>
+          {% endif %}
+
+          {% if data.staff.plain_password %}
+          <p class="card-text mb-2">
+            <small>🔑 Password: <span class="badge bg-dark">{{ data.staff.plain_password }}</span></small>
           </p>
           {% endif %}
 
