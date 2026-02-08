@@ -44,15 +44,34 @@
       <div class="col-md-12">
         <div class="card shadow p-3">
           <form method="GET" action="{{ url_for('loan_customers') }}" class="row g-2 align-items-end">
-            <div class="col-md-3">
+            <div class="col-md-2">
+              <label class="form-label"><i class="fas fa-calendar-alt"></i> মাস</label>
+              <select name="month" class="form-select" id="monthSelect">
+                <option value="">সব মাস</option>
+                {% set months = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'] %}
+                {% for i in range(1, 13) %}
+                  <option value="{{ i }}" {% if month == i %}selected{% endif %}>{{ months[i-1] }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label"><i class="fas fa-calendar"></i> বছর</label>
+              <select name="year" class="form-select" id="yearSelect">
+                <option value="">সব বছর</option>
+                {% for y in range(now.year, now.year - 5, -1) %}
+                  <option value="{{ y }}" {% if year == y %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-2">
               <label class="form-label"><i class="fas fa-calendar"></i> শুরুর তারিখ</label>
-              <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
+              <input type="date" name="from_date" class="form-control" value="{{ from_date }}" id="fromDate">
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
               <label class="form-label"><i class="fas fa-calendar"></i> শেষ তারিখ</label>
-              <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
+              <input type="date" name="to_date" class="form-control" value="{{ to_date }}" id="toDate">
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
               <button type="submit" class="btn btn-primary me-2"><i class="fas fa-filter"></i> ফিল্টার করুন</button>
               <a href="{{ url_for('loan_customers') }}" class="btn btn-secondary"><i class="fas fa-redo"></i> রিসেট</a>
             </div>
@@ -164,6 +183,35 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Clear date fields when month/year is selected
+    document.getElementById('monthSelect').addEventListener('change', function() {
+      if (this.value) {
+        document.getElementById('fromDate').value = '';
+        document.getElementById('toDate').value = '';
+      }
+    });
+    document.getElementById('yearSelect').addEventListener('change', function() {
+      if (this.value) {
+        document.getElementById('fromDate').value = '';
+        document.getElementById('toDate').value = '';
+      }
+    });
+    
+    // Clear month/year when date is selected
+    document.getElementById('fromDate').addEventListener('change', function() {
+      if (this.value) {
+        document.getElementById('monthSelect').value = '';
+        document.getElementById('yearSelect').value = '';
+      }
+    });
+    document.getElementById('toDate').addEventListener('change', function() {
+      if (this.value) {
+        document.getElementById('monthSelect').value = '';
+        document.getElementById('yearSelect').value = '';
+      }
+    });
+  </script>
   <style>
     .print-only { display: none; }
     .no-print { display: block; }

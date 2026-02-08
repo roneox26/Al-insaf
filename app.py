@@ -934,6 +934,8 @@ def all_customers_print():
 def loan_customers():
     from_date = request.args.get('from_date', '').strip()
     to_date = request.args.get('to_date', '').strip()
+    month = request.args.get('month', type=int)
+    year = request.args.get('year', type=int)
     
     if current_user.role == 'staff' and not current_user.is_office_staff and not current_user.is_monitor:
         query = Customer.query.filter_by(staff_id=current_user.id).filter(Customer.total_loan > 0)
@@ -943,7 +945,30 @@ def loan_customers():
     from_date_display = ''
     to_date_display = ''
     
-    if from_date or to_date:
+    # Month filter
+    if month and year:
+        import calendar
+        last_day = calendar.monthrange(year, month)[1]
+        start = datetime(year, month, 1, 0, 0, 0)
+        end = datetime(year, month, last_day, 23, 59, 59)
+        from_date_display = start.strftime('%d %B %Y')
+        to_date_display = end.strftime('%d %B %Y')
+        
+        customer_ids = db.session.query(Customer.id).join(
+            Loan, Customer.name == Loan.customer_name
+        ).filter(
+            Loan.loan_date >= start,
+            Loan.loan_date <= end
+        ).distinct().all()
+        
+        ids = [cid[0] for cid in customer_ids]
+        if ids:
+            query = query.filter(Customer.id.in_(ids))
+        else:
+            query = query.filter(Customer.id == -1)
+    
+    # Date range filter
+    elif from_date or to_date:
         try:
             if from_date and to_date:
                 start = datetime.strptime(from_date, '%Y-%m-%d').replace(hour=0, minute=0, second=0)
@@ -986,7 +1011,7 @@ def loan_customers():
             flash(f'তারিখ ফিল্টার এ সমস্যা হয়েছে!', 'danger')
     
     customers = query.all()
-    return render_template('loan_customers.html', customers=customers, from_date=from_date, to_date=to_date, from_date_display=from_date_display, to_date_display=to_date_display, now=datetime.now())
+    return render_template('loan_customers.html', customers=customers, from_date=from_date, to_date=to_date, from_date_display=from_date_display, to_date_display=to_date_display, now=datetime.now(), month=month, year=year)
 
 @app.route('/customer_details/<int:id>')
 @login_required
@@ -2549,22 +2574,35 @@ def search_customers():
         (Customer.member_no.like(f'%{query}%')) | 
         (Customer.phone.like(f'%{query}%'))
     ).limit(20).all()
-    return {'customers': [{
-        'id': c.id,
-        'name': c.name,
-        'member_no': c.member_no or 'N/A',
-        'phone': c.phone or 'N/A',
-        'village': c.village or 'N/A',
-        'address': c.address or 'N/A',
-        'father_husband': c.father_husband or 'N/A',
-        'nid_no': c.nid_no or 'N/A',
-        'profession': c.profession or 'N/A',
-        'total_loan': float(c.total_loan),
-        'remaining_loan': float(c.remaining_loan),
-        'savings_balance': float(c.savings_balance),
-        'staff_name': c.staff.name if c.staff else 'N/A',
-        'created_date': c.created_date.strftime('%d-%m-%Y') if c.created_date else 'N/A'
-    } for c in customers]}
+    
+    result = []
+    for c in customers:
+        # Calculate collection stats
+        total_collected = db.session.query(db.func.sum(LoanCollection.amount)).filter_by(customer_id=c.id).scalar() or 0
+        last_collection = LoanCollection.query.filter_by(customer_id=c.id).order_by(LoanCollection.collection_date.desc()).first()
+        
+        result.append({
+            'id': c.id,
+            'name': c.name,
+            'member_no': c.member_no or 'N/A',
+            'phone': c.phone or 'N/A',
+            'village': c.village or 'N/A',
+            'address': c.address or 'N/A',
+            'father_husband': c.father_husband or 'N/A',
+            'nid_no': c.nid_no or 'N/A',
+            'profession': c.profession or 'N/A',
+            'total_loan': float(c.total_loan),
+            'remaining_loan': float(c.remaining_loan),
+            'savings_balance': float(c.savings_balance),
+            'staff_name': c.staff.name if c.staff else 'N/A',
+            'created_date': c.created_date.strftime('%d-%m-%Y') if c.created_date else 'N/A',
+            'total_collected': float(total_collected),
+            'last_collection_date': last_collection.collection_date.strftime('%d-%m-%Y') if last_collection else 'কখনো নয়',
+            'loan_status': 'পরিশোধিত' if c.remaining_loan == 0 and c.total_loan > 0 else 'চলমান' if c.remaining_loan > 0 else 'নতুন',
+            'payment_percentage': round((total_collected / c.total_loan * 100) if c.total_loan > 0 else 0, 1)
+        })
+    
+    return {'customers': result}
 
 @app.route('/api/get_customer_by_nid')
 @login_required
