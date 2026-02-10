@@ -60,6 +60,11 @@
   <h3 style="text-align: center;">সকল স্টাফ রিপোর্ট</h3>
   {% if from_date and to_date %}
   <p style="text-align: center;">তারিখ: {{ from_date.split('-')[2] }}-{{ from_date.split('-')[1] }}-{{ from_date.split('-')[0] }} থেকে {{ to_date.split('-')[2] }}-{{ to_date.split('-')[1] }}-{{ to_date.split('-')[0] }}</p>
+  {% elif month and year %}
+  <p style="text-align: center; font-weight: bold;">
+    {% set month_names = ['', 'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'] %}
+    মাস: {{ month_names[month] }} {{ year }}
+  </p>
   {% elif period == 'daily' %}
   <p style="text-align: center;">দৈনিক রিপোর্ট - তারিখ: {{ now.strftime('%d-%m-%Y') }}</p>
   {% elif period == 'monthly' %}

@@ -23,7 +23,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h2 class="page-title"><i class="fas fa-receipt"></i> সব ফি হিস্ট্রি</h2>
       <div>
-        <a href="{{ url_for('all_fees_print') }}?from_date={{ from_date }}&to_date={{ to_date }}" class="btn btn-light me-2" target="_blank"><i class="fas fa-print"></i> প্রিন্ট করুন</a>
+        <a href="{{ url_for('all_fees_print', from_date=from_date, to_date=to_date, month=request.args.get('month'), year=request.args.get('year')) }}" class="btn btn-light me-2" target="_blank"><i class="fas fa-print"></i> প্রিন্ট করুন</a>
         <a href="{{ url_for('dashboard') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> ফিরে যান</a>
       </div>
     </div>
@@ -60,7 +60,20 @@
     </div>
 
     <div class="main-card p-4 mb-4">
-      <h5 class="mb-3"><i class="fas fa-filter"></i> তারিখ অনুযায়ী ফিল্টার</h5>
+      <h5 class="mb-3"><i class="fas fa-filter"></i> ফিল্টার</h5>
+      
+      <div class="mb-3">
+        <div class="btn-group" role="group">
+          {% set months = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'] %}
+          {% for i in range(1, 13) %}
+            <a href="{{ url_for('all_fees_history', month=i, year=now.year) }}" 
+               class="btn btn-sm btn-{{ 'success' if request.args.get('month')|int == i else 'outline-secondary' }}">
+              {{ months[i-1] }}
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+      
       <form method="GET" class="row g-3">
         <div class="col-md-4">
           <label class="form-label"><i class="fas fa-calendar-alt"></i> শুরুর তারিখ</label>

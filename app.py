@@ -343,6 +343,8 @@ def staff_collection_report(id):
     period = request.args.get('period', 'daily')
     from_date = request.args.get('from_date', '')
     to_date = request.args.get('to_date', '')
+    month = request.args.get('month', type=int)
+    year = request.args.get('year', type=int)
     
     today = datetime.now()
     
@@ -357,8 +359,14 @@ def staff_collection_report(id):
         start_date = today.replace(hour=0, minute=0, second=0, microsecond=0)
         end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
     elif period == 'monthly':
-        start_date = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
+        if month and year:
+            import calendar
+            last_day = calendar.monthrange(year, month)[1]
+            start_date = datetime(year, month, 1, 0, 0, 0)
+            end_date = datetime(year, month, last_day, 23, 59, 59)
+        else:
+            start_date = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
     else:
         start_date = today.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
         end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
@@ -411,6 +419,8 @@ def all_staff_report_print():
     period = request.args.get('period', 'daily')
     from_date = request.args.get('from_date', '')
     to_date = request.args.get('to_date', '')
+    month = request.args.get('month', type=int)
+    year = request.args.get('year', type=int)
     
     today = datetime.now()
     
@@ -425,8 +435,14 @@ def all_staff_report_print():
         start_date = today.replace(hour=0, minute=0, second=0, microsecond=0)
         end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
     elif period == 'monthly':
-        start_date = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
+        if month and year:
+            import calendar
+            last_day = calendar.monthrange(year, month)[1]
+            start_date = datetime(year, month, 1, 0, 0, 0)
+            end_date = datetime(year, month, last_day, 23, 59, 59)
+        else:
+            start_date = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
     else:
         start_date = today.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
         end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
@@ -452,7 +468,7 @@ def all_staff_report_print():
             'total_collection': total_loan + total_saving
         })
     
-    return render_template('all_staff_report_print.html', staff_data=staff_data, period=period, from_date=from_date, to_date=to_date)
+    return render_template('all_staff_report_print.html', staff_data=staff_data, period=period, from_date=from_date, to_date=to_date, month=month, year=year)
 
 @app.route('/admin/staff/delete/<int:id>', methods=['POST'])
 @login_required
@@ -903,19 +919,33 @@ def manage_customers():
         # Monitor staff can view but not edit
         is_monitor = hasattr(current_user, 'is_monitor') and current_user.is_monitor
         
+        # Get filter parameters
+        month = request.args.get('month', type=int)
+        year = request.args.get('year', type=int)
+        
         if current_user.role == 'staff':
             # Office staff and monitor can see all customers
             is_office = hasattr(current_user, 'is_office_staff') and current_user.is_office_staff
             if is_office or is_monitor:
-                customers = Customer.query.filter_by(is_active=True).all()
+                query = Customer.query.filter_by(is_active=True)
             else:
                 # Field staff can only see their own customers
-                customers = Customer.query.filter_by(staff_id=current_user.id, is_active=True).all()
+                query = Customer.query.filter_by(staff_id=current_user.id, is_active=True)
         else:
             # Admin can see all customers
-            customers = Customer.query.filter_by(is_active=True).all()
+            query = Customer.query.filter_by(is_active=True)
         
-        return render_template('manage_customers.html', customers=customers)
+        # Apply date filter if provided
+        if month and year:
+            import calendar
+            last_day = calendar.monthrange(year, month)[1]
+            start_date = datetime(year, month, 1)
+            end_date = datetime(year, month, last_day, 23, 59, 59)
+            query = query.filter(Customer.created_date >= start_date, Customer.created_date <= end_date)
+        
+        customers = query.all()
+        
+        return render_template('manage_customers.html', customers=customers, month=month, year=year)
     except Exception as e:
         flash(f'Error loading customers: {str(e)}', 'danger')
         return redirect(url_for('dashboard'))
@@ -923,11 +953,23 @@ def manage_customers():
 @app.route('/all_customers_print')
 @login_required
 def all_customers_print():
+    month = request.args.get('month', type=int)
+    year = request.args.get('year', type=int)
+    
     if current_user.role == 'staff' and (not hasattr(current_user, 'is_office_staff') or not current_user.is_office_staff):
-        customers = Customer.query.filter_by(staff_id=current_user.id).order_by(Customer.member_no).all()
+        query = Customer.query.filter_by(staff_id=current_user.id).order_by(Customer.member_no)
     else:
-        customers = Customer.query.order_by(Customer.member_no).all()
-    return render_template('all_customers_print.html', customers=customers)
+        query = Customer.query.order_by(Customer.member_no)
+    
+    if month and year:
+        import calendar
+        last_day = calendar.monthrange(year, month)[1]
+        start_date = datetime(year, month, 1)
+        end_date = datetime(year, month, last_day, 23, 59, 59)
+        query = query.filter(Customer.created_date >= start_date, Customer.created_date <= end_date)
+    
+    customers = query.all()
+    return render_template('all_customers_print.html', customers=customers, month=month, year=year)
 
 @app.route('/loan_customers')
 @login_required
@@ -2712,14 +2754,24 @@ def all_fees_history():
     
     from_date = request.args.get('from_date', '')
     to_date = request.args.get('to_date', '')
+    month = request.args.get('month', type=int)
+    year = request.args.get('year', type=int)
     
     query = FeeCollection.query
-    if from_date:
+    
+    if month and year:
+        import calendar
+        last_day = calendar.monthrange(year, month)[1]
+        start_date = datetime(year, month, 1)
+        end_date = datetime(year, month, last_day, 23, 59, 59)
+        query = query.filter(FeeCollection.collection_date >= start_date, FeeCollection.collection_date <= end_date)
+    elif from_date:
         try:
             from_datetime = datetime.strptime(from_date, '%Y-%m-%d')
             query = query.filter(FeeCollection.collection_date >= from_datetime)
         except ValueError:
             pass
+    
     if to_date:
         try:
             to_datetime = datetime.strptime(to_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
@@ -2753,14 +2805,24 @@ def all_fees_print():
     
     from_date = request.args.get('from_date', '')
     to_date = request.args.get('to_date', '')
+    month = request.args.get('month', type=int)
+    year = request.args.get('year', type=int)
     
     query = FeeCollection.query
-    if from_date:
+    
+    if month and year:
+        import calendar
+        last_day = calendar.monthrange(year, month)[1]
+        start_date = datetime(year, month, 1)
+        end_date = datetime(year, month, last_day, 23, 59, 59)
+        query = query.filter(FeeCollection.collection_date >= start_date, FeeCollection.collection_date <= end_date)
+    elif from_date:
         try:
             from_datetime = datetime.strptime(from_date, '%Y-%m-%d')
             query = query.filter(FeeCollection.collection_date >= from_datetime)
         except ValueError:
             pass
+    
     if to_date:
         try:
             to_datetime = datetime.strptime(to_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)

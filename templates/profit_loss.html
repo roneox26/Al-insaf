@@ -6,19 +6,28 @@
   <title>Profit & Loss Statement</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
+  <style>
+    @media print {
+      .no-print { display: none; }
+      body { background: white; }
+    }
+  </style>
+
   <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
 </head>
 
 <body class="container mt-5">
   <h2 class="mb-4">📊 Profit & Loss Statement</h2>
 
-  <div class="mb-3">
+  <div class="mb-3 no-print">
+    <button onclick="window.print()" class="btn btn-primary">🖨️ Print Full Report</button>
     <a href="{{ url_for('profit_loss', period='monthly') }}" class="btn btn-{% if period == 'monthly' %}primary{% else %}outline-primary{% endif %}">📅 This Month</a>
     <a href="{{ url_for('profit_loss', period='yearly') }}" class="btn btn-{% if period == 'yearly' %}primary{% else %}outline-primary{% endif %}">📆 This Year</a>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">⬅️ Back to Dashboard</a>
   </div>
 
   {% if period == 'monthly' %}
-  <div class="mb-3">
+  <div class="mb-3 no-print">
     <div class="btn-group" role="group">
       {% set months = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'] %}
       {% for i in range(1, 13) %}
@@ -70,97 +79,130 @@
   <div class="row">
     <div class="col-md-6">
       <div class="card shadow p-4">
-        <h4 class="text-success">💰 Income Breakdown
-          {% if period == 'monthly' and month_name %}
-          <small class="text-muted">(📆 {{ month_name }} {{ year }})</small>
-          {% elif period == 'yearly' %}
-          <small class="text-muted">(📆 Year {{ year }})</small>
-          {% endif %}
-        </h4>
-        <table class="table table-bordered">
-          <tr>
-            <td>Loan Collections</td>
-            <td class="text-end"><strong>৳{{ "{:,.2f}".format(total_loan_collected) }}</strong></td>
-          </tr>
-          <tr>
-            <td>Savings Collections</td>
-            <td class="text-end"><strong>৳{{ "{:,.2f}".format(total_savings_collected) }}</strong></td>
-          </tr>
-          <tr class="table-success">
-            <td><strong>Total Income</strong></td>
-            <td class="text-end"><strong>৳{{ "{:,.2f}".format(total_income) }}</strong></td>
-          </tr>
-        </table>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4 class="text-success mb-0">💰 Income Breakdown
+            {% if period == 'monthly' and month_name %}
+            <small class="text-muted">(📆 {{ month_name }} {{ year }})</small>
+            {% elif period == 'yearly' %}
+            <small class="text-muted">(📆 Year {{ year }})</small>
+            {% endif %}
+          </h4>
+          <button onclick="printSection('income-section')" class="btn btn-sm btn-success no-print">🖨️ Print</button>
+        </div>
+        <div id="income-section">
+          <table class="table table-bordered">
+            <tr>
+              <td>Loan Collections</td>
+              <td class="text-end"><strong>৳{{ "{:,.2f}".format(total_loan_collected) }}</strong></td>
+            </tr>
+            <tr>
+              <td>Savings Collections</td>
+              <td class="text-end"><strong>৳{{ "{:,.2f}".format(total_savings_collected) }}</strong></td>
+            </tr>
+            <tr class="table-success">
+              <td><strong>Total Income</strong></td>
+              <td class="text-end"><strong>৳{{ "{:,.2f}".format(total_income) }}</strong></td>
+            </tr>
+          </table>
+        </div>
       </div>
     </div>
 
     <div class="col-md-6">
       <div class="card shadow p-4">
-        <h4 class="text-danger">💸 Outflow Breakdown
-          {% if period == 'monthly' and month_name %}
-          <small class="text-muted">(📆 {{ month_name }} {{ year }})</small>
-          {% elif period == 'yearly' %}
-          <small class="text-muted">(📆 Year {{ year }})</small>
-          {% endif %}
-        </h4>
-        <table class="table table-bordered">
-          <tr>
-            <td>👨💼 Staff Salary</td>
-            <td class="text-end">৳{{ "{:,.2f}".format(salary_exp) }}</td>
-          </tr>
-          <tr>
-            <td>🏢 Office Cost</td>
-            <td class="text-end">৳{{ "{:,.2f}".format(office_exp) }}</td>
-          </tr>
-          <tr>
-            <td>🚗 Transport</td>
-            <td class="text-end">৳{{ "{:,.2f}".format(transport_exp) }}</td>
-          </tr>
-          <tr>
-            <td>📦 Other Expenses</td>
-            <td class="text-end">৳{{ "{:,.2f}".format(other_exp) }}</td>
-          </tr>
-          <tr>
-            <td>💸 Investor Withdrawals</td>
-            <td class="text-end">৳{{ "{:,.2f}".format(total_withdrawals) }}</td>
-          </tr>
-          <tr class="table-danger">
-            <td><strong>Total Outflow</strong></td>
-            <td class="text-end"><strong>৳{{ "{:,.2f}".format(total_expenses + total_withdrawals) }}</strong></td>
-          </tr>
-        </table>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4 class="text-danger mb-0">💸 Outflow Breakdown
+            {% if period == 'monthly' and month_name %}
+            <small class="text-muted">(📆 {{ month_name }} {{ year }})</small>
+            {% elif period == 'yearly' %}
+            <small class="text-muted">(📆 Year {{ year }})</small>
+            {% endif %}
+          </h4>
+          <button onclick="printSection('outflow-section')" class="btn btn-sm btn-danger no-print">🖨️ Print</button>
+        </div>
+        <div id="outflow-section">
+          <table class="table table-bordered">
+            <tr>
+              <td>👨💼 Staff Salary</td>
+              <td class="text-end">৳{{ "{:,.2f}".format(salary_exp) }}</td>
+            </tr>
+            <tr>
+              <td>🏢 Office Cost</td>
+              <td class="text-end">৳{{ "{:,.2f}".format(office_exp) }}</td>
+            </tr>
+            <tr>
+              <td>🚗 Transport</td>
+              <td class="text-end">৳{{ "{:,.2f}".format(transport_exp) }}</td>
+            </tr>
+            <tr>
+              <td>📦 Other Expenses</td>
+              <td class="text-end">৳{{ "{:,.2f}".format(other_exp) }}</td>
+            </tr>
+            <tr>
+              <td>💸 Investor Withdrawals</td>
+              <td class="text-end">৳{{ "{:,.2f}".format(total_withdrawals) }}</td>
+            </tr>
+            <tr class="table-danger">
+              <td><strong>Total Outflow</strong></td>
+              <td class="text-end"><strong>৳{{ "{:,.2f}".format(total_expenses + total_withdrawals) }}</strong></td>
+            </tr>
+          </table>
+        </div>
       </div>
     </div>
   </div>
 
   <div class="card shadow p-4 mt-4">
-    <h4>📊 Summary
-      {% if period == 'monthly' and month_name %}
-      <small class="text-muted">(📆 {{ month_name }} {{ year }})</small>
-      {% elif period == 'yearly' %}
-      <small class="text-muted">(📆 Year {{ year }})</small>
-      {% endif %}
-    </h4>
-    <table class="table table-bordered">
-      <tr>
-        <td>Total Income</td>
-        <td class="text-end text-success"><strong>৳{{ "{:,.2f}".format(total_income) }}</strong></td>
-      </tr>
-      <tr>
-        <td>Total Expenses</td>
-        <td class="text-end text-danger">৳{{ "{:,.2f}".format(total_expenses) }}</td>
-      </tr>
-      <tr>
-        <td>Investor Withdrawals</td>
-        <td class="text-end text-danger">৳{{ "{:,.2f}".format(total_withdrawals) }}</td>
-      </tr>
-      <tr class="{% if net_profit >= 0 %}table-primary{% else %}table-warning{% endif %}">
-        <td><strong>{% if net_profit >= 0 %}Net Profit{% else %}Net Loss{% endif %}</strong></td>
-        <td class="text-end"><strong>৳{{ "{:,.2f}".format(net_profit) }}</strong></td>
-      </tr>
-    </table>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h4 class="mb-0">📊 Summary
+        {% if period == 'monthly' and month_name %}
+        <small class="text-muted">(📆 {{ month_name }} {{ year }})</small>
+        {% elif period == 'yearly' %}
+        <small class="text-muted">(📆 Year {{ year }})</small>
+        {% endif %}
+      </h4>
+      <button onclick="printSection('summary-section')" class="btn btn-sm btn-primary no-print">🖨️ Print</button>
+    </div>
+    <div id="summary-section">
+      <table class="table table-bordered">
+        <tr>
+          <td>Total Income</td>
+          <td class="text-end text-success"><strong>৳{{ "{:,.2f}".format(total_income) }}</strong></td>
+        </tr>
+        <tr>
+          <td>Total Expenses</td>
+          <td class="text-end text-danger">৳{{ "{:,.2f}".format(total_expenses) }}</td>
+        </tr>
+        <tr>
+          <td>Investor Withdrawals</td>
+          <td class="text-end text-danger">৳{{ "{:,.2f}".format(total_withdrawals) }}</td>
+        </tr>
+        <tr class="{% if net_profit >= 0 %}table-primary{% else %}table-warning{% endif %}">
+          <td><strong>{% if net_profit >= 0 %}Net Profit{% else %}Net Loss{% endif %}</strong></td>
+          <td class="text-end"><strong>৳{{ "{:,.2f}".format(net_profit) }}</strong></td>
+        </tr>
+      </table>
+    </div>
   </div>
 
-  <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-4">⬅️ Back to Dashboard</a>
+  <script>
+  function printSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    const printWindow = window.open('', '', 'height=600,width=800');
+    printWindow.document.write('<html><head><title>Print</title>');
+    printWindow.document.write('<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">');
+    printWindow.document.write('<style>body{padding:20px;}</style>');
+    printWindow.document.write('</head><body>');
+    printWindow.document.write('<h3>আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h3>');
+    printWindow.document.write(section.innerHTML);
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.print();
+  }
+  </script>
+
+  <div class="no-print mt-4">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">⬅️ Back to Dashboard</a>
+  </div>
 </body>
 </html>

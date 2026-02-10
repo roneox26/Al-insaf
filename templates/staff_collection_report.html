@@ -45,6 +45,20 @@
       {% endif %}
     </div>
     
+    {% if period == 'monthly' %}
+    <div class="mt-3">
+      <div class="btn-group" role="group">
+        {% set months = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'] %}
+        {% for i in range(1, 13) %}
+          <a href="{{ url_for('staff_collection_report', id=staff.id, period='monthly', month=i, year=now.year, from_staff_view=request.args.get('from_staff_view')) }}" 
+             class="btn btn-sm btn-{{ 'success' if request.args.get('month', now.month)|int == i else 'outline-secondary' }}">
+            {{ months[i-1] }}
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+    
     <form method="GET" class="mt-3">
       <div class="row g-2">
         <div class="col-md-4">

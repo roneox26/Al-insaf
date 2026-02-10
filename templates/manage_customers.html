@@ -35,15 +35,50 @@
     </div>
 
     <div class="main-card p-4 mb-4">
-      <div class="d-flex flex-wrap gap-2">
+      <div class="d-flex flex-wrap gap-2 mb-3">
         {% if current_user.role == 'admin' or (current_user.role == 'staff' and not (current_user.is_monitor if current_user.is_monitor is defined else false)) %}
         <a href="{{ url_for('add_customer') }}" class="btn btn-success"><i class="fas fa-user-plus"></i> Add New Customer</a>
         {% endif %}
-        <a href="{{ url_for('all_customers_print') }}" class="btn btn-primary" target="_blank"><i class="fas fa-print"></i> Print All</a>
+        <a href="{{ url_for('all_customers_print', month=month, year=year) }}" class="btn btn-primary" target="_blank"><i class="fas fa-print"></i> Print All</a>
         {% if current_user.role == 'admin' %}
         <a href="{{ url_for('inactive_customers') }}" class="btn btn-warning"><i class="fas fa-user-slash"></i> Inactive Customers</a>
         {% endif %}
       </div>
+      
+      <!-- Date Filter -->
+      <form method="GET" class="row g-2">
+        <div class="col-md-3">
+          <label class="form-label">মাস</label>
+          <select name="month" class="form-select">
+            <option value="">সব মাস</option>
+            <option value="1" {% if month == 1 %}selected{% endif %}>জানুয়ারি</option>
+            <option value="2" {% if month == 2 %}selected{% endif %}>ফেব্রুয়ারি</option>
+            <option value="3" {% if month == 3 %}selected{% endif %}>মার্চ</option>
+            <option value="4" {% if month == 4 %}selected{% endif %}>এপ্রিল</option>
+            <option value="5" {% if month == 5 %}selected{% endif %}>মে</option>
+            <option value="6" {% if month == 6 %}selected{% endif %}>জুন</option>
+            <option value="7" {% if month == 7 %}selected{% endif %}>জুলাই</option>
+            <option value="8" {% if month == 8 %}selected{% endif %}>আগস্ট</option>
+            <option value="9" {% if month == 9 %}selected{% endif %}>সেপ্টেম্বর</option>
+            <option value="10" {% if month == 10 %}selected{% endif %}>অক্টোবর</option>
+            <option value="11" {% if month == 11 %}selected{% endif %}>নভেম্বর</option>
+            <option value="12" {% if month == 12 %}selected{% endif %}>ডিসেম্বর</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">বছর</label>
+          <select name="year" class="form-select">
+            <option value="">সব বছর</option>
+            {% for y in range(2020, 2031) %}
+            <option value="{{ y }}" {% if year == y %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+          <button type="submit" class="btn btn-info me-2"><i class="fas fa-filter"></i> ফিল্টার</button>
+          <a href="{{ url_for('manage_customers') }}" class="btn btn-secondary"><i class="fas fa-redo"></i> রিসেট</a>
+        </div>
+      </form>
     </div>
 
     <div class="table-container shadow">

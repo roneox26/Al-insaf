@@ -30,6 +30,8 @@
     <a href="{{ url_for('add_staff') }}" class="btn btn-success">➕ নতুন Staff যোগ করুন</a>
     {% if from_date and to_date %}
     <a href="{{ url_for('all_staff_report_print', from_date=from_date, to_date=to_date) }}" class="btn btn-primary" target="_blank">🖨️ Print Report</a>
+    {% elif request.args.get('month') and request.args.get('year') %}
+    <a href="{{ url_for('all_staff_report_print', period='monthly', month=request.args.get('month'), year=request.args.get('year')) }}" class="btn btn-primary" target="_blank">🖨️ Print Report</a>
     {% else %}
     <a href="{{ url_for('all_staff_report_print', period=period) }}" class="btn btn-primary" target="_blank">🖨️ Print Report</a>
     {% endif %}
