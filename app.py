@@ -1119,73 +1119,80 @@ def customer_details_print(id):
 @app.route('/customer_loan_sheet/<int:id>')
 @login_required
 def customer_loan_sheet(id):
-    customer = Customer.query.get_or_404(id)
-    loans = Loan.query.filter_by(customer_name=customer.name).all()
-    loan_collections = LoanCollection.query.filter_by(customer_id=id).order_by(LoanCollection.collection_date).all()
-    saving_collections = SavingCollection.query.filter_by(customer_id=id).order_by(SavingCollection.collection_date).all()
-    withdrawals = Withdrawal.query.filter_by(customer_id=id).order_by(Withdrawal.date).all()
-    from models.fee_model import FeeCollection
-    admission_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=id, fee_type='admission').scalar() or 0
-    welfare_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=id, fee_type='welfare').scalar() or 0
-    application_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=id, fee_type='application').scalar() or 0
-    
-    loan_principal = sum(loan.amount for loan in loans)
-    interest_amount = sum(loan.amount * loan.interest / 100 for loan in loans)
-    total_loan_disbursed = loan_principal
-    total_loan_with_interest = loan_principal + interest_amount
-    
-    total_loan_collected = sum(lc.amount for lc in loan_collections)
-    total_savings = sum(sc.amount for sc in saving_collections)
-    total_withdrawn = sum(w.amount for w in withdrawals)
-    
-    collections_dict = {}
-    for lc in loan_collections:
-        date_key = lc.collection_date.date()
-        if date_key not in collections_dict:
-            collections_dict[date_key] = {'date': lc.collection_date, 'loan': 0, 'saving': 0}
-        collections_dict[date_key]['loan'] += lc.amount
-    
-    for sc in saving_collections:
-        date_key = sc.collection_date.date()
-        if date_key not in collections_dict:
-            collections_dict[date_key] = {'date': sc.collection_date, 'loan': 0, 'saving': 0}
-        collections_dict[date_key]['saving'] += sc.amount
-    
-    merged_collections = sorted(collections_dict.values(), key=lambda x: x['date'])
-    
-    installment_count = sum(loan.installment_count for loan in loans)
-    weekly_installment = loans[0].installment_amount if loans else 0
-    loan_date = loans[0].loan_date.strftime('%d-%m-%Y') if loans else ''
-    loan_end_date = ''
-    if loans and loans[0].loan_date and installment_count > 0:
-        from datetime import timedelta
-        loan_end_date = (loans[0].loan_date + timedelta(weeks=installment_count)).strftime('%d-%m-%Y')
-    interest_rate = loans[0].interest if loans else 0
-    
-    staff = User.query.get(customer.staff_id) if customer.staff_id else None
-    
-    return render_template('customer_loan_sheet.html', 
-                         customer=customer, 
-                         loans=loans, 
-                         merged_collections=merged_collections, 
-                         withdrawals=withdrawals, 
-                         total_loan_disbursed=total_loan_disbursed,
-                         total_loan_with_interest=total_loan_with_interest,
-                         total_loan_collected=total_loan_collected, 
-                         total_withdrawn=total_withdrawn, 
-                         installment_count=installment_count, 
-                         weekly_installment=weekly_installment, 
-                         staff=staff, 
-                         loan_date=loan_date, 
-                         loan_end_date=loan_end_date, 
-                         interest_rate=interest_rate, 
-                         loan_principal=loan_principal, 
-                         interest_amount=interest_amount, 
-                         total_savings=total_savings, 
-                         admission_fee=admission_fee, 
-                         welfare_fee=welfare_fee, 
-                         application_fee=application_fee, 
-                         now=datetime.now())
+    try:
+        customer = Customer.query.get_or_404(id)
+        loans = Loan.query.filter_by(customer_name=customer.name).all()
+        loan_collections = LoanCollection.query.filter_by(customer_id=id).order_by(LoanCollection.collection_date).all()
+        saving_collections = SavingCollection.query.filter_by(customer_id=id).order_by(SavingCollection.collection_date).all()
+        withdrawals = Withdrawal.query.filter_by(customer_id=id).order_by(Withdrawal.date).all()
+        from models.fee_model import FeeCollection
+        admission_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=id, fee_type='admission').scalar() or 0
+        welfare_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=id, fee_type='welfare').scalar() or 0
+        application_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=id, fee_type='application').scalar() or 0
+        
+        loan_principal = sum(loan.amount for loan in loans)
+        interest_amount = sum(loan.amount * loan.interest / 100 for loan in loans)
+        total_loan_disbursed = loan_principal
+        total_loan_with_interest = loan_principal + interest_amount
+        
+        total_loan_collected = sum(lc.amount for lc in loan_collections)
+        total_savings = sum(sc.amount for sc in saving_collections)
+        total_withdrawn = sum(w.amount for w in withdrawals)
+        
+        collections_dict = {}
+        for lc in loan_collections:
+            date_key = lc.collection_date.date()
+            if date_key not in collections_dict:
+                collections_dict[date_key] = {'date': lc.collection_date, 'loan': 0, 'saving': 0}
+            collections_dict[date_key]['loan'] += lc.amount
+        
+        for sc in saving_collections:
+            date_key = sc.collection_date.date()
+            if date_key not in collections_dict:
+                collections_dict[date_key] = {'date': sc.collection_date, 'loan': 0, 'saving': 0}
+            collections_dict[date_key]['saving'] += sc.amount
+        
+        merged_collections = sorted(collections_dict.values(), key=lambda x: x['date'])
+        
+        installment_count = sum(loan.installment_count for loan in loans)
+        weekly_installment = loans[0].installment_amount if loans else 0
+        loan_date = loans[0].loan_date.strftime('%d-%m-%Y') if loans else ''
+        loan_end_date = ''
+        if loans and loans[0].loan_date and installment_count > 0:
+            from datetime import timedelta
+            loan_end_date = (loans[0].loan_date + timedelta(weeks=installment_count)).strftime('%d-%m-%Y')
+        interest_rate = loans[0].interest if loans else 0
+        
+        staff = User.query.get(customer.staff_id) if customer.staff_id else None
+        
+        return render_template('customer_loan_sheet.html', 
+                             customer=customer, 
+                             loans=loans, 
+                             merged_collections=merged_collections, 
+                             withdrawals=withdrawals, 
+                             total_loan_disbursed=total_loan_disbursed,
+                             total_loan_with_interest=total_loan_with_interest,
+                             total_loan_collected=total_loan_collected, 
+                             total_withdrawn=total_withdrawn, 
+                             installment_count=installment_count, 
+                             weekly_installment=weekly_installment, 
+                             staff=staff, 
+                             loan_date=loan_date, 
+                             loan_end_date=loan_end_date, 
+                             interest_rate=interest_rate, 
+                             loan_principal=loan_principal, 
+                             interest_amount=interest_amount, 
+                             total_savings=total_savings, 
+                             admission_fee=admission_fee, 
+                             welfare_fee=welfare_fee, 
+                             application_fee=application_fee, 
+                             now=datetime.now())
+    except Exception as e:
+        import traceback
+        print(f"Error in customer_loan_sheet: {e}")
+        traceback.print_exc()
+        flash(f'Error loading loan sheet: {str(e)}', 'danger')
+        return redirect(url_for('customer_details', id=id))
 
 @app.route('/customer/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
