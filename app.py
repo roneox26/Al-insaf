@@ -81,6 +81,8 @@ def load_user(user_id):
 
 @app.route('/')
 def home():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -248,7 +250,7 @@ def add_staff():
         hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
         is_office_staff = staff_type == 'office'
         is_monitor = staff_type == 'monitor'
-        salary = float(request.form.get('salary', 0) or 0)
+        salary = float(request.form.get('salary', '0') or 0)
         new_staff = User(name=name, email=email, password=hashed_pw, role='staff', is_office_staff=is_office_staff, is_monitor=is_monitor, phone=request.form.get('phone', '').strip(), nid=request.form.get('nid', '').strip(), address=request.form.get('address', '').strip(), salary=salary, photo=photo_filename, plain_password=password)
         db.session.add(new_staff)
         db.session.commit()
@@ -310,7 +312,7 @@ def edit_staff(id):
         staff.nid = request.form.get('nid', '').strip()
         staff.address = request.form.get('address', '').strip()
         staff.status = request.form.get('status', 'active')
-        staff.salary = float(request.form.get('salary', 0) or 0)
+        staff.salary = float(request.form.get('salary', '0') or 0)
         
         if request.form.get('password'):
             staff.password = bcrypt.generate_password_hash(request.form['password']).decode('utf-8')
@@ -1127,10 +1129,14 @@ def customer_loan_sheet(id):
     welfare_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=id, fee_type='welfare').scalar() or 0
     application_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=id, fee_type='application').scalar() or 0
     
+    # Calculate loan amounts
     loan_principal = sum(loan.amount for loan in loans)
     interest_amount = sum(loan.amount * loan.interest / 100 for loan in loans)
-    total_loan = sum(loan.amount + (loan.amount * loan.interest / 100) for loan in loans)
-    total_collected = sum(lc.amount for lc in loan_collections)
+    total_loan_disbursed = loan_principal  # Only principal amount disbursed
+    total_loan_with_interest = loan_principal + interest_amount  # Total to be repaid
+    
+    # Calculate collections
+    total_loan_collected = sum(lc.amount for lc in loan_collections)
     total_savings = sum(sc.amount for sc in saving_collections)
     total_withdrawn = sum(w.amount for w in withdrawals)
     
@@ -1161,7 +1167,28 @@ def customer_loan_sheet(id):
     
     staff = User.query.get(customer.staff_id) if customer.staff_id else None
     
-    return render_template('customer_loan_sheet.html', customer=customer, loans=loans, merged_collections=merged_collections, withdrawals=withdrawals, total_loan=total_loan, total_collected=total_collected, total_withdrawn=total_withdrawn, installment_count=installment_count, weekly_installment=weekly_installment, staff=staff, loan_date=loan_date, loan_end_date=loan_end_date, interest_rate=interest_rate, loan_principal=loan_principal, interest_amount=interest_amount, total_savings=total_savings, admission_fee=admission_fee, welfare_fee=welfare_fee, application_fee=application_fee, now=datetime.now())
+    return render_template('customer_loan_sheet.html', 
+                         customer=customer, 
+                         loans=loans, 
+                         merged_collections=merged_collections, 
+                         withdrawals=withdrawals, 
+                         total_loan_disbursed=total_loan_disbursed,
+                         total_loan_with_interest=total_loan_with_interest,
+                         total_loan_collected=total_loan_collected, 
+                         total_withdrawn=total_withdrawn, 
+                         installment_count=installment_count, 
+                         weekly_installment=weekly_installment, 
+                         staff=staff, 
+                         loan_date=loan_date, 
+                         loan_end_date=loan_end_date, 
+                         interest_rate=interest_rate, 
+                         loan_principal=loan_principal, 
+                         interest_amount=interest_amount, 
+                         total_savings=total_savings, 
+                         admission_fee=admission_fee, 
+                         welfare_fee=welfare_fee, 
+                         application_fee=application_fee, 
+                         now=datetime.now())
 
 @app.route('/customer/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -1981,8 +2008,9 @@ def profit_loss():
     elif period == 'yearly':
         display_year = today.year
     
+    from markupsafe import escape
     return render_template('profit_loss.html', 
-                         period=period,
+                         period=escape(period),
                          total_income=total_income,
                          total_loan_collected=total_loan_collected,
                          total_savings_collected=total_savings_collected,
@@ -2629,10 +2657,17 @@ def search_customers():
             'member_no': c.member_no or 'N/A',
             'phone': c.phone or 'N/A',
             'village': c.village or 'N/A',
+            'post': c.post or 'N/A',
+            'thana': c.thana or 'N/A',
+            'district': c.district or 'N/A',
             'address': c.address or 'N/A',
             'father_husband': c.father_husband or 'N/A',
+            'granter': c.granter or 'N/A',
             'nid_no': c.nid_no or 'N/A',
             'profession': c.profession or 'N/A',
+            'admission_fee': float(c.admission_fee),
+            'welfare_fee': float(c.welfare_fee),
+            'application_fee': float(c.application_fee),
             'total_loan': float(c.total_loan),
             'remaining_loan': float(c.remaining_loan),
             'savings_balance': float(c.savings_balance),
@@ -3634,9 +3669,9 @@ def import_old_data():
                 village = request.form.get('village', '').strip()
                 address = request.form.get('address', '').strip()
                 staff_id = request.form.get('staff_id', type=int)
-                total_loan = float(request.form.get('total_loan', 0) or 0)
-                remaining_loan = float(request.form.get('remaining_loan', 0) or 0)
-                savings_balance = float(request.form.get('savings_balance', 0) or 0)
+                total_loan = float(request.form.get('total_loan', '0') or 0)
+                remaining_loan = float(request.form.get('remaining_loan', '0') or 0)
+                savings_balance = float(request.form.get('savings_balance', '0') or 0)
                 created_date_str = request.form.get('created_date', '')
                 
                 if not name:
@@ -3741,7 +3776,8 @@ def init_db():
 if __name__ == '__main__':
     init_db()
     port = int(os.environ.get('PORT', 5000))
-    app.run(debug=False, host='0.0.0.0', port=port)
+    debug = os.environ.get('FLASK_ENV') != 'production'
+    app.run(debug=debug, host='0.0.0.0', port=port)
 
 
 

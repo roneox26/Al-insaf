@@ -150,21 +150,48 @@
                                                 <small class="text-muted d-block mb-1">
                                                     <i class="fas fa-map-marker-alt text-danger"></i> ${c.village}
                                                 </small>
+                                                ${c.post !== 'N/A' ? `<small class="text-muted d-block mb-1">
+                                                    <i class="fas fa-envelope text-info"></i> <strong>পোস্ট:</strong> ${c.post}
+                                                </small>` : ''}
+                                                ${c.thana !== 'N/A' ? `<small class="text-muted d-block mb-1">
+                                                    <i class="fas fa-building text-primary"></i> <strong>থানা:</strong> ${c.thana}
+                                                </small>` : ''}
+                                                ${c.district !== 'N/A' ? `<small class="text-muted d-block mb-1">
+                                                    <i class="fas fa-city text-success"></i> <strong>জেলা:</strong> ${c.district}
+                                                </small>` : ''}
                                                 <small class="text-muted d-block mb-1">
                                                     <i class="fas fa-male text-primary"></i> <strong>পিতা/স্বামী:</strong> ${c.father_husband}
                                                 </small>
+                                                ${c.granter !== 'N/A' ? `<small class="text-muted d-block mb-1">
+                                                    <i class="fas fa-user-shield text-warning"></i> <strong>জামিনদার:</strong> ${c.granter}
+                                                </small>` : ''}
                                                 <small class="text-muted d-block mb-1">
                                                     <i class="fas fa-briefcase text-warning"></i> <strong>পেশা:</strong> ${c.profession}
                                                 </small>
                                                 <small class="text-muted d-block mb-1">
                                                     <i class="fas fa-id-card text-secondary"></i> <strong>NID:</strong> ${c.nid_no}
                                                 </small>
+                                                ${c.admission_fee > 0 ? `<small class="text-muted d-block mb-1">
+                                                    <i class="fas fa-money-bill text-success"></i> <strong>ভর্তি ফি:</strong> ৳${c.admission_fee.toLocaleString()}
+                                                </small>` : ''}
+                                                ${c.welfare_fee > 0 ? `<small class="text-muted d-block mb-1">
+                                                    <i class="fas fa-hand-holding-usd text-info"></i> <strong>কল্যাণ ফি:</strong> ৳${c.welfare_fee.toLocaleString()}
+                                                </small>` : ''}
+                                                ${c.application_fee > 0 ? `<small class="text-muted d-block mb-1">
+                                                    <i class="fas fa-file-invoice-dollar text-primary"></i> <strong>আবেদন ফি:</strong> ৳${c.application_fee.toLocaleString()}
+                                                </small>` : ''}
                                                 <small class="text-muted d-block mb-1">
                                                     <i class="fas fa-calendar-plus text-info"></i> <strong>যোগদান:</strong> ${c.created_date}
                                                 </small>
                                                 <small class="text-muted d-block mb-1">
                                                     <i class="fas fa-user-tie text-info"></i> <strong>স্টাফ:</strong> ${c.staff_name}
                                                 </small>
+                                                ${c.total_collected > 0 ? `<small class="text-muted d-block mb-1">
+                                                    <i class="fas fa-coins text-success"></i> <strong>মোট আদায়:</strong> ৳${c.total_collected.toLocaleString()}
+                                                </small>` : ''}
+                                                ${c.last_collection_date !== 'কখনো নয়' ? `<small class="text-muted d-block mb-1">
+                                                    <i class="fas fa-calendar-check text-primary"></i> <strong>শেষ আদায়:</strong> ${c.last_collection_date}
+                                                </small>` : ''}
                                             </div>
                                             
                                             ${c.total_loan > 0 ? `
