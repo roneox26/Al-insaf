@@ -297,12 +297,12 @@
                     <div class="info-cell" style="grid-column: span 3;">{{ customer.address or '' }}</div>
                     
                     <div class="info-cell label">মোবাইল জামিনদার</div>
-                    <div class="info-cell">{{ customer.granter_phone or '' }}</div>
+                    <div class="info-cell"></div>
                     <div class="info-cell label">কল্যাণ</div>
                     <div class="info-cell">{{ "{:,.0f}".format(welfare_fee) if welfare_fee else '০' }}</div>
                     
                     <div class="info-cell label">অভি:ফোন নং</div>
-                    <div class="info-cell">{{ customer.guardian_phone or '' }}</div>
+                    <div class="info-cell"></div>
                     <div class="info-cell label">আবেদন ফি</div>
                     <div class="info-cell">{{ "{:,.0f}".format(application_fee) if application_fee else '০' }}</div>
                     
@@ -325,9 +325,6 @@
                     <div class="info-cell">{{ loan_end_date }}</div>
                     <div class="info-cell label">মোট বকেয়া</div>
                     <div class="info-cell">{{ "{:,.0f}".format(customer.remaining_loan) }}</div>
-                    
-                    <div class="info-cell label">ঋণের উদ্দেশ্য</div>
-                    <div class="info-cell" style="grid-column: span 3;">{{ customer.loan_purpose or '' }}</div>
                 </div>
             </div>
 
@@ -365,15 +362,15 @@
         <div class="summary-section">
             <div class="summary-box">
                 <div class="summary-label">মোট ঋণ</div>
-                <div class="summary-value">{{ "{:,.0f}".format(total_loan) }}</div>
+                <div class="summary-value">{{ "{:,.0f}".format(total_loan_disbursed) }}</div>
             </div>
             <div class="summary-box">
-                <div class="summary-label">মোট 	সঞ্চয়</div>
-                <div class="summary-value">{{ "{:,.0f}".format(total_collected) }}</div>
+                <div class="summary-label">মোট সঞ্চয়</div>
+                <div class="summary-value">{{ "{:,.0f}".format(total_savings) }}</div>
             </div>
             <div class="summary-box">
-                <div class="summary-label">মোট কিস্তি আদায়</div>
-                <div class="summary-value">{{ merged_collections|length }}</div>
+                <div class="summary-label">মোট বিতরণ আদায়</div>
+                <div class="summary-value">{{ "{:,.0f}".format(total_loan_collected) }}</div>
             </div>
             <div class="summary-box">
                 <div class="summary-label">মোট বকেয়া</div>

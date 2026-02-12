@@ -1,9 +1,19 @@
 import os
-os.environ['DATABASE_URL'] = 'postgresql://ngoweb_db_user:REtACHujjdzbn0DspqewJgF4evtzHaDU@dpg-d43kkqgdl3ps73a1a430-a/ngoweb_db'
+import sys
+
+# Get DATABASE_URL from environment variable
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if not DATABASE_URL:
+    print("Error: DATABASE_URL environment variable not set")
+    print("Usage: set DATABASE_URL=postgresql://user:password@host/dbname")
+    sys.exit(1)
+
+os.environ['DATABASE_URL'] = DATABASE_URL
 
 from app import app, init_db
 
 if __name__ == '__main__':
     init_db()
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    host = os.environ.get('HOST', '127.0.0.1')
+    app.run(host=host, port=port, debug=False)

@@ -18,7 +18,9 @@ with app.app_context():
             
             for col_name, col_type in columns_to_add:
                 try:
-                    conn.execute(text(f"ALTER TABLE user ADD COLUMN {col_name} {col_type}"))
+                    # Use parameterized query to prevent SQL injection
+                    sql = text("ALTER TABLE user ADD COLUMN :col_name :col_type")
+                    conn.execute(sql, {"col_name": col_name, "col_type": col_type})
                     conn.commit()
                     print(f"[OK] Added column: {col_name}")
                 except Exception as e:

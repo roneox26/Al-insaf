@@ -25,12 +25,12 @@ def migrate_database():
             # Add the column
             cursor.execute("ALTER TABLE user ADD COLUMN plain_password VARCHAR(100)")
             
-            # Update existing staff with default password
-            cursor.execute("UPDATE user SET plain_password = 'staff123' WHERE role = 'staff' AND plain_password IS NULL")
+            # Note: Existing users will need to reset their passwords
+            # Do not set default passwords for security reasons
             
             conn.commit()
             print("Successfully added plain_password column!")
-            print("Updated existing staff with default password 'staff123'")
+            print("Note: Existing users need to reset their passwords via admin panel")
         else:
             print("Column plain_password already exists!")
         

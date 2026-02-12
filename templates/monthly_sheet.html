@@ -70,16 +70,15 @@
         </thead>
         <tbody>
           {% for customer in customers %}
+          {% set ns = namespace(total_loan=0, total_saving=0) %}
           <tr>
             <td class="member-col">{{ customer.member_no }}</td>
             <td class="member-col">{{ customer.name }}</td>
-            {% set total_loan = 0 %}
-            {% set total_saving = 0 %}
             {% for day in range(1, last_day + 1) %}
             <td>
               {% if customer_data[customer.id][day]['loan'] > 0 %}
               {{ "{:,.0f}".format(customer_data[customer.id][day]['loan']) }}
-              {% set total_loan = total_loan + customer_data[customer.id][day]['loan'] %}
+              {% set ns.total_loan = ns.total_loan + customer_data[customer.id][day]['loan'] %}
               {% else %}
               -
               {% endif %}
@@ -87,14 +86,14 @@
             <td>
               {% if customer_data[customer.id][day]['saving'] > 0 %}
               {{ "{:,.0f}".format(customer_data[customer.id][day]['saving']) }}
-              {% set total_saving = total_saving + customer_data[customer.id][day]['saving'] %}
+              {% set ns.total_saving = ns.total_saving + customer_data[customer.id][day]['saving'] %}
               {% else %}
               -
               {% endif %}
             </td>
             {% endfor %}
-            <td class="total-col">{{ "{:,.0f}".format(total_loan) if total_loan > 0 else '-' }}</td>
-            <td class="total-col">{{ "{:,.0f}".format(total_saving) if total_saving > 0 else '-' }}</td>
+            <td class="total-col">{{ "{:,.0f}".format(ns.total_loan) if ns.total_loan > 0 else '-' }}</td>
+            <td class="total-col">{{ "{:,.0f}".format(ns.total_saving) if ns.total_saving > 0 else '-' }}</td>
           </tr>
           {% endfor %}
         </tbody>

@@ -1,5 +1,14 @@
 import os
-os.environ['DATABASE_URL'] = 'postgresql://ngoweb_db_user:REtACHujjdzbn0DspqewJgF4evtzHaDU@dpg-d43kkqgdl3ps73a1a430-a/ngoweb_db'
+import sys
+
+# Get DATABASE_URL from environment variable
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if not DATABASE_URL:
+    print("Error: DATABASE_URL environment variable not set")
+    print("Usage: set DATABASE_URL=postgresql://user:password@host/dbname")
+    sys.exit(1)
+
+os.environ['DATABASE_URL'] = DATABASE_URL
 
 from app import app, db
 from models import User, Customer, Loan, Saving, Collection, Investor, Investment, Withdrawal, Expense, ScheduledExpense, Note
@@ -24,4 +33,3 @@ with app.app_context():
         print("✓ Admin user created")
     
     print("✓ Database setup complete!")
-    print("URL: postgresql://dpg-d43kkqgdl3ps73a1a430-a")

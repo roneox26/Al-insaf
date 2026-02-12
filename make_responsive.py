@@ -8,8 +8,19 @@ import re
 
 def add_responsive_meta(file_path):
     """Add responsive meta tags and CSS to HTML file"""
+    import os
+    
+    # Validate path to prevent path traversal
+    file_path = os.path.basename(file_path)
+    safe_path = os.path.abspath(file_path)
+    
+    # Ensure file is in current directory
+    if not safe_path.startswith(os.path.abspath(os.getcwd())):
+        print(f"Error: Invalid file path")
+        return False
+    
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(safe_path, 'r', encoding='utf-8') as f:
             content = f.read()
         
         if 'viewport' in content:
@@ -28,7 +39,7 @@ def add_responsive_meta(file_path):
         if '</head>' in content:
             content = content.replace('</head>', css_link + '\n</head>', 1)
         
-        with open(file_path, 'w', encoding='utf-8') as f:
+        with open(safe_path, 'w', encoding='utf-8') as f:
             f.write(content)
         
         print(f"Updated: {file_path}")
@@ -40,6 +51,9 @@ def add_responsive_meta(file_path):
 
 def process_templates(templates_dir='templates'):
     """Process all HTML templates"""
+    # Validate directory to prevent path traversal
+    templates_dir = os.path.basename(templates_dir)
+    
     updated = 0
     skipped = 0
     
@@ -48,6 +62,8 @@ def process_templates(templates_dir='templates'):
     
     for filename in os.listdir(templates_dir):
         if filename.endswith('.html'):
+            # Validate filename to prevent path traversal
+            filename = os.path.basename(filename)
             file_path = os.path.join(templates_dir, filename)
             if add_responsive_meta(file_path):
                 updated += 1

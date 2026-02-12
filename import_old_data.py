@@ -100,8 +100,19 @@ def add_old_collection(customer_id, loan_amount=0, saving_amount=0, collection_d
 def import_from_csv(csv_file_path):
     """CSV file থেকে data import করুন"""
     import csv
+    import os
+    
+    # Validate path to prevent path traversal
+    csv_file_path = os.path.basename(csv_file_path)
+    safe_path = os.path.abspath(csv_file_path)
+    
+    # Ensure file is in current directory
+    if not safe_path.startswith(os.path.abspath(os.getcwd())):
+        print(f"❌ Error: File must be in current directory")
+        return
+    
     with app.app_context():
-        with open(csv_file_path, 'r', encoding='utf-8') as file:
+        with open(safe_path, 'r', encoding='utf-8') as file:
             reader = csv.DictReader(file)
             for row in reader:
                 try:

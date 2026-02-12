@@ -5,7 +5,7 @@ services:
     repo: roneox26/Al-insaf
     branch: main
     deploy_on_push: true
-  build_command: pip install -r requirements.txt && python create_db.py
+  build_command: pip install -r requirements.txt && python create_db.py || echo "Build failed" && exit 1
   run_command: gunicorn --bind 0.0.0.0:8080 --workers 2 --timeout 120 app:app
   environment_slug: python
   instance_count: 1
@@ -22,3 +22,5 @@ databases:
 - name: db
   engine: PG
   version: "12"
+  production: true
+  cluster_name: al-insaf-db

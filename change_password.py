@@ -40,8 +40,6 @@ def change_password():
         print("=" * 50)
         print(f"\nUser: {user.name}")
         print(f"Email: {user.email}")
-        print(f"New Password: {new_password}")
-        print("\nPlease save this information securely!")
 
 if __name__ == '__main__':
     try:

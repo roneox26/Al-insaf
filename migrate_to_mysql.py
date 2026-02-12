@@ -86,14 +86,16 @@ for table_name in tables_to_migrate:
         
         # Read data from SQLite
         with sqlite_engine.connect() as conn:
-            result = conn.execute(sqlite_table.select())
+            select_stmt = sqlite_table.select()
+            result = conn.execute(select_stmt)
             rows = result.fetchall()
             
             if rows:
-                # Insert into MySQL
+                # Insert into MySQL using parameterized queries
                 with mysql_engine.connect() as mysql_conn:
                     for row in rows:
-                        insert_stmt = mysql_table.insert().values(**dict(row._mapping))
+                        row_dict = dict(row._mapping)
+                        insert_stmt = mysql_table.insert().values(row_dict)
                         mysql_conn.execute(insert_stmt)
                     mysql_conn.commit()
                 
@@ -112,15 +114,32 @@ print(f"\n✅ Your application is now using MySQL database!")
 print(f"🔗 Connection: {MYSQL_HOST}/{MYSQL_DB}")
 
 # Update .env file
+# Sanitize values to prevent file injection
+import re
+
+def sanitize_env_value(value):
+    """Remove newlines and special characters to prevent injection"""
+    # Remove newlines, carriage returns, and null bytes
+    return re.sub(r'[\r\n\x00]', '', str(value))
+
 env_content = f"""# MySQL Database Configuration
-MYSQL_HOST={MYSQL_HOST}
-MYSQL_USER={MYSQL_USER}
-MYSQL_PASSWORD={MYSQL_PASSWORD}
-MYSQL_DB={MYSQL_DB}
+MYSQL_HOST={sanitize_env_value(MYSQL_HOST)}
+MYSQL_USER={sanitize_env_value(MYSQL_USER)}
+MYSQL_PASSWORD={sanitize_env_value(MYSQL_PASSWORD)}
+MYSQL_DB={sanitize_env_value(MYSQL_DB)}
 """
 
+# Validate content before writing
+if '\x00' in env_content or len(env_content) > 10000:
+    print("❌ Error: Invalid configuration data")
+    sys.exit(1)
+
 with open('.env', 'w', encoding='utf-8') as f:
-    f.write(env_content)
+    f.write('# MySQL Database Configuration\n')
+    f.write(f'MYSQL_HOST={sanitize_env_value(MYSQL_HOST)}\n')
+    f.write(f'MYSQL_USER={sanitize_env_value(MYSQL_USER)}\n')
+    f.write(f'MYSQL_PASSWORD={sanitize_env_value(MYSQL_PASSWORD)}\n')
+    f.write(f'MYSQL_DB={sanitize_env_value(MYSQL_DB)}\n')
 
 print(f"\n📝 Created .env file with MySQL configuration")
 print("\n⚠️  IMPORTANT: Backup your SQLite database before deleting it!")

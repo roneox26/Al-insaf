@@ -46,6 +46,8 @@ def load_user(user_id):
 
 @app.route('/')
 def home():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -496,7 +498,7 @@ def add_loan():
                 interest=interest_rate,
                 loan_date=loan_date,
                 due_date=datetime.strptime(request.form['due_date'], '%Y-%m-%d'),
-                installment_count=int(request.form.get('installment_count', 0)),
+                installment_count=int(request.form.get('installment_count', '0') or 0),
                 installment_amount=float(request.form.get('installment_amount', '0') or 0),
                 service_charge=service_charge,
                 installment_type=request.form.get('installment_type', ''),
