@@ -1129,18 +1129,15 @@ def customer_loan_sheet(id):
     welfare_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=id, fee_type='welfare').scalar() or 0
     application_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=id, fee_type='application').scalar() or 0
     
-    # Calculate loan amounts
     loan_principal = sum(loan.amount for loan in loans)
     interest_amount = sum(loan.amount * loan.interest / 100 for loan in loans)
-    total_loan_disbursed = loan_principal  # Only principal amount disbursed
-    total_loan_with_interest = loan_principal + interest_amount  # Total to be repaid
+    total_loan_disbursed = loan_principal
+    total_loan_with_interest = loan_principal + interest_amount
     
-    # Calculate collections
     total_loan_collected = sum(lc.amount for lc in loan_collections)
     total_savings = sum(sc.amount for sc in saving_collections)
     total_withdrawn = sum(w.amount for w in withdrawals)
     
-    # Merge collections by date
     collections_dict = {}
     for lc in loan_collections:
         date_key = lc.collection_date.date()
