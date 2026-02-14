@@ -5,6 +5,7 @@
   <meta charset="utf-8">
   <title>Edit Staff</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
 </head>
@@ -35,7 +36,12 @@
     <div class="row">
       <div class="col-md-6 mb-3">
         <label class="form-label">নতুন পাসওয়ার্ড (খালি রাখলে পরিবর্তন হবে না)</label>
-        <input type="password" name="password" class="form-control">
+        <div class="input-group">
+          <input type="password" name="password" id="password" class="form-control">
+          <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+            <i class="fas fa-eye" id="eyeIcon"></i>
+          </button>
+        </div>
       </div>
       <div class="col-md-6 mb-3">
         <label class="form-label">ফোন নম্বর</label>
@@ -107,5 +113,22 @@
     <button type="submit" class="btn btn-warning">💾 আপডেট করুন</button>
     <a href="{{ url_for('manage_staff') }}" class="btn btn-secondary">⬅️ ফিরে যান</a>
   </form>
+
+  <script>
+    document.getElementById('togglePassword').addEventListener('click', function() {
+      const passwordField = document.getElementById('password');
+      const eyeIcon = document.getElementById('eyeIcon');
+      
+      if (passwordField.type === 'password') {
+        passwordField.type = 'text';
+        eyeIcon.classList.remove('fa-eye');
+        eyeIcon.classList.add('fa-eye-slash');
+      } else {
+        passwordField.type = 'password';
+        eyeIcon.classList.remove('fa-eye-slash');
+        eyeIcon.classList.add('fa-eye');
+      }
+    });
+  </script>
 </body>
 </html>

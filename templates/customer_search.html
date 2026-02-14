@@ -8,15 +8,23 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile-responsive.css') }}">
     <style>
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-        .search-container { max-width: 1400px; margin: 0 auto; padding: 30px 15px; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .search-container { max-width: 1600px; margin: 0 auto; padding: 20px 15px; }
         .search-card { background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-        .search-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 20px 20px 0 0; }
-        .search-input { font-size: 1.2rem; padding: 15px 20px; border-radius: 50px; border: 3px solid #667eea; }
+        .search-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 20px 20px 0 0; }
+        .search-input { font-size: 1.1rem; padding: 12px 20px; border-radius: 50px; border: 3px solid #667eea; }
         .search-input:focus { border-color: #764ba2; box-shadow: 0 0 0 0.25rem rgba(118, 75, 162, 0.25); }
-        .customer-card { transition: all 0.3s; border: 2px solid #e0e0e0; border-radius: 15px; }
-        .customer-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.2); border-color: #667eea; }
-        .stat-badge { font-size: 1.1rem; padding: 8px 15px; border-radius: 10px; }
+        .customer-card { transition: all 0.3s; border: none; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .customer-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.2); }
+        .card-header-custom { background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-bottom: 3px solid #dee2e6; padding: 15px; }
+        .info-section { background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 10px; }
+        .info-section h6 { color: #495057; font-weight: 600; margin-bottom: 8px; font-size: 0.9rem; border-bottom: 2px solid #dee2e6; padding-bottom: 5px; }
+        .info-item { padding: 4px 0; font-size: 0.85rem; display: flex; align-items: center; }
+        .info-item i { width: 20px; margin-right: 8px; }
+        .info-label { font-weight: 600; color: #6c757d; min-width: 90px; }
+        .info-value { color: #212529; flex: 1; }
+        .stat-box { text-align: center; padding: 10px; border-radius: 8px; }
+        .action-buttons { display: flex; gap: 5px; }
     </style>
 </head>
 <body>
@@ -86,7 +94,6 @@
 
                         let html = '';
                         data.customers.forEach(c => {
-                            // Determine status badge color
                             let statusBadge = '';
                             if (c.loan_status === 'পরিশোধিত') {
                                 statusBadge = '<span class="badge bg-success"><i class="fas fa-check-circle"></i> পরিশোধিত</span>';
@@ -97,115 +104,169 @@
                             }
                             
                             html += `
-                                <div class="col-md-6 col-lg-4">
+                                <div class="col-lg-6 col-xl-4">
                                     <div class="card customer-card h-100">
-                                        <div class="card-body">
-                                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                                <div>
-                                                    <h5 class="card-title mb-1">
-                                                        <i class="fas fa-user text-primary"></i> ${c.name}
-                                                    </h5>
-                                                    <div>
-                                                        <span class="badge bg-secondary me-1">${c.member_no}</span>
+                                        <div class="card-header-custom">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div class="flex-grow-1">
+                                                    <h5 class="mb-1"><i class="fas fa-user-circle text-primary"></i> ${c.name}</h5>
+                                                    <div class="mb-2">
+                                                        <span class="badge bg-dark me-1"><i class="fas fa-id-badge"></i> ${c.member_no}</span>
                                                         ${statusBadge}
                                                     </div>
                                                 </div>
-                                                <div class="btn-group-vertical">
-                                                    <a href="{{ url_for('customer_details', id='') }}${c.id}" class="btn btn-sm btn-primary mb-1" title="Details">
+                                                <div class="action-buttons">
+                                                    <a href="{{ url_for('customer_details', id='') }}${c.id}" class="btn btn-sm btn-primary" title="বিস্তারিত">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
-                                                    <a href="{{ url_for('customer_loan_sheet', id='') }}${c.id}" class="btn btn-sm btn-success" title="Loan Sheet">
+                                                    <a href="{{ url_for('customer_loan_sheet', id='') }}${c.id}" class="btn btn-sm btn-success" title="লোন শীট" target="_blank">
                                                         <i class="fas fa-file-invoice"></i>
                                                     </a>
                                                 </div>
                                             </div>
-                                            
-                                            <div class="mb-3">
-                                                <div class="row g-2 text-center">
-                                                    <div class="col-6">
-                                                        <div class="p-2 bg-primary bg-opacity-10 rounded">
-                                                            <small class="text-muted d-block" style="font-size: 0.7rem;"><i class="fas fa-coins"></i> মোট লোন</small>
-                                                            <strong class="text-primary">৳${c.total_loan.toLocaleString()}</strong>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-6">
-                                                        <div class="p-2 bg-danger bg-opacity-10 rounded">
-                                                            <small class="text-muted d-block" style="font-size: 0.7rem;"><i class="fas fa-exclamation-circle"></i> বাকি</small>
-                                                            <strong class="text-danger">৳${c.remaining_loan.toLocaleString()}</strong>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-12">
-                                                        <div class="p-2 bg-success bg-opacity-10 rounded">
-                                                            <small class="text-muted d-block" style="font-size: 0.7rem;"><i class="fas fa-piggy-bank"></i> সেভিংস</small>
-                                                            <strong class="text-success">৳${c.savings_balance.toLocaleString()}</strong>
-                                                        </div>
+                                        </div>
+                                        <div class="card-body p-3">
+                                            <!-- Financial Stats -->
+                                            <div class="row g-2 mb-3">
+                                                <div class="col-4">
+                                                    <div class="stat-box bg-primary bg-opacity-10">
+                                                        <small class="d-block text-muted" style="font-size: 0.7rem;"><i class="fas fa-coins"></i> মোট লোন</small>
+                                                        <strong class="text-primary d-block">৳${c.total_loan.toLocaleString()}</strong>
                                                     </div>
                                                 </div>
-                                            </div>
-                                            
-                                            <div class="mb-2" style="font-size: 0.85rem;">
-                                                <small class="text-muted d-block mb-1">
-                                                    <i class="fas fa-phone text-success"></i> ${c.phone}
-                                                </small>
-                                                <small class="text-muted d-block mb-1">
-                                                    <i class="fas fa-map-marker-alt text-danger"></i> ${c.village}
-                                                </small>
-                                                ${c.post !== 'N/A' ? `<small class="text-muted d-block mb-1">
-                                                    <i class="fas fa-envelope text-info"></i> <strong>পোস্ট:</strong> ${c.post}
-                                                </small>` : ''}
-                                                ${c.thana !== 'N/A' ? `<small class="text-muted d-block mb-1">
-                                                    <i class="fas fa-building text-primary"></i> <strong>থানা:</strong> ${c.thana}
-                                                </small>` : ''}
-                                                ${c.district !== 'N/A' ? `<small class="text-muted d-block mb-1">
-                                                    <i class="fas fa-city text-success"></i> <strong>জেলা:</strong> ${c.district}
-                                                </small>` : ''}
-                                                <small class="text-muted d-block mb-1">
-                                                    <i class="fas fa-male text-primary"></i> <strong>পিতা/স্বামী:</strong> ${c.father_husband}
-                                                </small>
-                                                ${c.granter !== 'N/A' ? `<small class="text-muted d-block mb-1">
-                                                    <i class="fas fa-user-shield text-warning"></i> <strong>জামিনদার:</strong> ${c.granter}
-                                                </small>` : ''}
-                                                <small class="text-muted d-block mb-1">
-                                                    <i class="fas fa-briefcase text-warning"></i> <strong>পেশা:</strong> ${c.profession}
-                                                </small>
-                                                <small class="text-muted d-block mb-1">
-                                                    <i class="fas fa-id-card text-secondary"></i> <strong>NID:</strong> ${c.nid_no}
-                                                </small>
-                                                ${c.admission_fee > 0 ? `<small class="text-muted d-block mb-1">
-                                                    <i class="fas fa-money-bill text-success"></i> <strong>ভর্তি ফি:</strong> ৳${c.admission_fee.toLocaleString()}
-                                                </small>` : ''}
-                                                ${c.welfare_fee > 0 ? `<small class="text-muted d-block mb-1">
-                                                    <i class="fas fa-hand-holding-usd text-info"></i> <strong>কল্যাণ ফি:</strong> ৳${c.welfare_fee.toLocaleString()}
-                                                </small>` : ''}
-                                                ${c.application_fee > 0 ? `<small class="text-muted d-block mb-1">
-                                                    <i class="fas fa-file-invoice-dollar text-primary"></i> <strong>আবেদন ফি:</strong> ৳${c.application_fee.toLocaleString()}
-                                                </small>` : ''}
-                                                <small class="text-muted d-block mb-1">
-                                                    <i class="fas fa-calendar-plus text-info"></i> <strong>যোগদান:</strong> ${c.created_date}
-                                                </small>
-                                                <small class="text-muted d-block mb-1">
-                                                    <i class="fas fa-user-tie text-info"></i> <strong>স্টাফ:</strong> ${c.staff_name}
-                                                </small>
-                                                ${c.total_collected > 0 ? `<small class="text-muted d-block mb-1">
-                                                    <i class="fas fa-coins text-success"></i> <strong>মোট আদায়:</strong> ৳${c.total_collected.toLocaleString()}
-                                                </small>` : ''}
-                                                ${c.last_collection_date !== 'কখনো নয়' ? `<small class="text-muted d-block mb-1">
-                                                    <i class="fas fa-calendar-check text-primary"></i> <strong>শেষ আদায়:</strong> ${c.last_collection_date}
-                                                </small>` : ''}
+                                                <div class="col-4">
+                                                    <div class="stat-box bg-danger bg-opacity-10">
+                                                        <small class="d-block text-muted" style="font-size: 0.7rem;"><i class="fas fa-exclamation-circle"></i> বাকি</small>
+                                                        <strong class="text-danger d-block">৳${c.remaining_loan.toLocaleString()}</strong>
+                                                    </div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <div class="stat-box bg-success bg-opacity-10">
+                                                        <small class="d-block text-muted" style="font-size: 0.7rem;"><i class="fas fa-piggy-bank"></i> সেভিংস</small>
+                                                        <strong class="text-success d-block">৳${c.savings_balance.toLocaleString()}</strong>
+                                                    </div>
+                                                </div>
                                             </div>
                                             
                                             ${c.total_loan > 0 ? `
-                                            <div class="mb-2">
+                                            <div class="mb-3">
                                                 <div class="d-flex justify-content-between align-items-center mb-1">
-                                                    <small class="text-muted">পরিশোধ অগ্রগতি</small>
-                                                    <small class="text-primary fw-bold">${c.payment_percentage}%</small>
+                                                    <small class="text-muted"><i class="fas fa-chart-line"></i> পরিশোধ অগ্রগতি</small>
+                                                    <span class="badge ${c.payment_percentage >= 75 ? 'bg-success' : c.payment_percentage >= 50 ? 'bg-info' : c.payment_percentage >= 25 ? 'bg-warning' : 'bg-danger'}">${c.payment_percentage}%</span>
                                                 </div>
                                                 <div class="progress" style="height: 8px;">
                                                     <div class="progress-bar ${c.payment_percentage >= 75 ? 'bg-success' : c.payment_percentage >= 50 ? 'bg-info' : c.payment_percentage >= 25 ? 'bg-warning' : 'bg-danger'}" 
-                                                         role="progressbar" style="width: ${c.payment_percentage}%"></div>
+                                                         style="width: ${c.payment_percentage}%"></div>
                                                 </div>
                                             </div>
                                             ` : ''}
+                                            
+                                            <!-- Contact Info -->
+                                            <div class="info-section">
+                                                <h6><i class="fas fa-address-card"></i> যোগাযোগ ও ঠিকানা</h6>
+                                                <div class="info-item">
+                                                    <i class="fas fa-phone text-success"></i>
+                                                    <span class="info-label">ফোন:</span>
+                                                    <span class="info-value">${c.phone}</span>
+                                                </div>
+                                                <div class="info-item">
+                                                    <i class="fas fa-map-marker-alt text-danger"></i>
+                                                    <span class="info-label">গ্রাম:</span>
+                                                    <span class="info-value">${c.village}</span>
+                                                </div>
+                                                ${c.post !== 'N/A' ? `<div class="info-item">
+                                                    <i class="fas fa-envelope text-info"></i>
+                                                    <span class="info-label">পোস্ট:</span>
+                                                    <span class="info-value">${c.post}</span>
+                                                </div>` : ''}
+                                                ${c.thana !== 'N/A' ? `<div class="info-item">
+                                                    <i class="fas fa-building text-primary"></i>
+                                                    <span class="info-label">থানা:</span>
+                                                    <span class="info-value">${c.thana}</span>
+                                                </div>` : ''}
+                                                ${c.district !== 'N/A' ? `<div class="info-item">
+                                                    <i class="fas fa-city text-success"></i>
+                                                    <span class="info-label">জেলা:</span>
+                                                    <span class="info-value">${c.district}</span>
+                                                </div>` : ''}
+                                                ${c.address !== 'N/A' ? `<div class="info-item">
+                                                    <i class="fas fa-home text-secondary"></i>
+                                                    <span class="info-label">ঠিকানা:</span>
+                                                    <span class="info-value">${c.address}</span>
+                                                </div>` : ''}
+                                            </div>
+                                            
+                                            <!-- Personal Info -->
+                                            <div class="info-section">
+                                                <h6><i class="fas fa-user"></i> ব্যক্তিগত তথ্য</h6>
+                                                <div class="info-item">
+                                                    <i class="fas fa-male text-primary"></i>
+                                                    <span class="info-label">পিতা/স্বামী:</span>
+                                                    <span class="info-value">${c.father_husband}</span>
+                                                </div>
+                                                ${c.granter !== 'N/A' ? `<div class="info-item">
+                                                    <i class="fas fa-user-shield text-warning"></i>
+                                                    <span class="info-label">জামিনদার:</span>
+                                                    <span class="info-value">${c.granter}</span>
+                                                </div>` : ''}
+                                                <div class="info-item">
+                                                    <i class="fas fa-briefcase text-info"></i>
+                                                    <span class="info-label">পেশা:</span>
+                                                    <span class="info-value">${c.profession}</span>
+                                                </div>
+                                                <div class="info-item">
+                                                    <i class="fas fa-id-card text-secondary"></i>
+                                                    <span class="info-label">NID:</span>
+                                                    <span class="info-value">${c.nid_no}</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Fees -->
+                                            ${(c.admission_fee > 0 || c.welfare_fee > 0 || c.application_fee > 0) ? `
+                                            <div class="info-section">
+                                                <h6><i class="fas fa-money-bill-wave"></i> ফি সমূহ</h6>
+                                                ${c.admission_fee > 0 ? `<div class="info-item">
+                                                    <i class="fas fa-money-bill text-success"></i>
+                                                    <span class="info-label">ভর্তি ফি:</span>
+                                                    <span class="info-value text-success fw-bold">৳${c.admission_fee.toLocaleString()}</span>
+                                                </div>` : ''}
+                                                ${c.welfare_fee > 0 ? `<div class="info-item">
+                                                    <i class="fas fa-hand-holding-usd text-info"></i>
+                                                    <span class="info-label">কল্যাণ ফি:</span>
+                                                    <span class="info-value text-info fw-bold">৳${c.welfare_fee.toLocaleString()}</span>
+                                                </div>` : ''}
+                                                ${c.application_fee > 0 ? `<div class="info-item">
+                                                    <i class="fas fa-file-invoice-dollar text-primary"></i>
+                                                    <span class="info-label">আবেদন ফি:</span>
+                                                    <span class="info-value text-primary fw-bold">৳${c.application_fee.toLocaleString()}</span>
+                                                </div>` : ''}
+                                            </div>
+                                            ` : ''}
+                                            
+                                            <!-- Collection History -->
+                                            <div class="info-section">
+                                                <h6><i class="fas fa-history"></i> আদায় তথ্য</h6>
+                                                ${c.total_collected > 0 ? `<div class="info-item">
+                                                    <i class="fas fa-coins text-success"></i>
+                                                    <span class="info-label">মোট আদায়:</span>
+                                                    <span class="info-value text-success fw-bold">৳${c.total_collected.toLocaleString()}</span>
+                                                </div>` : ''}
+                                                ${c.last_collection_date !== 'কখনো নয়' ? `<div class="info-item">
+                                                    <i class="fas fa-calendar-check text-primary"></i>
+                                                    <span class="info-label">শেষ আদায়:</span>
+                                                    <span class="info-value">${c.last_collection_date}</span>
+                                                </div>` : '<div class="alert alert-warning py-1 px-2 mb-0"><small><i class="fas fa-exclamation-triangle"></i> এখনো কোনো আদায় হয়নি</small></div>'}
+                                                <div class="info-item">
+                                                    <i class="fas fa-calendar-plus text-info"></i>
+                                                    <span class="info-label">যোগদান:</span>
+                                                    <span class="info-value">${c.created_date}</span>
+                                                </div>
+                                                <div class="info-item">
+                                                    <i class="fas fa-user-tie text-secondary"></i>
+                                                    <span class="info-label">স্টাফ:</span>
+                                                    <span class="info-value">${c.staff_name}</span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

@@ -165,8 +165,8 @@ def manage_staff():
     period = request.args.get('period', 'daily')
     from_date = request.args.get('from_date', '')
     to_date = request.args.get('to_date', '')
-    month = request.args.get('month', type=int)
-    year = request.args.get('year', type=int)
+    month = (lambda x: int(x) if x and x != '' else 0)(request.args.get('month', ''))
+    year = (lambda x: int(x) if x and x != '' else 0)(request.args.get('year', ''))
     
     today = datetime.now()
     
@@ -250,7 +250,7 @@ def add_staff():
         hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
         is_office_staff = staff_type == 'office'
         is_monitor = staff_type == 'monitor'
-        salary = float(request.form.get('salary', '0') or 0)
+        salary = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('salary', ''))
         new_staff = User(name=name, email=email, password=hashed_pw, role='staff', is_office_staff=is_office_staff, is_monitor=is_monitor, phone=request.form.get('phone', '').strip(), nid=request.form.get('nid', '').strip(), address=request.form.get('address', '').strip(), salary=salary, photo=photo_filename, plain_password=password)
         db.session.add(new_staff)
         db.session.commit()
@@ -312,7 +312,7 @@ def edit_staff(id):
         staff.nid = request.form.get('nid', '').strip()
         staff.address = request.form.get('address', '').strip()
         staff.status = request.form.get('status', 'active')
-        staff.salary = float(request.form.get('salary', '0') or 0)
+        staff.salary = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('salary', ''))
         
         if request.form.get('password'):
             staff.password = bcrypt.generate_password_hash(request.form['password']).decode('utf-8')
@@ -345,8 +345,8 @@ def staff_collection_report(id):
     period = request.args.get('period', 'daily')
     from_date = request.args.get('from_date', '')
     to_date = request.args.get('to_date', '')
-    month = request.args.get('month', type=int)
-    year = request.args.get('year', type=int)
+    month = (lambda x: int(x) if x and x != '' else 0)(request.args.get('month', ''))
+    year = (lambda x: int(x) if x and x != '' else 0)(request.args.get('year', ''))
     
     today = datetime.now()
     
@@ -405,11 +405,15 @@ def staff_collection_report(id):
     elif period == 'daily':
         period_display = f"দৈনিক রিপোর্ট - {today.strftime('%d-%m-%Y')}"
     elif period == 'monthly':
-        period_display = f"মাসিক রিপোর্ট - {today.strftime('%B %Y')}"
+        month_names = ['', 'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর']
+        if month and year:
+            period_display = f"মাসিক রিপোর্ট - {month_names[month]} {year}"
+        else:
+            period_display = f"মাসিক রিপোর্ট - {month_names[today.month]} {today.year}"
     else:
         period_display = f"বার্ষিক রিপোর্ট - {today.year}"
     
-    return render_template('staff_collection_report.html', staff=staff, daily_collections=daily_collections, total_loan=total_loan, total_saving=total_saving, period=period, from_date=from_date, to_date=to_date, period_display=period_display)
+    return render_template('staff_collection_report.html', staff=staff, daily_collections=daily_collections, total_loan=total_loan, total_saving=total_saving, period=period, from_date=from_date, to_date=to_date, period_display=period_display, now=datetime.now(), month=month, year=year)
 
 @app.route('/all_staff_report_print')
 @login_required
@@ -421,8 +425,8 @@ def all_staff_report_print():
     period = request.args.get('period', 'daily')
     from_date = request.args.get('from_date', '')
     to_date = request.args.get('to_date', '')
-    month = request.args.get('month', type=int)
-    year = request.args.get('year', type=int)
+    month = (lambda x: int(x) if x and x != '' else 0)(request.args.get('month', ''))
+    year = (lambda x: int(x) if x and x != '' else 0)(request.args.get('year', ''))
     
     today = datetime.now()
     
@@ -529,8 +533,8 @@ def staff_dashboard_view(id):
 @login_required
 def manage_loans():
     filter_type = request.args.get('filter_type', 'all')
-    month = request.args.get('month', type=int)
-    year = request.args.get('year', type=int)
+    month = (lambda x: int(x) if x and x != '' else 0)(request.args.get('month', ''))
+    year = (lambda x: int(x) if x and x != '' else 0)(request.args.get('year', ''))
     
     query = Loan.query
     
@@ -555,8 +559,8 @@ def manage_loans():
 @login_required
 def loans_print():
     filter_type = request.args.get('filter_type', 'all')
-    month = request.args.get('month', type=int)
-    year = request.args.get('year', type=int)
+    month = (lambda x: int(x) if x and x != '' else 0)(request.args.get('month', ''))
+    year = (lambda x: int(x) if x and x != '' else 0)(request.args.get('year', ''))
     
     query = Loan.query
     
@@ -580,7 +584,7 @@ def loans_print():
 @app.route('/loan_collections_history')
 @login_required
 def loan_collections_history():
-    staff_filter = request.args.get('staff_id', type=int)
+    staff_filter = (lambda x: int(x) if x and x != '' else 0)(request.args.get('staff_id', ''))
     customer_filter = request.args.get('customer', '')
     from_date = request.args.get('from_date', '')
     to_date = request.args.get('to_date', '')
@@ -623,9 +627,12 @@ def add_loan():
     
     if request.method == 'POST':
         try:
-            customer_id = request.form.get('customer_id', type=int)
-            amount = request.form.get('amount', type=float, default=0)
-            interest_rate = request.form.get('interest', type=float, default=0)
+            customer_id_str = request.form.get('customer_id', '').strip()
+            customer_id = int(customer_id_str) if customer_id_str else None
+            amount_str = request.form.get('amount', '').strip()
+            amount = float(amount_str) if amount_str else 0
+            interest_rate_str = request.form.get('interest', '').strip()
+            interest_rate = float(interest_rate_str) if interest_rate_str else 0
             
             if not customer_id or amount <= 0:
                 flash('সব তথ্য সঠিকভাবে দিন!', 'danger')
@@ -662,8 +669,8 @@ def add_loan():
                 interest=interest_rate,
                 loan_date=loan_date,
                 due_date=datetime.strptime(request.form['due_date'], '%Y-%m-%d'),
-                installment_count=int(request.form.get('installment_count', 0)),
-                installment_amount=float(request.form.get('installment_amount', '0') or 0),
+                installment_count=(lambda x: int(x) if x and x != '' else 0)(request.form.get('installment_count', '')),
+                installment_amount=(lambda x: float(x) if x and x != '' else 0.0)(request.form.get('installment_amount', '')),
                 service_charge=0,
                 installment_type=request.form.get('installment_type', ''),
                 staff_id=customer.staff_id
@@ -731,8 +738,8 @@ def edit_loan(id):
     if request.method == 'POST':
         try:
             customer_name = request.form.get('customer_name', '').strip()
-            amount = request.form.get('amount', type=float, default=0)
-            interest = request.form.get('interest', type=float, default=0)
+            amount = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('amount', ''))
+            interest = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('interest', ''))
             due_date_str = request.form.get('due_date', '')
             status = request.form.get('status', '')
             
@@ -770,7 +777,7 @@ def mark_paid(id):
 @app.route('/savings')
 @login_required
 def manage_savings():
-    staff_filter = request.args.get('staff_id', type=int)
+    staff_filter = (lambda x: int(x) if x and x != '' else 0)(request.args.get('staff_id', ''))
     customer_filter = request.args.get('customer', '')
     from_date = request.args.get('from_date', '')
     to_date = request.args.get('to_date', '')
@@ -804,8 +811,8 @@ def manage_savings():
 @login_required
 def add_saving():
     if request.method == 'POST':
-        customer_id = request.form.get('customer_id', type=int)
-        amount = request.form.get('amount', type=float, default=0)
+        customer_id = (lambda x: int(x) if x and x != '' else 0)(request.form.get('customer_id', ''))
+        amount = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('amount', ''))
         
         if not customer_id or amount <= 0:
             flash('সব তথ্য সঠিকভাবে দিন!', 'danger')
@@ -836,7 +843,7 @@ def add_saving():
 @login_required
 def reports():
     period = request.args.get('period', 'daily')
-    staff_id = request.args.get('staff_id', type=int)
+    staff_id = (lambda x: int(x) if x and x != '' else 0)(request.args.get('staff_id', ''))
     
     today = datetime.now()
     if period == 'daily':
@@ -871,7 +878,7 @@ def reports():
 @login_required
 def export_csv():
     period = request.args.get('period', 'daily')
-    staff_id = request.args.get('staff_id', type=int)
+    staff_id = (lambda x: int(x) if x and x != '' else 0)(request.args.get('staff_id', ''))
     
     today = datetime.now()
     if period == 'daily':
@@ -922,8 +929,8 @@ def manage_customers():
         is_monitor = hasattr(current_user, 'is_monitor') and current_user.is_monitor
         
         # Get filter parameters
-        month = request.args.get('month', type=int)
-        year = request.args.get('year', type=int)
+        month = (lambda x: int(x) if x and x != '' else 0)(request.args.get('month', ''))
+        year = (lambda x: int(x) if x and x != '' else 0)(request.args.get('year', ''))
         
         if current_user.role == 'staff':
             # Office staff and monitor can see all customers
@@ -955,8 +962,8 @@ def manage_customers():
 @app.route('/all_customers_print')
 @login_required
 def all_customers_print():
-    month = request.args.get('month', type=int)
-    year = request.args.get('year', type=int)
+    month = (lambda x: int(x) if x and x != '' else 0)(request.args.get('month', ''))
+    year = (lambda x: int(x) if x and x != '' else 0)(request.args.get('year', ''))
     
     if current_user.role == 'staff' and (not hasattr(current_user, 'is_office_staff') or not current_user.is_office_staff):
         query = Customer.query.filter_by(staff_id=current_user.id).order_by(Customer.member_no)
@@ -978,8 +985,8 @@ def all_customers_print():
 def loan_customers():
     from_date = request.args.get('from_date', '').strip()
     to_date = request.args.get('to_date', '').strip()
-    month = request.args.get('month', type=int)
-    year = request.args.get('year', type=int)
+    month = (lambda x: int(x) if x and x != '' else 0)(request.args.get('month', ''))
+    year = (lambda x: int(x) if x and x != '' else 0)(request.args.get('year', ''))
     
     if current_user.role == 'staff' and not current_user.is_office_staff and not current_user.is_monitor:
         query = Customer.query.filter_by(staff_id=current_user.id).filter(Customer.total_loan > 0)
@@ -1349,11 +1356,11 @@ def add_customer():
 @app.route('/collections')
 @login_required
 def manage_collections():
-    staff_id = request.args.get('staff_id', type=int)
+    staff_id = (lambda x: int(x) if x and x != '' else 0)(request.args.get('staff_id', ''))
     period = request.args.get('period', 'all')
     selected_date = request.args.get('date')
-    month = request.args.get('month', type=int)
-    year = request.args.get('year', type=int)
+    month = (lambda x: int(x) if x and x != '' else 0)(request.args.get('month', ''))
+    year = (lambda x: int(x) if x and x != '' else 0)(request.args.get('year', ''))
     
     if current_user.role == 'staff' and (not hasattr(current_user, 'is_office_staff') or not current_user.is_office_staff):
         query_loan = LoanCollection.query.filter_by(staff_id=current_user.id)
@@ -1446,8 +1453,8 @@ def manage_collections():
 @login_required
 def add_collection():
     if request.method == 'POST':
-        loan_id = request.form.get('loan_id', type=int)
-        amount = request.form.get('amount', type=float, default=0)
+        loan_id = (lambda x: int(x) if x and x != '' else 0)(request.form.get('loan_id', ''))
+        amount = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('amount', ''))
         
         if not loan_id or amount <= 0:
             flash('সব তথ্য সঠিকভাবে দিন!', 'danger')
@@ -1477,9 +1484,9 @@ def collection():
         return redirect(url_for('dashboard'))
     
     if request.method == 'POST':
-        customer_id = request.form.get('customer_id', type=int)
-        loan_amount = request.form.get('loan_amount', type=float, default=0)
-        saving_amount = request.form.get('saving_amount', type=float, default=0)
+        customer_id = (lambda x: int(x) if x and x != '' else 0)(request.form.get('customer_id', ''))
+        loan_amount = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('loan_amount', ''))
+        saving_amount = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('saving_amount', ''))
         
         if not customer_id:
             flash('কাস্টমার খুঁজে পাওয়া যায়নি!', 'danger')
@@ -1572,8 +1579,8 @@ def collect_loan():
         return redirect(url_for('dashboard'))
     
     try:
-        customer_id = request.form.get('customer_id', type=int)
-        amount = request.form.get('amount', type=float, default=0)
+        customer_id = (lambda x: int(x) if x and x != '' else 0)(request.form.get('customer_id', ''))
+        amount = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('amount', ''))
         
         if not customer_id or amount <= 0:
             flash('সব তথ্য সঠিকভাবে দিন!', 'danger')
@@ -1633,8 +1640,8 @@ def collect_saving():
         return redirect(url_for('dashboard'))
     
     try:
-        customer_id = request.form.get('customer_id', type=int)
-        amount = request.form.get('amount', type=float, default=0)
+        customer_id = (lambda x: int(x) if x and x != '' else 0)(request.form.get('customer_id', ''))
+        amount = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('amount', ''))
         
         if not customer_id or amount <= 0:
             flash('সব তথ্য সঠিকভাবে দিন!', 'danger')
@@ -1738,7 +1745,7 @@ def manage_cash_balance():
     if request.method == 'POST':
         try:
             action = request.form.get('action', '')
-            amount = request.form.get('amount', type=float, default=0)
+            amount = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('amount', ''))
             
             if not action or amount <= 0:
                 flash('সব তথ্য সঠিকভাবে দিন!', 'danger')
@@ -1849,7 +1856,7 @@ def manage_expenses():
     if request.method == 'POST':
         try:
             category = request.form.get('category', '')
-            amount = request.form.get('amount', type=float, default=0)
+            amount = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('amount', ''))
             description = request.form.get('description', '')
             expense_date_str = request.form.get('expense_date')
             
@@ -1884,8 +1891,8 @@ def manage_expenses():
             return redirect(url_for('manage_expenses'))
     
     filter_type = request.args.get('filter_type', 'all')
-    month = request.args.get('month', type=int)
-    year = request.args.get('year', type=int)
+    month = (lambda x: int(x) if x and x != '' else 0)(request.args.get('month', ''))
+    year = (lambda x: int(x) if x and x != '' else 0)(request.args.get('year', ''))
     
     query = Expense.query
     
@@ -1921,8 +1928,8 @@ def expenses_print():
         return redirect(url_for('dashboard'))
     
     filter_type = request.args.get('filter_type', 'all')
-    month = request.args.get('month', type=int)
-    year = request.args.get('year', type=int)
+    month = (lambda x: int(x) if x and x != '' else 0)(request.args.get('month', ''))
+    year = (lambda x: int(x) if x and x != '' else 0)(request.args.get('year', ''))
     
     query = Expense.query
     
@@ -1960,8 +1967,8 @@ def profit_loss():
     import calendar
     
     period = request.args.get('period', 'monthly')
-    month = request.args.get('month', type=int)
-    year = request.args.get('year', type=int)
+    month = (lambda x: int(x) if x and x != '' else 0)(request.args.get('month', ''))
+    year = (lambda x: int(x) if x and x != '' else 0)(request.args.get('year', ''))
     
     today = datetime.now()
     if period == 'monthly':
@@ -2033,7 +2040,7 @@ def profit_loss():
 @login_required
 def view_messages():
     # Get conversation partner ID from query params
-    partner_id = request.args.get('user_id', type=int)
+    partner_id = (lambda x: int(x) if x and x != '' else 0)(request.args.get('user_id', ''))
     
     if current_user.role == 'admin':
         # Admin can see all staff
@@ -2096,7 +2103,7 @@ def view_messages():
 @app.route('/message/send', methods=['POST'])
 @login_required
 def send_message():
-    receiver_id = request.form.get('receiver_id', type=int)
+    receiver_id = (lambda x: int(x) if x and x != '' else 0)(request.form.get('receiver_id', ''))
     content = request.form.get('content', '').strip()
     
     if not receiver_id:
@@ -2214,8 +2221,8 @@ def manage_withdrawals():
     
     if request.method == 'POST':
         try:
-            customer_id = request.form.get('customer_id', type=int)
-            amount = request.form.get('amount', type=float, default=0)
+            customer_id = (lambda x: int(x) if x and x != '' else 0)(request.form.get('customer_id', ''))
+            amount = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('amount', ''))
             note = request.form.get('note', '')
             
             if not customer_id or amount <= 0:
@@ -2793,8 +2800,8 @@ def all_fees_history():
     
     from_date = request.args.get('from_date', '')
     to_date = request.args.get('to_date', '')
-    month = request.args.get('month', type=int)
-    year = request.args.get('year', type=int)
+    month = (lambda x: int(x) if x and x != '' else 0)(request.args.get('month', ''))
+    year = (lambda x: int(x) if x and x != '' else 0)(request.args.get('year', ''))
     
     query = FeeCollection.query
     
@@ -2844,8 +2851,8 @@ def all_fees_print():
     
     from_date = request.args.get('from_date', '')
     to_date = request.args.get('to_date', '')
-    month = request.args.get('month', type=int)
-    year = request.args.get('year', type=int)
+    month = (lambda x: int(x) if x and x != '' else 0)(request.args.get('month', ''))
+    year = (lambda x: int(x) if x and x != '' else 0)(request.args.get('year', ''))
     
     query = FeeCollection.query
     
@@ -2891,7 +2898,7 @@ def all_fees_print():
 def due_report():
     from datetime import date, timedelta
     
-    staff_filter = request.args.get('staff_id', type=int)
+    staff_filter = (lambda x: int(x) if x and x != '' else 0)(request.args.get('staff_id', ''))
     min_due = request.args.get('min_due', type=float, default=0)
     max_due = request.args.get('max_due', type=float)
     min_days = request.args.get('min_days', type=int, default=0)
@@ -3153,7 +3160,7 @@ def add_followup(customer_id):
     
     method = request.form.get('method')
     notes = request.form.get('notes')
-    amount_promised = request.form.get('amount_promised', type=float, default=0)
+    amount_promised = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('amount_promised', ''))
     next_follow_date_str = request.form.get('next_follow_date')
     
     next_follow_date = None
@@ -3182,7 +3189,7 @@ def complete_followup(id):
     from models.followup_model import FollowUp
     
     followup = FollowUp.query.get_or_404(id)
-    amount_collected = request.form.get('amount_collected', type=float, default=0)
+    amount_collected = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('amount_collected', ''))
     
     followup.status = 'completed'
     followup.amount_collected = amount_collected
@@ -3359,7 +3366,7 @@ def manage_scheduled_expenses():
     if request.method == 'POST':
         try:
             category = request.form.get('category', '')
-            amount = request.form.get('amount', type=float, default=0)
+            amount = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('amount', ''))
             description = request.form.get('description', '')
             frequency = request.form.get('frequency', '')
             start_date_str = request.form.get('start_date')
@@ -3511,7 +3518,7 @@ def withdrawal_invoice(id):
 def collection_schedule():
     date_filter = request.args.get('date_filter', 'today')
     status_filter = request.args.get('status_filter', 'all')
-    staff_filter = request.args.get('staff_filter', type=int)
+    staff_filter = (lambda x: int(x) if x and x != '' else 0)(request.args.get('staff_filter', ''))
     
     today = date.today()
     query = CollectionSchedule.query
@@ -3607,7 +3614,8 @@ def loan_application_form():
         flash('Access denied!', 'danger')
         return redirect(url_for('dashboard'))
     
-    customer_id = request.args.get('customer_id', type=int)
+    customer_id_str = request.args.get('customer_id', '')
+    customer_id = int(customer_id_str) if customer_id_str else None
     customer = Customer.query.get(customer_id) if customer_id else None
     
     if current_user.role == 'field_staff':
@@ -3623,7 +3631,8 @@ def commitment_form():
         flash('Access denied!', 'danger')
         return redirect(url_for('dashboard'))
     
-    customer_id = request.args.get('customer_id', type=int)
+    customer_id_str = request.args.get('customer_id', '')
+    customer_id = int(customer_id_str) if customer_id_str else None
     customer = Customer.query.get(customer_id) if customer_id else None
     
     if current_user.role == 'field_staff':
@@ -3639,7 +3648,8 @@ def angikarnama_form():
         flash('Access denied!', 'danger')
         return redirect(url_for('dashboard'))
     
-    customer_id = request.args.get('customer_id', type=int)
+    customer_id_str = request.args.get('customer_id', '')
+    customer_id = int(customer_id_str) if customer_id_str else None
     customer = Customer.query.get(customer_id) if customer_id else None
     
     if current_user.role == 'field_staff':
@@ -3672,10 +3682,11 @@ def import_old_data():
                 member_no = request.form.get('member_no', '').strip()
                 village = request.form.get('village', '').strip()
                 address = request.form.get('address', '').strip()
-                staff_id = request.form.get('staff_id', type=int)
-                total_loan = float(request.form.get('total_loan', '0') or 0)
-                remaining_loan = float(request.form.get('remaining_loan', '0') or 0)
-                savings_balance = float(request.form.get('savings_balance', '0') or 0)
+                staff_id_str = request.form.get('staff_id', '').strip()
+                staff_id = int(staff_id_str) if staff_id_str else None
+                total_loan = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('total_loan', ''))
+                remaining_loan = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('remaining_loan', ''))
+                savings_balance = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('savings_balance', ''))
                 created_date_str = request.form.get('created_date', '')
                 
                 if not name:
@@ -3709,11 +3720,13 @@ def import_old_data():
                 return redirect(url_for('import_old_data'))
             
             elif action == 'add_collection':
-                customer_id = request.form.get('customer_id', type=int)
-                loan_amount = float(request.form.get('loan_amount', 0) or 0)
-                saving_amount = float(request.form.get('saving_amount', 0) or 0)
+                customer_id_str = request.form.get('customer_id', '').strip()
+                customer_id = int(customer_id_str) if customer_id_str else None
+                loan_amount = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('loan_amount', ''))
+                saving_amount = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('saving_amount', ''))
                 collection_date_str = request.form.get('collection_date', '')
-                staff_id = request.form.get('staff_id', type=int) or current_user.id
+                staff_id_str = request.form.get('staff_id', '').strip()
+                staff_id = int(staff_id_str) if staff_id_str else current_user.id
                 
                 if not customer_id:
                     flash('Customer খুঁজে পাওয়া যায়নি!', 'danger')
