@@ -1073,24 +1073,34 @@ def customer_details(id):
         flash('Access denied!', 'danger')
         return redirect(url_for('dashboard'))
     
-    loan_collections = LoanCollection.query.filter_by(customer_id=id).all()
-    saving_collections = SavingCollection.query.filter_by(customer_id=id).all()
+    loan_collections = LoanCollection.query.filter_by(customer_id=id).order_by(LoanCollection.collection_date.desc()).all()
+    saving_collections = SavingCollection.query.filter_by(customer_id=id).order_by(SavingCollection.collection_date.desc()).all()
     withdrawals = Withdrawal.query.filter_by(customer_id=id).order_by(Withdrawal.date.desc()).all() if hasattr(Withdrawal, 'customer_id') else []
     
-    collections_dict = {}
+    # Create individual collection records instead of grouping
+    all_collections = []
+    
+    # Add each loan collection separately
     for lc in loan_collections:
-        key = (lc.collection_date, lc.staff.name)
-        if key not in collections_dict:
-            collections_dict[key] = {'loan': 0, 'saving': 0, 'date': lc.collection_date, 'staff': lc.staff.name}
-        collections_dict[key]['loan'] += lc.amount
+        all_collections.append({
+            'loan': lc.amount,
+            'saving': 0,
+            'date': lc.collection_date,
+            'staff': lc.staff.name
+        })
     
+    # Add each saving collection separately
     for sc in saving_collections:
-        key = (sc.collection_date, sc.staff.name)
-        if key not in collections_dict:
-            collections_dict[key] = {'loan': 0, 'saving': 0, 'date': sc.collection_date, 'staff': sc.staff.name}
-        collections_dict[key]['saving'] += sc.amount
+        all_collections.append({
+            'loan': 0,
+            'saving': sc.amount,
+            'date': sc.collection_date,
+            'staff': sc.staff.name
+        })
     
-    all_collections = sorted(collections_dict.values(), key=lambda x: x['date'], reverse=True)
+    # Sort by date descending
+    all_collections.sort(key=lambda x: x['date'], reverse=True)
+    
     total_collected = sum(lc.amount for lc in loan_collections)
     total_withdrawn = sum(w.amount for w in withdrawals)
     
@@ -1100,24 +1110,31 @@ def customer_details(id):
 @login_required
 def customer_details_print(id):
     customer = Customer.query.get_or_404(id)
-    loan_collections = LoanCollection.query.filter_by(customer_id=id).all()
-    saving_collections = SavingCollection.query.filter_by(customer_id=id).all()
+    loan_collections = LoanCollection.query.filter_by(customer_id=id).order_by(LoanCollection.collection_date.desc()).all()
+    saving_collections = SavingCollection.query.filter_by(customer_id=id).order_by(SavingCollection.collection_date.desc()).all()
     withdrawals = Withdrawal.query.filter_by(customer_id=id).order_by(Withdrawal.date.desc()).all() if hasattr(Withdrawal, 'customer_id') else []
     
-    collections_dict = {}
+    # Create individual collection records
+    all_collections = []
+    
     for lc in loan_collections:
-        key = (lc.collection_date, lc.staff.name)
-        if key not in collections_dict:
-            collections_dict[key] = {'loan': 0, 'saving': 0, 'date': lc.collection_date, 'staff': lc.staff.name}
-        collections_dict[key]['loan'] += lc.amount
+        all_collections.append({
+            'loan': lc.amount,
+            'saving': 0,
+            'date': lc.collection_date,
+            'staff': lc.staff.name
+        })
     
     for sc in saving_collections:
-        key = (sc.collection_date, sc.staff.name)
-        if key not in collections_dict:
-            collections_dict[key] = {'loan': 0, 'saving': 0, 'date': sc.collection_date, 'staff': sc.staff.name}
-        collections_dict[key]['saving'] += sc.amount
+        all_collections.append({
+            'loan': 0,
+            'saving': sc.amount,
+            'date': sc.collection_date,
+            'staff': sc.staff.name
+        })
     
-    all_collections = sorted(collections_dict.values(), key=lambda x: x['date'], reverse=True)
+    all_collections.sort(key=lambda x: x['date'], reverse=True)
+    
     total_loan_collected = sum(lc.amount for lc in loan_collections)
     total_saving_collected = sum(sc.amount for sc in saving_collections)
     total_withdrawn = sum(w.amount for w in withdrawals)
@@ -1128,71 +1145,131 @@ def customer_details_print(id):
 def customer_loan_sheet(id):
     try:
         customer = Customer.query.get_or_404(id)
-        loans = Loan.query.filter_by(customer_name=customer.name).all()
-        loan_collections = LoanCollection.query.filter_by(customer_id=id).order_by(LoanCollection.collection_date).all()
+        loans = Loan.query.filter_by(customer_name=customer.name).order_by(Loan.loan_date).all()
+        
+        # Get all savings and withdrawals
         saving_collections = SavingCollection.query.filter_by(customer_id=id).order_by(SavingCollection.collection_date).all()
         withdrawals = Withdrawal.query.filter_by(customer_id=id).order_by(Withdrawal.date).all()
+        
+        # Calculate actual savings balance
+        total_savings_collected = sum(sc.amount for sc in saving_collections)
+        total_withdrawn = sum(w.amount for w in withdrawals)
+        actual_savings_balance = total_savings_collected - total_withdrawn
+        
+        # Group collections by loan
+        loans_with_collections = []
+        
+        for loan in loans:
+            loan_collections = LoanCollection.query.filter_by(customer_id=id, loan_id=loan.id)\
+                .order_by(LoanCollection.collection_date).all()
+            
+            if not loan_collections:
+                latest_loan = loans[-1] if loans else None
+                if loan == latest_loan:
+                    loan_collections = LoanCollection.query.filter_by(customer_id=id, loan_id=None)\
+                        .order_by(LoanCollection.collection_date).all()
+            
+            # Create a combined list of all collection dates (loan + savings)
+            all_dates = set()
+            for lc in loan_collections:
+                all_dates.add(lc.collection_date.date())
+            for sc in saving_collections:
+                all_dates.add(sc.collection_date.date())
+            
+            # Sort dates
+            sorted_dates = sorted(all_dates)
+            
+            # Create collections with both loan and savings for each date
+            collections_with_savings = []
+            for date in sorted_dates:
+                # Get loan amount for this date
+                loan_amount = sum(lc.amount for lc in loan_collections if lc.collection_date.date() == date)
+                # Get savings amount for this date
+                saving_amount = sum(sc.amount for sc in saving_collections if sc.collection_date.date() == date)
+                
+                # Create a pseudo collection object
+                if loan_amount > 0:
+                    # Use actual loan collection
+                    lc = next((lc for lc in loan_collections if lc.collection_date.date() == date), None)
+                    collections_with_savings.append({
+                        'collection': lc,
+                        'saving_amount': saving_amount,
+                        'loan_amount': loan_amount
+                    })
+                else:
+                    # Create a pseudo object for savings-only dates
+                    from datetime import datetime as dt
+                    class PseudoCollection:
+                        def __init__(self, date, amount):
+                            self.collection_date = dt.combine(date, dt.min.time())
+                            self.amount = amount
+                    
+                    collections_with_savings.append({
+                        'collection': PseudoCollection(date, 0),
+                        'saving_amount': saving_amount,
+                        'loan_amount': 0
+                    })
+            
+            loan_collected = sum(lc.amount for lc in loan_collections)
+            loan_with_interest = loan.amount + (loan.amount * loan.interest / 100)
+            loan_remaining = loan_with_interest - loan_collected
+            
+            loans_with_collections.append({
+                'loan': loan,
+                'collections': collections_with_savings,
+                'total_collected': loan_collected,
+                'total_with_interest': loan_with_interest,
+                'remaining': loan_remaining,
+                'status': 'পরিশোধিত' if loan_remaining <= 0 else 'চলমান'
+            })
+        
+        all_loan_collections = LoanCollection.query.filter_by(customer_id=id).all()
+        
         from models.fee_model import FeeCollection
         admission_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=id, fee_type='admission').scalar() or 0
         welfare_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=id, fee_type='welfare').scalar() or 0
         application_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=id, fee_type='application').scalar() or 0
         
-        loan_principal = sum(loan.amount for loan in loans)
-        interest_amount = sum(loan.amount * loan.interest / 100 for loan in loans)
-        total_loan_disbursed = loan_principal
-        total_loan_with_interest = loan_principal + interest_amount
+        total_loan_disbursed = sum(loan.amount for loan in loans)
+        total_interest = sum(loan.amount * loan.interest / 100 for loan in loans)
+        total_loan_collected = sum(lc.amount for lc in all_loan_collections)
+        actual_remaining = sum(item['remaining'] for item in loans_with_collections)
         
-        total_loan_collected = sum(lc.amount for lc in loan_collections)
-        total_savings = sum(sc.amount for sc in saving_collections)
-        total_withdrawn = sum(w.amount for w in withdrawals)
-        
-        collections_dict = {}
-        for lc in loan_collections:
-            date_key = lc.collection_date.date()
-            if date_key not in collections_dict:
-                collections_dict[date_key] = {'date': lc.collection_date, 'loan': 0, 'saving': 0}
-            collections_dict[date_key]['loan'] += lc.amount
-        
-        for sc in saving_collections:
-            date_key = sc.collection_date.date()
-            if date_key not in collections_dict:
-                collections_dict[date_key] = {'date': sc.collection_date, 'loan': 0, 'saving': 0}
-            collections_dict[date_key]['saving'] += sc.amount
-        
-        merged_collections = sorted(collections_dict.values(), key=lambda x: x['date'])
-        
-        installment_count = sum(loan.installment_count for loan in loans)
-        weekly_installment = loans[0].installment_amount if loans else 0
-        loan_date = loans[0].loan_date.strftime('%d-%m-%Y') if loans else ''
+        loan_principal = total_loan_disbursed
+        interest_amount = total_interest
+        loan_date = loans_with_collections[0]['loan'].loan_date.strftime('%d-%m-%Y') if loans_with_collections else ''
         loan_end_date = ''
-        if loans and loans[0].loan_date and installment_count > 0:
+        if loans_with_collections and loans_with_collections[0]['loan'].installment_count > 0:
             from datetime import timedelta
-            loan_end_date = (loans[0].loan_date + timedelta(weeks=installment_count)).strftime('%d-%m-%Y')
-        interest_rate = loans[0].interest if loans else 0
+            loan = loans_with_collections[0]['loan']
+            loan_end_date = (loan.loan_date + timedelta(weeks=loan.installment_count)).strftime('%d-%m-%Y')
+        interest_rate = loans_with_collections[0]['loan'].interest if loans_with_collections else 0
+        installment_count = sum(item['loan'].installment_count for item in loans_with_collections)
+        weekly_installment = loans_with_collections[0]['loan'].installment_amount if loans_with_collections else 0
         
         staff = User.query.get(customer.staff_id) if customer.staff_id else None
         
         return render_template('customer_loan_sheet.html', 
-                             customer=customer, 
-                             loans=loans, 
-                             merged_collections=merged_collections, 
-                             withdrawals=withdrawals, 
+                             customer=customer,
+                             loans_with_collections=loans_with_collections,
                              total_loan_disbursed=total_loan_disbursed,
-                             total_loan_with_interest=total_loan_with_interest,
-                             total_loan_collected=total_loan_collected, 
-                             total_withdrawn=total_withdrawn, 
-                             installment_count=installment_count, 
-                             weekly_installment=weekly_installment, 
-                             staff=staff, 
-                             loan_date=loan_date, 
-                             loan_end_date=loan_end_date, 
-                             interest_rate=interest_rate, 
-                             loan_principal=loan_principal, 
-                             interest_amount=interest_amount, 
-                             total_savings=total_savings, 
-                             admission_fee=admission_fee, 
-                             welfare_fee=welfare_fee, 
-                             application_fee=application_fee, 
+                             total_interest=total_interest,
+                             total_loan_collected=total_loan_collected,
+                             total_savings=total_savings_collected,
+                             total_withdrawn=total_withdrawn,
+                             actual_savings_balance=actual_savings_balance,
+                             actual_remaining=actual_remaining,
+                             admission_fee=admission_fee,
+                             welfare_fee=welfare_fee,
+                             application_fee=application_fee,
+                             loan_principal=loan_principal,
+                             interest_amount=interest_amount,
+                             loan_date=loan_date,
+                             loan_end_date=loan_end_date,
+                             interest_rate=interest_rate,
+                             installment_count=installment_count,
+                             weekly_installment=weekly_installment,
+                             staff=staff,
                              now=datetime.now())
     except Exception as e:
         import traceback
@@ -1593,11 +1670,17 @@ def collect_loan():
             return redirect(url_for('loan_collection'))
         
         if amount > customer.remaining_loan:
-            flash(f'নাম? নাম? নাম (?{customer.remaining_loan}) নেওয়া হয়েছে, আবার নেওয়া যাবে না!', 'danger')
+            flash(f'নাম? নাম? নাম (৳{customer.remaining_loan}) নেওয়া হয়েছে, আবার নেওয়া যাবে না!', 'danger')
             return redirect(url_for('loan_collection'))
+        
+        # Find the active loan with remaining balance
+        active_loan = Loan.query.filter_by(customer_name=customer.name)\
+            .filter(Loan.status != 'Paid')\
+            .order_by(Loan.loan_date.desc()).first()
         
         collection = LoanCollection(
             customer_id=customer_id,
+            loan_id=active_loan.id if active_loan else None,
             amount=amount,
             staff_id=current_user.id
         )

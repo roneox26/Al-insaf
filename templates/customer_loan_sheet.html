@@ -313,8 +313,8 @@
                     
                     <div class="info-cell label">কিস্তি ধরন</div>
                     <div class="info-cell">সাপ্তাহিক</div>
-                    <div class="info-cell label">সঞ্চয়</div>
-                    <div class="info-cell">{{ "{:,.0f}".format(total_savings) }}</div>
+                    <div class="info-cell label">সঞ্চয় ব্যালেন্স</div>
+                    <div class="info-cell">{{ "{:,.0f}".format(actual_savings_balance) }}</div>
                     
                     <div class="info-cell label">কিস্তি সংখ্যা</div>
                     <div class="info-cell">{{ installment_count }}</div>
@@ -324,7 +324,7 @@
                     <div class="info-cell label">শেষ তারিখ</div>
                     <div class="info-cell">{{ loan_end_date }}</div>
                     <div class="info-cell label">মোট বকেয়া</div>
-                    <div class="info-cell">{{ "{:,.0f}".format(customer.remaining_loan) }}</div>
+                    <div class="info-cell">{{ "{:,.0f}".format(actual_remaining if actual_remaining is defined else customer.remaining_loan) }}</div>
                 </div>
             </div>
 
@@ -374,57 +374,93 @@
             </div>
             <div class="summary-box">
                 <div class="summary-label">মোট বকেয়া</div>
-                <div class="summary-value">{{ "{:,.0f}".format(customer.remaining_loan) }}</div>
+                <div class="summary-value">{{ "{:,.0f}".format(actual_remaining if actual_remaining is defined else customer.remaining_loan) }}</div>
             </div>
             <div class="summary-box">
-                <div class="summary-label">সঞ্চয় উত্তোলন</div>
-                <div class="summary-value">{{ "{:,.0f}".format(total_withdrawn) }}</div>
+                <div class="summary-label">সঞ্চয় ব্যালেন্স</div>
+                <div class="summary-value">{{ "{:,.0f}".format(actual_savings_balance) }}</div>
             </div>
         </div>
 
         <!-- Collection History -->
         <div class="collection-section">
-            <div class="collection-header">
-                কালেকশন হিস্ট্রি
-            </div>
-            <table class="collection-table">
-                <thead>
-                    <tr>
-                        <th>তারিখ</th>
-                        <th>ঋণ</th>
-                        <th>সঞ্চয়</th>
-                        <th>মোট কিস্তি</th>
-                        <th>মোট সঞ্চয়</th>
-                        <th>সঞ্চয় উত্তোলন</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if merged_collections %}
-                        {% set running_loan_total = namespace(value=0) %}
-                        {% set running_saving_total = namespace(value=0) %}
-                        {% for item in merged_collections %}
-                            {% set running_loan_total.value = running_loan_total.value + item.loan %}
-                            {% set running_saving_total.value = running_saving_total.value + item.saving %}
+            {% if loans_with_collections %}
+                {% for loan_item in loans_with_collections %}
+                <div class="collection-header" style="background: {% if loan_item.status == 'পরিশোধিত' %}#4CAF50{% else %}#2196F3{% endif %}; color: white; margin-top: {% if not loop.first %}15px{% else %}0{% endif %};">
+                    লোন #{{ loop.index }} | স্ট্যাটাস: {{ loan_item.status }}
+                </div>
+                <table class="collection-table">
+                    <thead>
+                        <tr>
+                            <th>তারিখ</th>
+                            <th>ঋণ</th>
+                            <th>সঞ্চয়</th>
+                            <th>মোট কিস্তি</th>
+                            <th>মোট সঞ্চয়</th>
+                            <th>বাকি</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if loan_item.collections %}
+                            {% set running_total = namespace(value=0) %}
+                            {% set running_saving = namespace(value=0) %}
+                            
+                            {% for item in loan_item.collections %}
+                                {% set running_total.value = running_total.value + item.loan_amount %}
+                                {% if item.saving_amount > 0 %}
+                                    {% set running_saving.value = running_saving.value + item.saving_amount %}
+                                {% endif %}
+                                
+                                <tr>
+                                    <td>{{ item.collection.collection_date.strftime('%d-%m-%y') }}</td>
+                                    <td>{{ "{:,.0f}".format(item.loan_amount) if item.loan_amount > 0 else '' }}</td>
+                                    <td>{{ "{:,.0f}".format(item.saving_amount) if item.saving_amount > 0 else '' }}</td>
+                                    <td>{{ "{:,.0f}".format(running_total.value) }}</td>
+                                    <td>{{ "{:,.0f}".format(running_saving.value) }}</td>
+                                    <td>{{ "{:,.0f}".format(loan_item.total_with_interest - running_total.value) }}</td>
+                                </tr>
+                            {% endfor %}
+                            {% for i in range(5 - loan_item.collections|length) %}
                             <tr>
-                                <td>{{ item.date.strftime('%d-%m-%y') }}</td>
-                                <td>{{ "{:,.0f}".format(item.loan) if item.loan > 0 else '' }}</td>
-                                <td>{{ "{:,.0f}".format(item.saving) if item.saving > 0 else '' }}</td>
-                                <td>{{ "{:,.0f}".format(running_loan_total.value) }}</td>
-                                <td>{{ "{:,.0f}".format(running_saving_total.value) }}</td>
+                                <td style="height: 28px;">&nbsp;</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
                                 <td></td>
                             </tr>
-                        {% endfor %}
-                        {% for i in range(10 - merged_collections|length) %}
+                            {% endfor %}
+                        {% else %}
+                            {% for i in range(5) %}
+                            <tr>
+                                <td style="height: 28px;">&nbsp;</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+                {% endfor %}
+            {% else %}
+                <div class="collection-header">
+                    কালেকশন হিস্ট্রি
+                </div>
+                <table class="collection-table">
+                    <thead>
                         <tr>
-                            <td style="height: 28px;">&nbsp;</td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
+                            <th>তারিখ</th>
+                            <th>ঋণ</th>
+                            <th>সঞ্চয়</th>
+                            <th>মোট কিস্তি</th>
+                            <th>মোট সঞ্চয়</th>
+                            <th>বাকি</th>
                         </tr>
-                        {% endfor %}
-                    {% else %}
+                    </thead>
+                    <tbody>
                         {% for i in range(10) %}
                         <tr>
                             <td style="height: 28px;">&nbsp;</td>
@@ -435,9 +471,9 @@
                             <td></td>
                         </tr>
                         {% endfor %}
-                    {% endif %}
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            {% endif %}
         </div>
     </div>
 </body>
