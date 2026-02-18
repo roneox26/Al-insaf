@@ -44,7 +44,23 @@
         <h2>আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h2>
         <h2>{{ fee_name }} রিপোর্ট</h2>
         <p>
-            {% if from_date and to_date %}
+            {% if month and year %}
+                মাস: 
+                {% if month == 1 %}জানুয়ারি
+                {% elif month == 2 %}ফেব্রুয়ারি
+                {% elif month == 3 %}মার্চ
+                {% elif month == 4 %}এপ্রিল
+                {% elif month == 5 %}মে
+                {% elif month == 6 %}জুন
+                {% elif month == 7 %}জুলাই
+                {% elif month == 8 %}আগস্ট
+                {% elif month == 9 %}সেপ্টেম্বর
+                {% elif month == 10 %}অক্টোবর
+                {% elif month == 11 %}নভেম্বর
+                {% elif month == 12 %}ডিসেম্বর
+                {% endif %}
+                {{ year }}
+            {% elif from_date and to_date %}
                 তারিখ: {{ from_date }} থেকে {{ to_date }}
             {% elif from_date %}
                 তারিখ: {{ from_date }} থেকে বর্তমান

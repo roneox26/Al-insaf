@@ -13,7 +13,7 @@
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>📋 {{ fee_name }} হিস্ট্রি</h2>
     <div>
-      <a href="{{ url_for('fee_print', fee_type=fee_type) }}?from_date={{ from_date }}&to_date={{ to_date }}" class="btn btn-primary me-2" target="_blank"><i class="fas fa-print"></i> প্রিন্ট</a>
+      <a href="{{ url_for('fee_print', fee_type=fee_type) }}?from_date={{ from_date }}&to_date={{ to_date }}&month={{ month }}&year={{ year }}" class="btn btn-primary me-2" target="_blank"><i class="fas fa-print"></i> প্রিন্ট</a>
       <a href="{{ url_for('dashboard') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> ফিরে যান</a>
     </div>
   </div>
@@ -23,15 +23,42 @@
   </div>
 
   <form method="GET" class="row g-3 mb-3">
-    <div class="col-md-4">
+    <div class="col-md-3">
       <label class="form-label">শুরুর তারিখ</label>
       <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
       <label class="form-label">শেষ তারিখ</label>
       <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
     </div>
-    <div class="col-md-4">
+    <div class="col-md-2">
+      <label class="form-label">মাস</label>
+      <select name="month" class="form-control">
+        <option value="">সব</option>
+        <option value="1" {% if month == 1 %}selected{% endif %}>জানুয়ারি</option>
+        <option value="2" {% if month == 2 %}selected{% endif %}>ফেব্রুয়ারি</option>
+        <option value="3" {% if month == 3 %}selected{% endif %}>মার্চ</option>
+        <option value="4" {% if month == 4 %}selected{% endif %}>এপ্রিল</option>
+        <option value="5" {% if month == 5 %}selected{% endif %}>মে</option>
+        <option value="6" {% if month == 6 %}selected{% endif %}>জুন</option>
+        <option value="7" {% if month == 7 %}selected{% endif %}>জুলাই</option>
+        <option value="8" {% if month == 8 %}selected{% endif %}>আগস্ট</option>
+        <option value="9" {% if month == 9 %}selected{% endif %}>সেপ্টেম্বর</option>
+        <option value="10" {% if month == 10 %}selected{% endif %}>অক্টোবর</option>
+        <option value="11" {% if month == 11 %}selected{% endif %}>নভেম্বর</option>
+        <option value="12" {% if month == 12 %}selected{% endif %}>ডিসেম্বর</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">বছর</label>
+      <select name="year" class="form-control">
+        <option value="">সব</option>
+        {% for y in range(2020, 2031) %}
+        <option value="{{ y }}" {% if year == y %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
       <label class="form-label">&nbsp;</label>
       <button type="submit" class="btn btn-primary w-100">🔍 ফিল্টার</button>
       <a href="{{ url_for('fee_history', fee_type=fee_type) }}" class="btn btn-secondary w-100 mt-2">🔄 রিসেট</a>

@@ -114,6 +114,12 @@ python change_password.py
 python create_db.py
 ```
 
+### Fix Database (Deploy করার পরে যদি error আসে)
+```bash
+python fix_database.py
+```
+**Note:** Deploy করার পরে যদি "loan_id" error দেখো, তাহলে এই command run করো।
+
 ## 🌐 Deploy করার নিয়ম
 
 ### Render.com এ Deploy (Free)
@@ -175,6 +181,11 @@ SECRET_KEY=your-secret-key-here
 **Database reset করতে:**
 - Console tab > "Run command"
 - Command: `python create_db.py`
+
+**Database migration করতে (deploy এর পরে প্রথমবার):**
+- Console tab > "Run command"
+- Command: `python migrate_loan_id.py`
+- এটা `loan_collections` table এ `loan_id` column add করবে
 
 **Code update করতে:**
 - GitHub এ push করলে automatic deploy হবে
@@ -258,6 +269,13 @@ from app import app as application
 ```bash
 cd ~/Al-insaf
 python create_db.py
+```
+
+**Database migration করতে (deploy এর পরে প্রথমবার):**
+```bash
+cd ~/Al-insaf
+python migrate_loan_id.py
+# Web tab এ Reload button ক্লিক করো
 ```
 
 **Code update করতে:**

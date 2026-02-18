@@ -21,6 +21,7 @@
 
   <div class="mb-3 no-print">
     <button onclick="window.print()" class="btn btn-primary">🖨️ Print Full Report</button>
+    <a href="{{ url_for('profit_loss_print', period=period, month=request.args.get('month'), year=request.args.get('year')) }}" class="btn btn-success" target="_blank">📊 আয়-ব্যয় Print</a>
     <a href="{{ url_for('profit_loss', period='monthly') }}" class="btn btn-{% if period == 'monthly' %}primary{% else %}outline-primary{% endif %}">📅 This Month</a>
     <a href="{{ url_for('profit_loss', period='yearly') }}" class="btn btn-{% if period == 'yearly' %}primary{% else %}outline-primary{% endif %}">📆 This Year</a>
     <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">⬅️ Back to Dashboard</a>
@@ -98,6 +99,25 @@
             <tr>
               <td>Savings Collections</td>
               <td class="text-end"><strong>৳{{ "{:,.2f}".format(total_savings_collected) }}</strong></td>
+            </tr>
+            <tr style="background: #f8f9fa;">
+              <td colspan="2" style="font-weight: bold;">📋 Fee Collections</td>
+            </tr>
+            <tr>
+              <td style="padding-left: 25px;">🎫 Admission Fee</td>
+              <td class="text-end">৳{{ "{:,.2f}".format(admission_fee_total|default(0)) }}</td>
+            </tr>
+            <tr>
+              <td style="padding-left: 25px;">📝 Application Fee</td>
+              <td class="text-end">৳{{ "{:,.2f}".format(application_fee_total|default(0)) }}</td>
+            </tr>
+            <tr>
+              <td style="padding-left: 25px;">🤝 Welfare Fee</td>
+              <td class="text-end">৳{{ "{:,.2f}".format(welfare_fee_total|default(0)) }}</td>
+            </tr>
+            <tr style="background: #e9ecef;">
+              <td style="padding-left: 25px;"><strong>Total Fees</strong></td>
+              <td class="text-end"><strong>৳{{ "{:,.2f}".format((admission_fee_total|default(0)) + (application_fee_total|default(0)) + (welfare_fee_total|default(0))) }}</strong></td>
             </tr>
             <tr class="table-success">
               <td><strong>Total Income</strong></td>

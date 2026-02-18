@@ -384,27 +384,27 @@
 
         <!-- Collection History -->
         <div class="collection-section">
-            {% if loans_with_collections %}
-                {% for loan_item in loans_with_collections %}
-                <div class="collection-header" style="background: {% if loan_item.status == 'পরিশোধিত' %}#4CAF50{% else %}#2196F3{% endif %}; color: white; margin-top: {% if not loop.first %}15px{% else %}0{% endif %};">
-                    লোন #{{ loop.index }} | স্ট্যাটাস: {{ loan_item.status }}
-                </div>
-                <table class="collection-table">
-                    <thead>
-                        <tr>
-                            <th>তারিখ</th>
-                            <th>ঋণ</th>
-                            <th>সঞ্চয়</th>
-                            <th>মোট কিস্তি</th>
-                            <th>মোট সঞ্চয়</th>
-                            <th>বাকি</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% if loan_item.collections %}
-                            {% set running_total = namespace(value=0) %}
-                            {% set running_saving = namespace(value=0) %}
-                            
+            <div class="collection-header" style="background: #2196F3; color: white;">
+                কালেকশন হিস্ট্রি
+            </div>
+            <table class="collection-table">
+                <thead>
+                    <tr>
+                        <th>তারিখ</th>
+                        <th>ঋণ</th>
+                        <th>সঞ্চয়</th>
+                        <th>মোট কিস্তি</th>
+                        <th>মোট সঞ্চয়</th>
+                        <th>বাকি</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if loans_with_collections and loans_with_collections|length > 0 %}
+                        {% set running_total = namespace(value=0) %}
+                        {% set running_saving = namespace(value=0) %}
+                        {% set total_loan_amount = (total_loan_disbursed + total_interest) if total_interest is defined else total_loan_disbursed %}
+                        
+                        {% for loan_item in loans_with_collections %}
                             {% for item in loan_item.collections %}
                                 {% set running_total.value = running_total.value + item.loan_amount %}
                                 {% if item.saving_amount > 0 %}
@@ -417,50 +417,27 @@
                                     <td>{{ "{:,.0f}".format(item.saving_amount) if item.saving_amount > 0 else '' }}</td>
                                     <td>{{ "{:,.0f}".format(running_total.value) }}</td>
                                     <td>{{ "{:,.0f}".format(running_saving.value) }}</td>
-                                    <td>{{ "{:,.0f}".format(loan_item.total_with_interest - running_total.value) }}</td>
+                                    <td>{{ "{:,.0f}".format(total_loan_amount - running_total.value) }}</td>
                                 </tr>
                             {% endfor %}
-                            {% for i in range(5 - loan_item.collections|length) %}
-                            <tr>
-                                <td style="height: 28px;">&nbsp;</td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                            </tr>
-                            {% endfor %}
-                        {% else %}
-                            {% for i in range(5) %}
-                            <tr>
-                                <td style="height: 28px;">&nbsp;</td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                            </tr>
-                            {% endfor %}
-                        {% endif %}
-                    </tbody>
-                </table>
-                {% endfor %}
-            {% else %}
-                <div class="collection-header">
-                    কালেকশন হিস্ট্রি
-                </div>
-                <table class="collection-table">
-                    <thead>
+                        {% endfor %}
+                        
+                        <!-- Add empty rows to fill space -->
+                        {% set total_rows = namespace(value=0) %}
+                        {% for loan_item in loans_with_collections %}
+                            {% set total_rows.value = total_rows.value + loan_item.collections|length %}
+                        {% endfor %}
+                        {% for i in range(10 - total_rows.value) %}
                         <tr>
-                            <th>তারিখ</th>
-                            <th>ঋণ</th>
-                            <th>সঞ্চয়</th>
-                            <th>মোট কিস্তি</th>
-                            <th>মোট সঞ্চয়</th>
-                            <th>বাকি</th>
+                            <td style="height: 28px;">&nbsp;</td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
                         </tr>
-                    </thead>
-                    <tbody>
+                        {% endfor %}
+                    {% else %}
                         {% for i in range(10) %}
                         <tr>
                             <td style="height: 28px;">&nbsp;</td>
@@ -471,9 +448,9 @@
                             <td></td>
                         </tr>
                         {% endfor %}
-                    </tbody>
-                </table>
-            {% endif %}
+                    {% endif %}
+                </tbody>
+            </table>
         </div>
     </div>
 </body>

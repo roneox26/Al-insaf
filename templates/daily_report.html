@@ -31,6 +31,7 @@
   <div class="no-print mb-3">
     <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">⬅️ Back</a>
     <button onclick="window.print()" class="btn btn-primary">🖨️ Print</button>
+    <a href="{{ url_for('daily_income_expense_print', date=selected_date) }}" class="btn btn-success" target="_blank">📊 আয়-ব্যয় Print</a>
     <button onclick="toggleCalculation()" class="btn btn-info">📊 সব হিসাব</button>
     
     <form method="get" class="d-inline-block ms-3">

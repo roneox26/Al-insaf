@@ -20,6 +20,7 @@
 
   <h2 class="mb-4">💰 Manage Loans</h2>
   <div class="mb-3">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">⬅️ Back</a>
     <a href="{{ url_for('add_loan') }}" class="btn btn-success">➕ Add New Loan</a>
     <a href="{{ url_for('loans_print') }}?filter_type={{ filter_type }}&month={{ month }}&year={{ year }}" class="btn btn-primary" target="_blank">🖨️ Print Report</a>
   </div>
@@ -136,7 +137,5 @@
       {% endfor %}
     </tbody>
   </table>
-
-  <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-3">⬅️ Back</a>
 </body>
 </html>

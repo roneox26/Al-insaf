@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>দৈনিক আয়-ব্যয় রিপোর্ট - {{ report_date }}</title>
+    <style>
+        @page { size: A4; margin: 12mm 10mm; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Noto Sans Bengali', 'SolaimanLipi', Arial, sans-serif; 
+            font-size: 10px;
+            line-height: 1.4;
+            color: #000;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+        }
+        .header h2 { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
+        .header h4 { font-size: 14px; margin-bottom: 3px; }
+        
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .section {
+            page-break-inside: avoid;
+        }
+        .section-title {
+            background: #e9ecef;
+            padding: 6px 10px;
+            font-weight: bold;
+            font-size: 11px;
+            border: 1px solid #000;
+            margin-bottom: 5px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8px;
+        }
+        table td {
+            padding: 4px 8px;
+            border: 1px solid #666;
+            font-size: 9px;
+        }
+        table td:first-child {
+            font-weight: bold;
+            width: 50%;
+        }
+        table td:last-child {
+            text-align: right;
+            width: 50%;
+        }
+        .total-row {
+            background: #d4edda;
+            font-weight: bold;
+        }
+        .expense-total {
+            background: #f8d7da;
+            font-weight: bold;
+        }
+        .fee-header {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+        .fee-item td:first-child {
+            padding-left: 20px;
+        }
+        .fee-subtotal {
+            background: #e9ecef;
+            font-weight: bold;
+        }
+        .fee-subtotal td:first-child {
+            padding-left: 20px;
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .summary-box {
+            border: 2px solid #000;
+            padding: 10px;
+            text-align: center;
+        }
+        .summary-box h6 {
+            margin: 0 0 5px 0;
+            font-size: 9px;
+            font-weight: bold;
+        }
+        .summary-box h3 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .footer {
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #666;
+            text-align: center;
+            font-size: 8px;
+            color: #666;
+        }
+        
+        .print-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+        .print-btn:hover { background: #218838; }
+        
+        @media print {
+            .print-btn { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <button class="print-btn" onclick="window.print()">🖨️ প্রিন্ট করুন</button>
+
+    <div class="header">
+        <h2>আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h2>
+        <h4>দৈনিক আয়-ব্যয় রিপোর্ট</h4>
+        <p>তারিখ: {{ report_date }}</p>
+    </div>
+    
+    <div class="two-column">
+        <div class="section">
+            <div class="section-title">💰 দৈনিক আয় (জমা)</div>
+            <table>
+                <tr><td>💵 লোন কিস্তি</td><td>৳{{ "{:,.0f}".format(total_installment) }}</td></tr>
+                <tr><td>🏦 সঞ্চয় জমা</td><td>৳{{ "{:,.0f}".format(total_saving) }}</td></tr>
+                <tr class="fee-header">
+                    <td colspan="2">📋 ফি সমূহ</td>
+                </tr>
+                <tr class="fee-item"><td>🎫 ভর্তি ফি</td><td>৳{{ "{:,.0f}".format(total_admission_fee) }}</td></tr>
+                <tr class="fee-item"><td>📝 আবেদন ফি</td><td>৳{{ "{:,.0f}".format(total_application_fee) }}</td></tr>
+                <tr class="fee-item"><td>🤝 কল্যাণ ফি</td><td>৳{{ "{:,.0f}".format(total_welfare_fee) }}</td></tr>
+                <tr class="fee-subtotal">
+                    <td>মোট ফি</td>
+                    <td>৳{{ "{:,.0f}".format(total_admission_fee + total_application_fee + total_welfare_fee) }}</td>
+                </tr>
+                <tr class="total-row"><td>মোট আয়</td><td>৳{{ "{:,.0f}".format(total_income) }}</td></tr>
+            </table>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">📉 দৈনিক ব্যয় (খরচ)</div>
+            <table>
+                <tr><td>💸 লোন বিতরণ</td><td>৳{{ "{:,.0f}".format(total_loan_distributed) }}</td></tr>
+                <tr><td>💵 সঞ্চয় ফেরত</td><td>৳{{ "{:,.0f}".format(total_withdrawal) }}</td></tr>
+                <tr><td>📄 দৈনিক খরচ</td><td>৳{{ "{:,.0f}".format(total_expense) }}</td></tr>
+                <tr class="expense-total"><td>মোট ব্যয়</td><td>৳{{ "{:,.0f}".format(total_outflow) }}</td></tr>
+            </table>
+        </div>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">📊 দৈনিক সারাংশ</div>
+        <div class="summary-grid">
+            <div class="summary-box" style="background: #d4edda;">
+                <h6>মোট আয়</h6>
+                <h3>৳{{ "{:,.0f}".format(total_income) }}</h3>
+            </div>
+            <div class="summary-box" style="background: #f8d7da;">
+                <h6>মোট ব্যয়</h6>
+                <h3>৳{{ "{:,.0f}".format(total_outflow) }}</h3>
+            </div>
+            <div class="summary-box" style="background: #d1ecf1;">
+                <h6>নিট পরিবর্তন</h6>
+                <h3>৳{{ "{:,.0f}".format(total_income - total_outflow) }}</h3>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>প্রিন্ট তারিখ: {{ now.strftime('%d-%m-%Y') }} | সময়: {{ now.strftime('%I:%M %p') }}</p>
+    </div>
+</body>
+</html>

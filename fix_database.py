@@ -1,43 +1,59 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Fix database by adding missing columns"""
+"""
+Quick fix for deployed database - adds missing loan_id column
+Run this ONCE after deployment if you get "loan_id" error
+"""
 
-from app import app, db
-from sqlalchemy import text
+import sqlite3
+import os
+import sys
 
-print("Fixing database...")
+# Fix encoding for Windows
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
 
-with app.app_context():
+def fix_database():
+    # Try multiple database names
+    db_names = ['loan.db', 'ngo.db', 'database.db']
+    db_path = None
+    
+    for db_name in db_names:
+        test_path = os.path.join('instance', db_name)
+        if os.path.exists(test_path):
+            db_path = test_path
+            break
+    
+    if not db_path:
+        print("[ERROR] Database not found!")
+        print("Please run 'python create_db.py' first")
+        return
+    
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
     try:
-        # Check and add missing columns to customers table
-        with db.engine.connect() as conn:
-            # Check if created_date column exists
-            result = conn.execute(text("PRAGMA table_info(customers)"))
-            columns = [row[1] for row in result]
-            
-            if 'created_date' not in columns:
-                conn.execute(text("ALTER TABLE customers ADD COLUMN created_date DATETIME DEFAULT CURRENT_TIMESTAMP"))
-                conn.commit()
-                print("✓ Added created_date column to customers table")
-            
-            # Check withdrawals table
-            result = conn.execute(text("PRAGMA table_info(withdrawals)"))
-            columns = [row[1] for row in result]
-            
-            if 'customer_id' not in columns:
-                conn.execute(text("ALTER TABLE withdrawals ADD COLUMN customer_id INTEGER"))
-                conn.commit()
-                print("✓ Added customer_id column to withdrawals table")
-            
-            if 'withdrawal_type' not in columns:
-                conn.execute(text("ALTER TABLE withdrawals ADD COLUMN withdrawal_type VARCHAR(20) DEFAULT 'savings'"))
-                conn.commit()
-                print("✓ Added withdrawal_type column to withdrawals table")
+        # Check if loan_id column exists
+        cursor.execute("PRAGMA table_info(loan_collections)")
+        columns = [row[1] for row in cursor.fetchall()]
         
-        print("\n✓ Database fixed successfully!")
-        print("\nYou can now run: python run.py")
+        if 'loan_id' in columns:
+            print("[OK] loan_id column already exists")
+        else:
+            print("[INFO] Adding loan_id column...")
+            cursor.execute("ALTER TABLE loan_collections ADD COLUMN loan_id INTEGER")
+            conn.commit()
+            print("[SUCCESS] loan_id column added!")
+            print("[SUCCESS] Database fixed! customer_loan_sheet will work now.")
         
     except Exception as e:
-        print(f"Error: {e}")
-        print("\nTry closing all applications using the database and run:")
-        print("  python reset_database.py")
+        print(f"[ERROR] {e}")
+        conn.rollback()
+    finally:
+        conn.close()
+
+if __name__ == '__main__':
+    print("=" * 50)
+    print("Database Fix Script")
+    print("=" * 50)
+    fix_database()
+    print("=" * 50)

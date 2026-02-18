@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>লোন শীট - {{ customer.name }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Kalpurush', 'SolaimanLipi', Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { text-align: center; padding: 20px; border-bottom: 3px solid #2196F3; margin-bottom: 20px; }
+        .header h2 { font-size: 24px; color: #333; margin-bottom: 10px; }
+        .customer-info { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 5px; }
+        .info-item { padding: 10px; }
+        .info-item label { font-weight: bold; color: #555; display: block; margin-bottom: 5px; }
+        .info-item span { color: #333; }
+        
+        .loan-section { margin-bottom: 30px; border: 2px solid #e0e0e0; border-radius: 8px; overflow: hidden; }
+        .loan-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .loan-header.completed { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+        .loan-header h3 { font-size: 18px; margin: 0; }
+        .loan-status { background: rgba(255,255,255,0.3); padding: 5px 15px; border-radius: 20px; font-size: 14px; }
+        
+        .loan-details { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; padding: 20px; background: #fafafa; }
+        .detail-box { text-align: center; padding: 15px; background: white; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .detail-box label { display: block; font-size: 12px; color: #666; margin-bottom: 5px; }
+        .detail-box .value { font-size: 20px; font-weight: bold; color: #333; }
+        .detail-box .value.success { color: #4CAF50; }
+        .detail-box .value.danger { color: #f44336; }
+        
+        .collections-table { width: 100%; border-collapse: collapse; }
+        .collections-table th { background: #f5f5f5; padding: 12px; text-align: left; border-bottom: 2px solid #ddd; font-size: 14px; }
+        .collections-table td { padding: 10px 12px; border-bottom: 1px solid #eee; }
+        .collections-table tr:hover { background: #f9f9f9; }
+        
+        .summary-section { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-top: 30px; }
+        .summary-box { text-align: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .summary-box:nth-child(2) { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .summary-box:nth-child(3) { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .summary-box:nth-child(4) { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        .summary-box:nth-child(5) { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .summary-label { font-size: 13px; margin-bottom: 8px; opacity: 0.9; }
+        .summary-value { font-size: 24px; font-weight: bold; }
+        
+        .no-print { margin-bottom: 20px; text-align: center; }
+        .btn { padding: 10px 20px; margin: 0 5px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; transition: all 0.3s; }
+        .btn-primary { background: #2196F3; color: white; }
+        .btn-success { background: #4CAF50; color: white; }
+        .btn-secondary { background: #666; color: white; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        
+        @media print {
+            .no-print { display: none; }
+            body { padding: 0; background: white; }
+            .container { box-shadow: none; }
+            .loan-section { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button class="btn btn-primary" onclick="window.print()">🖨️ প্রিন্ট করুন</button>
+        <button class="btn btn-secondary" onclick="window.history.back()">← ফিরে যান</button>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h2>গ্রাহক লোন শীট</h2>
+            <p style="color: #666; margin-top: 5px;">তারিখ: {{ now.strftime('%d-%m-%Y') }}</p>
+        </div>
+
+        <div class="customer-info">
+            <div class="info-item">
+                <label>নাম:</label>
+                <span>{{ customer.name }}</span>
+            </div>
+            <div class="info-item">
+                <label>সদস্য নং:</label>
+                <span>{{ customer.member_no or 'N/A' }}</span>
+            </div>
+            <div class="info-item">
+                <label>মোবাইল:</label>
+                <span>{{ customer.phone }}</span>
+            </div>
+            <div class="info-item">
+                <label>গ্রাম:</label>
+                <span>{{ customer.village or 'N/A' }}</span>
+            </div>
+            <div class="info-item">
+                <label>স্টাফ:</label>
+                <span>{{ staff.name if staff else 'N/A' }}</span>
+            </div>
+            <div class="info-item">
+                <label>মোট বকেয়া:</label>
+                <span style="color: #f44336; font-weight: bold;">৳{{ "{:,.0f}".format(customer.remaining_loan) }}</span>
+            </div>
+        </div>
+
+        {% if loans_with_collections %}
+            {% for item in loans_with_collections %}
+            <div class="loan-section">
+                <div class="loan-header {% if item.status == 'পরিশোধিত' %}completed{% endif %}">
+                    <h3>লোন #{{ loop.index }} - {{ item.loan.loan_date.strftime('%d-%m-%Y') }}</h3>
+                    <span class="loan-status">{{ item.status }}</span>
+                </div>
+                
+                <div class="loan-details">
+                    <div class="detail-box">
+                        <label>মূল টাকা</label>
+                        <div class="value">৳{{ "{:,.0f}".format(item.loan.amount) }}</div>
+                    </div>
+                    <div class="detail-box">
+                        <label>সুদ ({{ item.loan.interest }}%)</label>
+                        <div class="value">৳{{ "{:,.0f}".format(item.loan.amount * item.loan.interest / 100) }}</div>
+                    </div>
+                    <div class="detail-box">
+                        <label>মোট পরিশোধ</label>
+                        <div class="value success">৳{{ "{:,.0f}".format(item.total_collected) }}</div>
+                    </div>
+                    <div class="detail-box">
+                        <label>বাকি</label>
+                        <div class="value {% if item.remaining <= 0 %}success{% else %}danger{% endif %}">
+                            ৳{{ "{:,.0f}".format(item.remaining) }}
+                        </div>
+                    </div>
+                </div>
+
+                {% if item.collections %}
+                <div style="padding: 20px;">
+                    <h4 style="margin-bottom: 15px; color: #333;">কালেকশন হিস্ট্রি ({{ item.collections|length }} টি)</h4>
+                    <table class="collections-table">
+                        <thead>
+                            <tr>
+                                <th>তারিখ</th>
+                                <th>পরিমাণ</th>
+                                <th>মোট আদায়</th>
+                                <th>বাকি</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set running_total = namespace(value=0) %}
+                            {% for coll in item.collections %}
+                                {% set running_total.value = running_total.value + coll.amount %}
+                                <tr>
+                                    <td>{{ coll.collection_date.strftime('%d-%m-%Y') }}</td>
+                                    <td>৳{{ "{:,.0f}".format(coll.amount) }}</td>
+                                    <td>৳{{ "{:,.0f}".format(running_total.value) }}</td>
+                                    <td>৳{{ "{:,.0f}".format(item.total_with_interest - running_total.value) }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div style="padding: 20px; text-align: center; color: #999;">
+                    এই লোনের জন্য এখনো কোনো কালেকশন নেই
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <div style="text-align: center; padding: 40px; color: #999;">
+                <p>এই গ্রাহকের কোনো লোন নেই</p>
+            </div>
+        {% endif %}
+
+        <div class="summary-section">
+            <div class="summary-box">
+                <div class="summary-label">মোট ঋণ বিতরণ</div>
+                <div class="summary-value">৳{{ "{:,.0f}".format(total_loan_disbursed) }}</div>
+            </div>
+            <div class="summary-box">
+                <div class="summary-label">মোট সুদ</div>
+                <div class="summary-value">৳{{ "{:,.0f}".format(total_interest) }}</div>
+            </div>
+            <div class="summary-box">
+                <div class="summary-label">মোট আদায়</div>
+                <div class="summary-value">৳{{ "{:,.0f}".format(total_loan_collected) }}</div>
+            </div>
+            <div class="summary-box">
+                <div class="summary-label">মোট সঞ্চয়</div>
+                <div class="summary-value">৳{{ "{:,.0f}".format(total_savings) }}</div>
+            </div>
+            <div class="summary-box">
+                <div class="summary-label">মোট বকেয়া</div>
+                <div class="summary-value">৳{{ "{:,.0f}".format(customer.remaining_loan) }}</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

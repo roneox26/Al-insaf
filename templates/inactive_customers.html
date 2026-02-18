@@ -7,6 +7,15 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
   <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+  <style>
+    .table td {
+      vertical-align: middle;
+    }
+    .btn-sm {
+      margin: 2px;
+      white-space: nowrap;
+    }
+  </style>
 </head>
 
 <body class="container mt-5">
@@ -20,6 +29,11 @@
 
   <h2 class="mb-4">🚫 Inactive Customers</h2>
   <a href="{{ url_for('manage_customers') }}" class="btn btn-primary mb-3">✅ Active Customers</a>
+  <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mb-3">⬅️ Dashboard</a>
+
+  <div class="alert alert-warning">
+    <strong>⚠️ সতর্কতা:</strong> Delete করার আগে রিপোর্ড Download করে নিন। Delete করলে সব ডেটা স্থায়ীভাবে মুছে যাবে!
+  </div>
 
   <table class="table table-bordered">
     <thead>
@@ -50,7 +64,9 @@
         <td>{{ customer.staff.name if customer.staff else 'N/A' }}</td>
         <td>
           <a href="{{ url_for('customer_details', id=customer.id) }}" class="btn btn-sm btn-info">📋 Details</a>
+          <a href="{{ url_for('download_customer_report', id=customer.id) }}" class="btn btn-sm btn-warning">📄 Download Report</a>
           <button class="btn btn-sm btn-success" onclick="activateCustomer({{ customer.id }}, '{{ customer.name }}')">✅ Activate</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteCustomer({{ customer.id }}, '{{ customer.name }}')">🗑️ Delete</button>
         </td>
       </tr>
       {% endfor %}
@@ -61,14 +77,30 @@
   <div class="alert alert-info">কোন Inactive Customer নেই।</div>
   {% endif %}
 
-  <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-3">⬅️ Back</a>
-
   <script>
   function activateCustomer(customerId, customerName) {
     if (confirm('গ্রাহক "' + customerName + '" কে Activate করতে চান?')) {
       const form = document.createElement('form');
       form.method = 'POST';
       form.action = '/customer/activate/' + customerId;
+      document.body.appendChild(form);
+      form.submit();
+    }
+  }
+
+  function deleteCustomer(customerId, customerName) {
+    const password = prompt('গ্রাহক "' + customerName + '" কে সম্পূর্ণভাবে মুছে ফেলতে চান?\n\n⚠️ সতর্কতা: এটি স্থায়ীভাবে মুছে যাবে এবং পুনরুদ্ধার করা যাবে না!\n\nআপনার পাসওয়ার্ড দিন:');
+    if (password) {
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/customer/permanent_delete/' + customerId;
+      
+      const passwordInput = document.createElement('input');
+      passwordInput.type = 'hidden';
+      passwordInput.name = 'password';
+      passwordInput.value = password;
+      form.appendChild(passwordInput);
+      
       document.body.appendChild(form);
       form.submit();
     }
