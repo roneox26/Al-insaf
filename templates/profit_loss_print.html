@@ -3,213 +3,214 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>লাভ-ক্ষতি বিবরণী</title>
+    <title>লাভ/ক্ষতি রিপোর্ট - Print</title>
     <style>
-        @page { size: A4; margin: 12mm 10mm; }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            font-family: 'Noto Sans Bengali', 'SolaimanLipi', Arial, sans-serif; 
-            font-size: 10px;
-            line-height: 1.4;
-            color: #000;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+        @media print {
+            @page { margin: 0.5cm; }
+            body { margin: 0; }
+            .no-print { display: none !important; }
         }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'SolaimanLipi', Arial, sans-serif;
+            padding: 20px;
+            background: white;
+        }
+        
         .header {
             text-align: center;
-            margin-bottom: 15px;
-            border-bottom: 2px solid #000;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #333;
             padding-bottom: 10px;
         }
-        .header h2 { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
-        .header h4 { font-size: 14px; margin-bottom: 3px; }
         
-        .two-column {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .section {
-            page-break-inside: avoid;
-        }
-        .section-title {
-            background: #e9ecef;
-            padding: 6px 10px;
-            font-weight: bold;
-            font-size: 11px;
-            border: 1px solid #000;
+        .header h1 {
+            font-size: 24px;
+            color: #333;
             margin-bottom: 5px;
         }
+        
+        .header p {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .report-title {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .summary-box {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .summary-row:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            font-size: 18px;
+            color: #2c3e50;
+        }
+        
+        .summary-label {
+            font-weight: 600;
+        }
+        
+        .summary-value {
+            font-weight: bold;
+        }
+        
+        .positive { color: #28a745; }
+        .negative { color: #dc3545; }
         
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 8px;
-        }
-        table td {
-            padding: 4px 8px;
-            border: 1px solid #666;
-            font-size: 9px;
-        }
-        table td:first-child {
-            font-weight: bold;
-            width: 60%;
-        }
-        table td:last-child {
-            text-align: right;
-            width: 40%;
-        }
-        .total-row {
-            background: #d4edda;
-            font-weight: bold;
-        }
-        .expense-total {
-            background: #f8d7da;
-            font-weight: bold;
-        }
-        .fee-header {
-            background: #f8f9fa;
-            font-weight: bold;
-        }
-        .fee-item td:first-child {
-            padding-left: 20px;
-        }
-        .fee-subtotal {
-            background: #e9ecef;
-            font-weight: bold;
-        }
-        .fee-subtotal td:first-child {
-            padding-left: 20px;
+            margin: 20px 0;
         }
         
-        .summary-section {
-            margin-top: 15px;
-            page-break-inside: avoid;
-        }
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin: 15px 0;
-        }
-        .summary-box {
-            border: 2px solid #000;
+        th, td {
             padding: 10px;
-            text-align: center;
+            text-align: left;
+            border: 1px solid #dee2e6;
         }
-        .summary-box h6 {
-            margin: 0 0 5px 0;
-            font-size: 9px;
-            font-weight: bold;
+        
+        th {
+            background: #343a40;
+            color: white;
+            font-weight: 600;
         }
-        .summary-box h3 {
-            margin: 0;
-            font-size: 14px;
-            font-weight: bold;
+        
+        tr:nth-child(even) {
+            background: #f8f9fa;
         }
         
         .footer {
-            margin-top: 20px;
-            padding-top: 10px;
-            border-top: 1px solid #666;
+            margin-top: 30px;
             text-align: center;
-            font-size: 8px;
+            font-size: 12px;
             color: #666;
+            border-top: 1px solid #dee2e6;
+            padding-top: 10px;
         }
         
         .print-btn {
             position: fixed;
             top: 20px;
             right: 20px;
-            padding: 12px 24px;
-            background: #28a745;
+            padding: 10px 20px;
+            background: #007bff;
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             font-size: 14px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            z-index: 1000;
         }
-        .print-btn:hover { background: #218838; }
         
-        @media print {
-            .print-btn { display: none !important; }
+        .print-btn:hover {
+            background: #0056b3;
         }
     </style>
 </head>
 <body>
-    <button class="print-btn" onclick="window.print()">🖨️ প্রিন্ট করুন</button>
-
+    <button class="print-btn no-print" onclick="window.print()">🖨️ প্রিন্ট করুন</button>
+    
     <div class="header">
-        <h2>আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h2>
-        <h4>লাভ-ক্ষতি বিবরণী (Profit & Loss Statement)</h4>
-        <p>
-            {% if period == 'monthly' and month_name %}
-                মাস: {{ month_name }} {{ year }}
-            {% elif period == 'yearly' %}
-                বছর: {{ year }}
-            {% else %}
-                সময়কাল: সব
-            {% endif %}
-        </p>
+        <h1>আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h1>
+        <p>নেহালপুর, মনিরামপুর, যশোর</p>
     </div>
     
-    <div class="two-column">
-        <div class="section">
-            <div class="section-title">💰 আয় বিবরণী (Income Breakdown)</div>
-            <table>
-                <tr><td>💵 লোন কিস্তি সংগ্রহ</td><td>৳{{ "{:,.0f}".format(total_loan_collected) }}</td></tr>
-                <tr><td>🏦 সঞ্চয় সংগ্রহ</td><td>৳{{ "{:,.0f}".format(total_savings_collected) }}</td></tr>
-                <tr class="fee-header">
-                    <td colspan="2">📋 ফি সংগ্রহ</td>
-                </tr>
-                <tr class="fee-item"><td>🎫 ভর্তি ফি</td><td>৳{{ "{:,.0f}".format(admission_fee_total) }}</td></tr>
-                <tr class="fee-item"><td>📝 আবেদন ফি</td><td>৳{{ "{:,.0f}".format(application_fee_total) }}</td></tr>
-                <tr class="fee-item"><td>🤝 কল্যাণ ফি</td><td>৳{{ "{:,.0f}".format(welfare_fee_total) }}</td></tr>
-                <tr class="fee-subtotal">
-                    <td>মোট ফি</td>
-                    <td>৳{{ "{:,.0f}".format(admission_fee_total + application_fee_total + welfare_fee_total) }}</td>
-                </tr>
-                <tr class="total-row"><td>মোট আয়</td><td>৳{{ "{:,.0f}".format(total_income) }}</td></tr>
-            </table>
+    <div class="report-title">
+        লাভ/ক্ষতি রিপোর্ট
+        {% if period == 'monthly' and month_name %}
+            - {{ month_name }} {{ year }}
+        {% elif period == 'yearly' %}
+            - বার্ষিক {{ year }}
+        {% endif %}
+    </div>
+    
+    <div class="summary-box">
+        <h3 style="margin-bottom: 15px; color: #2c3e50;">আয়</h3>
+        <div class="summary-row">
+            <span class="summary-label">লোন কালেকশন:</span>
+            <span class="summary-value">৳{{ "{:,.2f}".format(total_loan_collected) }}</span>
         </div>
-        
-        <div class="section">
-            <div class="section-title">📉 ব্যয় বিবরণী (Outflow Breakdown)</div>
-            <table>
-                <tr><td>👨‍💼 কর্মচারী বেতন</td><td>৳{{ "{:,.0f}".format(salary_exp) }}</td></tr>
-                <tr><td>🏢 অফিস খরচ</td><td>৳{{ "{:,.0f}".format(office_exp) }}</td></tr>
-                <tr><td>🚗 যাতায়াত খরচ</td><td>৳{{ "{:,.0f}".format(transport_exp) }}</td></tr>
-                <tr><td>📦 অন্যান্য খরচ</td><td>৳{{ "{:,.0f}".format(other_exp) }}</td></tr>
-                <tr><td>💸 বিনিয়োগকারী উত্তোলন</td><td>৳{{ "{:,.0f}".format(total_withdrawals) }}</td></tr>
-                <tr class="expense-total"><td>মোট ব্যয়</td><td>৳{{ "{:,.0f}".format(total_expenses + total_withdrawals) }}</td></tr>
-            </table>
+        <div class="summary-row">
+            <span class="summary-label">সেভিংস কালেকশন:</span>
+            <span class="summary-value">৳{{ "{:,.2f}".format(total_savings_collected) }}</span>
+        </div>
+        <div class="summary-row">
+            <span class="summary-label">মোট আয়:</span>
+            <span class="summary-value positive">৳{{ "{:,.2f}".format(total_income) }}</span>
         </div>
     </div>
     
-    <div class="summary-section">
-        <div class="section-title">📊 সারাংশ (Summary)</div>
-        <div class="summary-grid">
-            <div class="summary-box" style="background: #d4edda;">
-                <h6>মোট আয়</h6>
-                <h3>৳{{ "{:,.0f}".format(total_income) }}</h3>
-            </div>
-            <div class="summary-box" style="background: #f8d7da;">
-                <h6>মোট ব্যয়</h6>
-                <h3>৳{{ "{:,.0f}".format(total_expenses + total_withdrawals) }}</h3>
-            </div>
-            <div class="summary-box" style="background: {% if net_profit >= 0 %}#d1ecf1{% else %}#fff3cd{% endif %};">
-                <h6>{% if net_profit >= 0 %}নিট লাভ{% else %}নিট ক্ষতি{% endif %}</h6>
-                <h3>৳{{ "{:,.0f}".format(net_profit) }}</h3>
-            </div>
+    <div class="summary-box">
+        <h3 style="margin-bottom: 15px; color: #2c3e50;">ব্যয়</h3>
+        <div class="summary-row">
+            <span class="summary-label">বেতন:</span>
+            <span class="summary-value">৳{{ "{:,.2f}".format(salary_exp) }}</span>
+        </div>
+        <div class="summary-row">
+            <span class="summary-label">অফিস খরচ:</span>
+            <span class="summary-value">৳{{ "{:,.2f}".format(office_exp) }}</span>
+        </div>
+        <div class="summary-row">
+            <span class="summary-label">যাতায়াত:</span>
+            <span class="summary-value">৳{{ "{:,.2f}".format(transport_exp) }}</span>
+        </div>
+        <div class="summary-row">
+            <span class="summary-label">অন্যান্য:</span>
+            <span class="summary-value">৳{{ "{:,.2f}".format(other_exp) }}</span>
+        </div>
+        <div class="summary-row">
+            <span class="summary-label">উত্তোলন:</span>
+            <span class="summary-value">৳{{ "{:,.2f}".format(total_withdrawals) }}</span>
+        </div>
+        <div class="summary-row">
+            <span class="summary-label">মোট ব্যয়:</span>
+            <span class="summary-value negative">৳{{ "{:,.2f}".format(total_expenses + total_withdrawals) }}</span>
+        </div>
+    </div>
+    
+    <div class="summary-box" style="background: {% if net_profit >= 0 %}#d4edda{% else %}#f8d7da{% endif %}; border-color: {% if net_profit >= 0 %}#28a745{% else %}#dc3545{% endif %};">
+        <div class="summary-row">
+            <span class="summary-label" style="font-size: 20px;">
+                {% if net_profit >= 0 %}
+                    নিট লাভ:
+                {% else %}
+                    নিট ক্ষতি:
+                {% endif %}
+            </span>
+            <span class="summary-value" style="font-size: 22px; color: {% if net_profit >= 0 %}#28a745{% else %}#dc3545{% endif %};">
+                ৳{{ "{:,.2f}".format(net_profit|abs) }}
+            </span>
         </div>
     </div>
     
     <div class="footer">
-        <p>প্রিন্ট তারিখ: {{ now.strftime('%d-%m-%Y') }} | সময়: {{ now.strftime('%I:%M %p') }}</p>
+        <p>প্রিন্ট তারিখ: {{ now.strftime('%d-%m-%Y %I:%M %p') }}</p>
+        <p>© 2024 Al-Insaf NGO Management System</p>
     </div>
+    
+    <script>
+        // Auto print on load (optional)
+        // window.onload = function() { window.print(); }
+    </script>
 </body>
 </html>

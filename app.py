@@ -1147,82 +1147,120 @@ def customer_loan_sheet(id):
         customer = Customer.query.get_or_404(id)
         loans = Loan.query.filter_by(customer_name=customer.name).order_by(Loan.loan_date).all()
         
-        # Get all savings and withdrawals
+        # Get all collections
+        all_loan_collections = LoanCollection.query.filter_by(customer_id=id).order_by(LoanCollection.collection_date).all()
         saving_collections = SavingCollection.query.filter_by(customer_id=id).order_by(SavingCollection.collection_date).all()
         withdrawals = Withdrawal.query.filter_by(customer_id=id).order_by(Withdrawal.date).all()
         
-        # Calculate actual savings balance
+        # Calculate savings
         total_savings_collected = sum(sc.amount for sc in saving_collections)
         total_withdrawn = sum(w.amount for w in withdrawals)
         actual_savings_balance = total_savings_collected - total_withdrawn
         
-        # Group collections by loan
+        # Simple approach: Show all collections together
         loans_with_collections = []
-        
-        # Get all loan collections for this customer (without loan_id filtering)
-        all_loan_collections = LoanCollection.query.filter_by(customer_id=id)\
-            .order_by(LoanCollection.collection_date).all()
+        total_loan_collected = sum(lc.amount for lc in all_loan_collections)
         
         for loan in loans:
-            # Simply divide collections equally among loans or assign all to latest loan
-            if loan == loans[-1]:  # Latest loan gets all collections
-                loan_collections = all_loan_collections
-            else:
-                loan_collections = []
+            loan_with_interest = loan.amount + (loan.amount * loan.interest / 100)
             
-            # Create a combined list of all collection dates (loan + savings)
+            # Create combined collection list (loan + savings by date)
             all_dates = set()
-            for lc in loan_collections:
+            for lc in all_loan_collections:
                 all_dates.add(lc.collection_date.date())
             for sc in saving_collections:
                 all_dates.add(sc.collection_date.date())
             
-            # Sort dates
-            sorted_dates = sorted(all_dates)
-            
-            # Create collections with both loan and savings for each date
             collections_with_savings = []
-            for date in sorted_dates:
-                # Get loan amount for this date
-                loan_amount = sum(lc.amount for lc in loan_collections if lc.collection_date.date() == date)
-                # Get savings amount for this date
+            for date in sorted(all_dates):
+                loan_amount = sum(lc.amount for lc in all_loan_collections if lc.collection_date.date() == date)
                 saving_amount = sum(sc.amount for sc in saving_collections if sc.collection_date.date() == date)
                 
-                # Create a pseudo collection object
-                if loan_amount > 0:
-                    # Use actual loan collection
-                    lc = next((lc for lc in loan_collections if lc.collection_date.date() == date), None)
+                if loan_amount > 0 or saving_amount > 0:
+                    lc = next((lc for lc in all_loan_collections if lc.collection_date.date() == date), None)
+                    if not lc:
+                        from datetime import datetime as dt
+                        class PseudoCollection:
+                            def __init__(self, date, amount):
+                                self.collection_date = dt.combine(date, dt.min.time())
+                                self.amount = amount
+                        lc = PseudoCollection(date, 0)
+                    
                     collections_with_savings.append({
                         'collection': lc,
                         'saving_amount': saving_amount,
                         'loan_amount': loan_amount
                     })
-                else:
-                    # Create a pseudo object for savings-only dates
-                    from datetime import datetime as dt
-                    class PseudoCollection:
-                        def __init__(self, date, amount):
-                            self.collection_date = dt.combine(date, dt.min.time())
-                            self.amount = amount
-                    
-                    collections_with_savings.append({
-                        'collection': PseudoCollection(date, 0),
-                        'saving_amount': saving_amount,
-                        'loan_amount': 0
-                    })
-            
-            loan_collected = sum(lc.amount for lc in loan_collections)
-            loan_with_interest = loan.amount + (loan.amount * loan.interest / 100)
-            loan_remaining = loan_with_interest - loan_collected
             
             loans_with_collections.append({
                 'loan': loan,
                 'collections': collections_with_savings,
-                'total_collected': loan_collected,
+                'total_collected': total_loan_collected if loan == loans[-1] else 0,
                 'total_with_interest': loan_with_interest,
-                'remaining': loan_remaining,
-                'status': 'পরিশোধিত' if loan_remaining <= 0 else 'চলমান'
+                'remaining': customer.remaining_loan if loan == loans[-1] else 0,
+                'status': 'পরিশোধিত' if customer.remaining_loan <= 0 and customer.total_loan > 0 else 'চলমান'
             })
+        
+        # Get fees
+        from models.fee_model import FeeCollection
+        admission_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=id, fee_type='admission').scalar() or 0
+        welfare_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=id, fee_type='welfare').scalar() or 0
+        application_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=id, fee_type='application').scalar() or 0
+        
+        # Calculate totals
+        total_loan_disbursed = sum(loan.amount for loan in loans)
+        total_interest = sum(loan.amount * loan.interest / 100 for loan in loans)
+        actual_remaining = customer.remaining_loan
+        
+        # Loan details for display
+        loan_principal = total_loan_disbursed
+        interest_amount = total_interest
+        loan_date = loans[0].loan_date.strftime('%d-%m-%Y') if loans else ''
+        loan_end_date = ''
+        if loans and loans[0].installment_count > 0:
+            from datetime import timedelta
+            loan = loans[0]
+            if loan.installment_type in ['Daily', 'দৈনিক']:
+                loan_end_date = (loan.loan_date + timedelta(days=loan.installment_count)).strftime('%d-%m-%Y')
+            elif loan.installment_type in ['Weekly', 'সাপ্তাহিক']:
+                loan_end_date = (loan.loan_date + timedelta(weeks=loan.installment_count)).strftime('%d-%m-%Y')
+            else:
+                loan_end_date = (loan.loan_date + timedelta(days=30*loan.installment_count)).strftime('%d-%m-%Y')
+        
+        interest_rate = loans[0].interest if loans else 0
+        installment_count = sum(loan.installment_count for loan in loans)
+        weekly_installment = loans[0].installment_amount if loans else 0
+        
+        staff = User.query.get(customer.staff_id) if customer.staff_id else None
+        
+        return render_template('customer_loan_sheet.html', 
+                             customer=customer,
+                             loans_with_collections=loans_with_collections,
+                             total_loan_disbursed=total_loan_disbursed,
+                             total_interest=total_interest,
+                             total_loan_collected=total_loan_collected,
+                             total_savings=total_savings_collected,
+                             total_withdrawn=total_withdrawn,
+                             actual_savings_balance=actual_savings_balance,
+                             actual_remaining=actual_remaining,
+                             admission_fee=admission_fee,
+                             welfare_fee=welfare_fee,
+                             application_fee=application_fee,
+                             loan_principal=loan_principal,
+                             interest_amount=interest_amount,
+                             loan_date=loan_date,
+                             loan_end_date=loan_end_date,
+                             interest_rate=interest_rate,
+                             installment_count=installment_count,
+                             weekly_installment=weekly_installment,
+                             staff=staff,
+                             now=datetime.now())
+    except Exception as e:
+        import traceback
+        print(f"Error in customer_loan_sheet: {e}")
+        traceback.print_exc()
+        flash(f'Error loading loan sheet: {str(e)}', 'danger')
+        return redirect(url_for('customer_details', id=id))
         
         all_loan_collections = LoanCollection.query.filter_by(customer_id=id).all()
         
@@ -2258,6 +2296,79 @@ def profit_loss():
     from markupsafe import escape
     return render_template('profit_loss.html', 
                          period=escape(period),
+                         total_income=total_income,
+                         total_loan_collected=total_loan_collected,
+                         total_savings_collected=total_savings_collected,
+                         total_expenses=total_expenses,
+                         total_withdrawals=total_withdrawals,
+                         net_profit=net_profit,
+                         salary_exp=salary_exp,
+                         office_exp=office_exp,
+                         transport_exp=transport_exp,
+                         other_exp=other_exp,
+                         now=datetime.now(),
+                         month_name=month_name,
+                         year=display_year)
+
+@app.route('/profit_loss_print')
+@login_required
+def profit_loss_print():
+    if current_user.role != 'admin':
+        flash('Access denied!', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    from datetime import datetime
+    import calendar
+    
+    period = request.args.get('period', 'monthly')
+    month = (lambda x: int(x) if x and x != '' else 0)(request.args.get('month', ''))
+    year = (lambda x: int(x) if x and x != '' else 0)(request.args.get('year', ''))
+    
+    today = datetime.now()
+    if period == 'monthly':
+        if month and year:
+            last_day = calendar.monthrange(year, month)[1]
+            start_date = datetime(year, month, 1, 0, 0, 0)
+        else:
+            start_date = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    else:
+        start_date = today.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+    
+    loan_collections = LoanCollection.query.filter(LoanCollection.collection_date >= start_date).all()
+    saving_collections = SavingCollection.query.filter(SavingCollection.collection_date >= start_date).all()
+    
+    total_loan_collected = sum(lc.amount for lc in loan_collections)
+    total_savings_collected = sum(sc.amount for sc in saving_collections)
+    total_income = total_loan_collected + total_savings_collected
+    
+    expenses = Expense.query.filter(Expense.date >= start_date).all()
+    total_expenses = sum(exp.amount for exp in expenses)
+    
+    withdrawals = Withdrawal.query.filter(Withdrawal.date >= start_date).all()
+    total_withdrawals = sum(wd.amount for wd in withdrawals)
+    
+    net_profit = total_income - (total_expenses + total_withdrawals)
+    
+    salary_exp = sum(exp.amount for exp in expenses if exp.category == 'Salary')
+    office_exp = sum(exp.amount for exp in expenses if exp.category == 'Office')
+    transport_exp = sum(exp.amount for exp in expenses if exp.category == 'Transport')
+    other_exp = sum(exp.amount for exp in expenses if exp.category == 'Other')
+    
+    month_name = None
+    display_year = today.year
+    if period == 'monthly':
+        month_names = ['', 'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর']
+        if month and year:
+            month_name = month_names[month]
+            display_year = year
+        else:
+            month_name = month_names[today.month]
+            display_year = today.year
+    elif period == 'yearly':
+        display_year = today.year
+    
+    return render_template('profit_loss_print.html', 
+                         period=period,
                          total_income=total_income,
                          total_loan_collected=total_loan_collected,
                          total_savings_collected=total_savings_collected,
