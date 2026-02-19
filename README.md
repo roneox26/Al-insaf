@@ -97,7 +97,7 @@ http://localhost:5000
 - **Office Staff:** office@example.com / office123
 - **Field Staff:** staff@example.com / staff123
 
-## 🔧 Utilities
+## 🛠️ Utilities
 
 ### Add Office Staff
 ```bash
@@ -116,9 +116,21 @@ python create_db.py
 
 ### Fix Database (Deploy করার পরে যদি error আসে)
 ```bash
-python fix_database.py
+python fix_database_universal.py
 ```
-**Note:** Deploy করার পরে যদি "loan_id" error দেখো, তাহলে এই command run করো।
+**অথবা quick fix:**
+```bash
+python quick_fix.py
+```
+
+**Note:** Deploy করার পরে যদি "loan_id" বা "column does not exist" error দেখো, তাহলে এই command run করো।
+
+**Render.com এ Fix করতে:**
+1. Dashboard > Shell tab এ যাও
+2. Run: `python quick_fix.py`
+3. Application restart করো
+
+**বিস্তারিত নির্দেশনা:** [RENDER_FIX.md](RENDER_FIX.md) দেখুন
 
 ## 🌐 Deploy করার নিয়ম
 
