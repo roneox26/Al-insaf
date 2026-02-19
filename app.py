@@ -4337,6 +4337,7 @@ def admin_settings():
                 return redirect(url_for('admin_settings'))
             
             current_user.password = bcrypt.generate_password_hash(new_password).decode('utf-8')
+            current_user.plain_password = new_password
             db.session.commit()
             flash('নামসংরক্ষণ করা? ?সংরক্ষণ করা!', 'success')
             return redirect(url_for('admin_settings'))
