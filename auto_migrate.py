@@ -23,16 +23,23 @@ def auto_migrate():
                 # Link existing collections
                 from models.loan_collection_model import LoanCollection
                 from models.loan_model import Loan
+                from models.customer_model import Customer
                 
                 collections = LoanCollection.query.all()
                 for collection in collections:
-                    if collection.customer:
-                        loan = Loan.query.filter_by(customer_name=collection.customer.name).first()
+                    customer = Customer.query.get(collection.customer_id)
+                    if customer:
+                        loan = Loan.query.filter_by(customer_name=customer.name).first()
                         if loan:
-                            collection.loan_id = loan.id
+                            # Manually update without using the model attribute
+                            db.session.execute(
+                                text("UPDATE loan_collections SET loan_id = :loan_id WHERE id = :id"),
+                                {"loan_id": loan.id, "id": collection.id}
+                            )
                 
                 db.session.commit()
                 print(f"✅ Linked {len(collections)} collections!")
+                print("⚠️ Please uncomment loan_id in loan_collection_model.py and restart!")
             else:
                 print("✅ Database is up to date!")
                 
