@@ -19,7 +19,13 @@
     {% endif %}
   {% endwith %}
 
-  <h2 class="mb-4">💰 সকল কালেকশন</h2>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">💰 সকল কালেকশন</h2>
+    <div class="no-print">
+      <button onclick="window.print()" class="btn btn-primary">🖨️ প্রিন্ট</button>
+      <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">⬅️ ফিরে যান</a>
+    </div>
+  </div>
   <h3 class="d-none d-print-block text-center" style="margin: 0;">আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h3>
   <p class="d-none d-print-block text-center" style="margin: 5px 0 15px 0;">
     সকল কালেকশন রিপোর্ট
@@ -155,11 +161,6 @@
   <p class="text-center">কোনো কালেকশন পাওয়া যায়নি</p>
   {% endif %}
 
-  <div class="no-print mt-3">
-    <button onclick="window.print()" class="btn btn-primary">🖨️ প্রিন্ট</button>
-    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">⬅️ ফিরে যান</a>
-  </div>
-
   <style>
     table { font-size: 10px; }
     th, td { padding: 2px !important; }
@@ -170,7 +171,8 @@
       .no-print { display: none !important; }
       body { font-family: Arial, sans-serif; width: 100%; margin: 0; padding: 0; color: #000 !important; }
       .container { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
-      h2 { display: none; }
+      h2 { font-size: 16px; margin: 0 0 2px 0; font-weight: bold; text-align: center; color: #000 !important; display: block !important; }
+      .d-flex { display: block !important; text-align: center !important; }
       h3 { font-size: 16px; margin: 0 0 2px 0; font-weight: bold; text-align: center; color: #000 !important; }
       p { font-size: 10px; margin: 0 0 5px 0; text-align: center; color: #000 !important; }
       

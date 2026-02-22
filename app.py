@@ -719,7 +719,8 @@ def add_loan():
             
             db.session.commit()
             flash(f'লোন দেওয়া হয়েছে! পরিমাণ: ৳{amount}, সুদ: ৳{interest_amount}, মোট: ৳{total_with_interest}, কল্যাণ ফি: ৳{welfare_fee}, আবেদন ফি: ৳{application_fee}', 'success')
-            return redirect(url_for('manage_loans'))
+            # Redirect to individual loan sheet for this specific loan
+            return redirect(url_for('loan_sheet', loan_id=loan.id))
         except Exception as e:
             db.session.rollback()
             flash(f'Error: {str(e)}', 'danger')
@@ -1140,12 +1141,109 @@ def customer_details_print(id):
     total_withdrawn = sum(w.amount for w in withdrawals)
     return render_template('customer_details_print.html', customer=customer, all_collections=all_collections, withdrawals=withdrawals, total_loan_collected=total_loan_collected, total_saving_collected=total_saving_collected, total_withdrawn=total_withdrawn)
 
+@app.route('/loan_sheet/<int:loan_id>')
+@login_required
+def loan_sheet(loan_id):
+    """Individual loan sheet for a specific loan"""
+    try:
+        loan = Loan.query.get_or_404(loan_id)
+        customer = Customer.query.filter_by(name=loan.customer_name).first()
+        
+        if not customer:
+            flash('Customer not found!', 'danger')
+            return redirect(url_for('manage_loans'))
+        
+        # Get collections for this specific loan
+        loan_collections = LoanCollection.query.filter_by(loan_id=loan_id).order_by(LoanCollection.collection_date).all()
+        saving_collections = SavingCollection.query.filter_by(customer_id=customer.id).order_by(SavingCollection.collection_date).all()
+        withdrawals = Withdrawal.query.filter_by(customer_id=customer.id).order_by(Withdrawal.date).all()
+        
+        # Calculate loan specific data
+        loan_with_interest = loan.amount + (loan.amount * loan.interest / 100)
+        total_collected = sum(lc.amount for lc in loan_collections)
+        remaining = loan_with_interest - total_collected
+        
+        # Savings data
+        total_savings_collected = sum(sc.amount for sc in saving_collections)
+        total_withdrawn = sum(w.amount for w in withdrawals)
+        actual_savings_balance = total_savings_collected - total_withdrawn
+        
+        # Create collection list with savings
+        collections_with_savings = []
+        for lc in loan_collections:
+            saving_on_date = sum(sc.amount for sc in saving_collections if sc.collection_date.date() == lc.collection_date.date())
+            collections_with_savings.append({
+                'collection': lc,
+                'loan_amount': lc.amount,
+                'saving_amount': saving_on_date
+            })
+        
+        # Get fees
+        from models.fee_model import FeeCollection
+        admission_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=customer.id, fee_type='admission').scalar() or 0
+        welfare_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=customer.id, fee_type='welfare').scalar() or 0
+        application_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=customer.id, fee_type='application').scalar() or 0
+        
+        # Loan details
+        loan_date = loan.loan_date.strftime('%d-%m-%Y')
+        loan_end_date = ''
+        if loan.installment_count > 0:
+            from datetime import timedelta
+            if loan.installment_type in ['Daily', 'দৈনিক']:
+                loan_end_date = (loan.loan_date + timedelta(days=loan.installment_count)).strftime('%d-%m-%Y')
+            elif loan.installment_type in ['Weekly', 'সাপ্তাহিক']:
+                loan_end_date = (loan.loan_date + timedelta(weeks=loan.installment_count)).strftime('%d-%m-%Y')
+            else:
+                loan_end_date = (loan.loan_date + timedelta(days=30*loan.installment_count)).strftime('%d-%m-%Y')
+        
+        staff = User.query.get(customer.staff_id) if customer.staff_id else None
+        
+        return render_template('customer_loan_sheet.html',
+                             customer=customer,
+                             loans_with_collections=[{
+                                 'loan': loan,
+                                 'collections': collections_with_savings,
+                                 'total_collected': total_collected,
+                                 'total_with_interest': loan_with_interest,
+                                 'remaining': remaining,
+                                 'status': 'পরিশোধিত' if remaining <= 0 else 'চলমান'
+                             }],
+                             total_loan_disbursed=loan.amount,
+                             total_interest=loan.amount * loan.interest / 100,
+                             total_loan_collected=total_collected,
+                             total_savings=total_savings_collected,
+                             total_withdrawn=total_withdrawn,
+                             actual_savings_balance=actual_savings_balance,
+                             actual_remaining=remaining,
+                             admission_fee=admission_fee,
+                             welfare_fee=welfare_fee,
+                             application_fee=application_fee,
+                             loan_principal=loan.amount,
+                             interest_amount=loan.amount * loan.interest / 100,
+                             loan_date=loan_date,
+                             loan_end_date=loan_end_date,
+                             interest_rate=loan.interest,
+                             installment_count=loan.installment_count,
+                             weekly_installment=loan.installment_amount,
+                             staff=staff,
+                             now=datetime.now())
+    except Exception as e:
+        import traceback
+        print(f"Error in loan_sheet: {e}")
+        traceback.print_exc()
+        flash(f'Error loading loan sheet: {str(e)}', 'danger')
+        return redirect(url_for('manage_loans'))
+
 @app.route('/customer_loan_sheet/<int:id>')
 @login_required
 def customer_loan_sheet(id):
     try:
         customer = Customer.query.get_or_404(id)
         loans = Loan.query.filter_by(customer_name=customer.name).order_by(Loan.loan_date).all()
+        
+        if not loans:
+            flash('এই Customer এর কোনো Loan নেই!', 'warning')
+            return redirect(url_for('customer_details', id=id))
         
         # Get all collections
         all_loan_collections = LoanCollection.query.filter_by(customer_id=id).order_by(LoanCollection.collection_date).all()
@@ -1157,49 +1255,49 @@ def customer_loan_sheet(id):
         total_withdrawn = sum(w.amount for w in withdrawals)
         actual_savings_balance = total_savings_collected - total_withdrawn
         
-        # Simple approach: Show all collections together
-        loans_with_collections = []
+        # Calculate loan totals
+        total_loan_disbursed = sum(loan.amount for loan in loans)
+        total_interest = sum(loan.amount * loan.interest / 100 for loan in loans)
         total_loan_collected = sum(lc.amount for lc in all_loan_collections)
+        actual_remaining = (total_loan_disbursed + total_interest) - total_loan_collected
         
-        for loan in loans:
-            loan_with_interest = loan.amount + (loan.amount * loan.interest / 100)
+        # Create collection list grouped by date
+        all_dates = set()
+        for lc in all_loan_collections:
+            all_dates.add(lc.collection_date.date())
+        for sc in saving_collections:
+            all_dates.add(sc.collection_date.date())
+        
+        collections_with_savings = []
+        for date in sorted(all_dates):
+            loan_amount = sum(lc.amount for lc in all_loan_collections if lc.collection_date.date() == date)
+            saving_amount = sum(sc.amount for sc in saving_collections if sc.collection_date.date() == date)
             
-            # Create combined collection list (loan + savings by date)
-            all_dates = set()
-            for lc in all_loan_collections:
-                all_dates.add(lc.collection_date.date())
-            for sc in saving_collections:
-                all_dates.add(sc.collection_date.date())
-            
-            collections_with_savings = []
-            for date in sorted(all_dates):
-                loan_amount = sum(lc.amount for lc in all_loan_collections if lc.collection_date.date() == date)
-                saving_amount = sum(sc.amount for sc in saving_collections if sc.collection_date.date() == date)
+            if loan_amount > 0 or saving_amount > 0:
+                lc = next((lc for lc in all_loan_collections if lc.collection_date.date() == date), None)
+                if not lc:
+                    from datetime import datetime as dt
+                    class PseudoCollection:
+                        def __init__(self, date, amount):
+                            self.collection_date = dt.combine(date, dt.min.time())
+                            self.amount = amount
+                    lc = PseudoCollection(date, 0)
                 
-                if loan_amount > 0 or saving_amount > 0:
-                    lc = next((lc for lc in all_loan_collections if lc.collection_date.date() == date), None)
-                    if not lc:
-                        from datetime import datetime as dt
-                        class PseudoCollection:
-                            def __init__(self, date, amount):
-                                self.collection_date = dt.combine(date, dt.min.time())
-                                self.amount = amount
-                        lc = PseudoCollection(date, 0)
-                    
-                    collections_with_savings.append({
-                        'collection': lc,
-                        'saving_amount': saving_amount,
-                        'loan_amount': loan_amount
-                    })
-            
-            loans_with_collections.append({
-                'loan': loan,
-                'collections': collections_with_savings,
-                'total_collected': total_loan_collected if loan == loans[-1] else 0,
-                'total_with_interest': loan_with_interest,
-                'remaining': customer.remaining_loan if loan == loans[-1] else 0,
-                'status': 'পরিশোধিত' if customer.remaining_loan <= 0 and customer.total_loan > 0 else 'চলমান'
-            })
+                collections_with_savings.append({
+                    'collection': lc,
+                    'saving_amount': saving_amount,
+                    'loan_amount': loan_amount
+                })
+        
+        # Create loans_with_collections for template
+        loans_with_collections = [{
+            'loan': loans[0],  # Use first loan for display
+            'collections': collections_with_savings,
+            'total_collected': total_loan_collected,
+            'total_with_interest': total_loan_disbursed + total_interest,
+            'remaining': actual_remaining,
+            'status': 'পরিশোধিত' if actual_remaining <= 0 else 'চলমান'
+        }]
         
         # Get fees
         from models.fee_model import FeeCollection
@@ -1207,17 +1305,10 @@ def customer_loan_sheet(id):
         welfare_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=id, fee_type='welfare').scalar() or 0
         application_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=id, fee_type='application').scalar() or 0
         
-        # Calculate totals
-        total_loan_disbursed = sum(loan.amount for loan in loans)
-        total_interest = sum(loan.amount * loan.interest / 100 for loan in loans)
-        actual_remaining = customer.remaining_loan
-        
         # Loan details for display
-        loan_principal = total_loan_disbursed
-        interest_amount = total_interest
-        loan_date = loans[0].loan_date.strftime('%d-%m-%Y') if loans else ''
+        loan_date = loans[0].loan_date.strftime('%d-%m-%Y')
         loan_end_date = ''
-        if loans and loans[0].installment_count > 0:
+        if loans[0].installment_count > 0:
             from datetime import timedelta
             loan = loans[0]
             if loan.installment_type in ['Daily', 'দৈনিক']:
@@ -1227,14 +1318,11 @@ def customer_loan_sheet(id):
             else:
                 loan_end_date = (loan.loan_date + timedelta(days=30*loan.installment_count)).strftime('%d-%m-%Y')
         
-        interest_rate = loans[0].interest if loans else 0
-        installment_count = sum(loan.installment_count for loan in loans)
-        weekly_installment = loans[0].installment_amount if loans else 0
-        
         staff = User.query.get(customer.staff_id) if customer.staff_id else None
         
         return render_template('customer_loan_sheet.html', 
                              customer=customer,
+                             loans=loans,
                              loans_with_collections=loans_with_collections,
                              total_loan_disbursed=total_loan_disbursed,
                              total_interest=total_interest,
@@ -1246,68 +1334,13 @@ def customer_loan_sheet(id):
                              admission_fee=admission_fee,
                              welfare_fee=welfare_fee,
                              application_fee=application_fee,
-                             loan_principal=loan_principal,
-                             interest_amount=interest_amount,
+                             loan_principal=total_loan_disbursed,
+                             interest_amount=total_interest,
                              loan_date=loan_date,
                              loan_end_date=loan_end_date,
-                             interest_rate=interest_rate,
-                             installment_count=installment_count,
-                             weekly_installment=weekly_installment,
-                             staff=staff,
-                             now=datetime.now())
-    except Exception as e:
-        import traceback
-        print(f"Error in customer_loan_sheet: {e}")
-        traceback.print_exc()
-        flash(f'Error loading loan sheet: {str(e)}', 'danger')
-        return redirect(url_for('customer_details', id=id))
-        
-        all_loan_collections = LoanCollection.query.filter_by(customer_id=id).all()
-        
-        from models.fee_model import FeeCollection
-        admission_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=id, fee_type='admission').scalar() or 0
-        welfare_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=id, fee_type='welfare').scalar() or 0
-        application_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=id, fee_type='application').scalar() or 0
-        
-        total_loan_disbursed = sum(loan.amount for loan in loans)
-        total_interest = sum(loan.amount * loan.interest / 100 for loan in loans)
-        total_loan_collected = sum(lc.amount for lc in all_loan_collections)
-        actual_remaining = sum(item['remaining'] for item in loans_with_collections)
-        
-        loan_principal = total_loan_disbursed
-        interest_amount = total_interest
-        loan_date = loans_with_collections[0]['loan'].loan_date.strftime('%d-%m-%Y') if loans_with_collections else ''
-        loan_end_date = ''
-        if loans_with_collections and loans_with_collections[0]['loan'].installment_count > 0:
-            from datetime import timedelta
-            loan = loans_with_collections[0]['loan']
-            loan_end_date = (loan.loan_date + timedelta(weeks=loan.installment_count)).strftime('%d-%m-%Y')
-        interest_rate = loans_with_collections[0]['loan'].interest if loans_with_collections else 0
-        installment_count = sum(item['loan'].installment_count for item in loans_with_collections)
-        weekly_installment = loans_with_collections[0]['loan'].installment_amount if loans_with_collections else 0
-        
-        staff = User.query.get(customer.staff_id) if customer.staff_id else None
-        
-        return render_template('customer_loan_sheet.html', 
-                             customer=customer,
-                             loans_with_collections=loans_with_collections,
-                             total_loan_disbursed=total_loan_disbursed,
-                             total_interest=total_interest,
-                             total_loan_collected=total_loan_collected,
-                             total_savings=total_savings_collected,
-                             total_withdrawn=total_withdrawn,
-                             actual_savings_balance=actual_savings_balance,
-                             actual_remaining=actual_remaining,
-                             admission_fee=admission_fee,
-                             welfare_fee=welfare_fee,
-                             application_fee=application_fee,
-                             loan_principal=loan_principal,
-                             interest_amount=interest_amount,
-                             loan_date=loan_date,
-                             loan_end_date=loan_end_date,
-                             interest_rate=interest_rate,
-                             installment_count=installment_count,
-                             weekly_installment=weekly_installment,
+                             interest_rate=loans[0].interest,
+                             installment_count=sum(loan.installment_count for loan in loans),
+                             weekly_installment=loans[0].installment_amount,
                              staff=staff,
                              now=datetime.now())
     except Exception as e:

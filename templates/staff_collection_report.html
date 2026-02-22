@@ -8,6 +8,8 @@
   <style>
     @media print {
       .no-print { display: none; }
+      .d-flex { display: block !important; text-align: center !important; }
+      h3, h4, h5 { text-align: center !important; }
       table { page-break-inside: auto; }
       thead { display: table-header-group; }
       tbody { display: table-row-group; }
@@ -26,9 +28,22 @@
 </head>
 
 <body class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h3 class="mb-0">আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h3>
+      <h4 class="mb-0">স্টাফ আদায় রিপোর্ট</h4>
+    </div>
+    <div class="no-print">
+      <button onclick="window.print()" class="btn btn-primary">🖨️ প্রিন্ট করুন</button>
+      {% if request.args.get('from_staff_view') %}
+      <a href="{{ url_for('staff_dashboard_view', id=staff.id) }}" class="btn btn-warning">⬅️ স্টাফ ভিউতে ফিরে যান</a>
+      {% else %}
+      <a href="{{ url_for('manage_staff') }}" class="btn btn-secondary">⬅️ ফিরে যান</a>
+      {% endif %}
+    </div>
+  </div>
+  
   <div class="text-center mb-4">
-    <h3>আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h3>
-    <h3>স্টাফ আদায় রিপোর্ট</h3>
     <h5>{{ staff.name }}</h5>
     <p>ইমেইল: {{ staff.email }}</p>
     <p><strong>সময়কাল:</strong> {{ period_display }}</p>
@@ -156,15 +171,6 @@
       <div style="font-weight: 600;">যাচাইকারক</div>
       <div class="signature-line">স্বাক্ষর ও তারিখ</div>
     </div>
-  </div>
-
-  <div class="no-print mt-4">
-    <button onclick="window.print()" class="btn btn-primary">🖨️ প্রিন্ট করুন</button>
-    {% if request.args.get('from_staff_view') %}
-    <a href="{{ url_for('staff_dashboard_view', id=staff.id) }}" class="btn btn-warning">⬅️ স্টাফ ভিউতে ফিরে যান</a>
-    {% else %}
-    <a href="{{ url_for('manage_staff') }}" class="btn btn-secondary">⬅️ ফিরে যান</a>
-    {% endif %}
   </div>
 </body>
 </html>

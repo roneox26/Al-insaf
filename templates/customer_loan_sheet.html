@@ -134,7 +134,7 @@
         
         .summary-section {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(6, 1fr);
             border-bottom: 2px solid #000;
             background: #f8f9fa;
         }
@@ -380,6 +380,25 @@
                 <div class="summary-label">সঞ্চয় ব্যালেন্স</div>
                 <div class="summary-value">{{ "{:,.0f}".format(actual_savings_balance) }}</div>
             </div>
+            <div class="summary-box">
+                <div class="summary-label">সঞ্চয় উত্তোলন</div>
+                <div class="summary-value">{{ "{:,.0f}".format(total_withdrawn) }}</div>
+            </div>
+        </div>
+
+        <!-- Loan Sheets Navigation -->
+        <div class="no-print" style="padding: 10px; background: #f8f9fa; border-bottom: 2px solid #000;">
+            <strong>Individual Loan Sheets:</strong>
+            {% if loans %}
+                {% for loan in loans %}
+                    <a href="{{ url_for('loan_sheet', loan_id=loan.id) }}" 
+                       style="background: #4CAF50; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; font-size: 13px; margin-left: 5px; display: inline-block;">
+                        📄 Loan #{{ loop.index }} Sheet (৳{{ "{:,.0f}".format(loan.amount) }})
+                    </a>
+                {% endfor %}
+            {% else %}
+                <span style="color: #999; margin-left: 10px;">কোনো loan নেই</span>
+            {% endif %}
         </div>
 
         <!-- Collection History -->
@@ -399,44 +418,39 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% if loans_with_collections and loans_with_collections|length > 0 %}
+                    {% if loans_with_collections and loans_with_collections|length > 0 and loans_with_collections[0].collections %}
                         {% set running_total = namespace(value=0) %}
                         {% set running_saving = namespace(value=0) %}
                         {% set total_loan_amount = (total_loan_disbursed + total_interest) if total_interest is defined else total_loan_disbursed %}
                         
-                        {% for loan_item in loans_with_collections %}
-                            {% for item in loan_item.collections %}
-                                {% set running_total.value = running_total.value + item.loan_amount %}
-                                {% if item.saving_amount > 0 %}
-                                    {% set running_saving.value = running_saving.value + item.saving_amount %}
-                                {% endif %}
-                                
-                                <tr>
-                                    <td>{{ item.collection.collection_date.strftime('%d-%m-%y') }}</td>
-                                    <td>{{ "{:,.0f}".format(item.loan_amount) if item.loan_amount > 0 else '' }}</td>
-                                    <td>{{ "{:,.0f}".format(item.saving_amount) if item.saving_amount > 0 else '' }}</td>
-                                    <td>{{ "{:,.0f}".format(running_total.value) }}</td>
-                                    <td>{{ "{:,.0f}".format(running_saving.value) }}</td>
-                                    <td>{{ "{:,.0f}".format(total_loan_amount - running_total.value) }}</td>
-                                </tr>
-                            {% endfor %}
+                        {% for item in loans_with_collections[0].collections %}
+                            {% set running_total.value = running_total.value + item.loan_amount %}
+                            {% set running_saving.value = running_saving.value + item.saving_amount %}
+                            
+                            <tr>
+                                <td>{{ item.collection.collection_date.strftime('%d-%m-%y') }}</td>
+                                <td>{{ "{:,.0f}".format(item.loan_amount) if item.loan_amount > 0 else '' }}</td>
+                                <td>{{ "{:,.0f}".format(item.saving_amount) if item.saving_amount > 0 else '' }}</td>
+                                <td>{{ "{:,.0f}".format(running_total.value) }}</td>
+                                <td>{{ "{:,.0f}".format(running_saving.value) }}</td>
+                                <td>{{ "{:,.0f}".format(total_loan_amount - running_total.value) }}</td>
+                            </tr>
                         {% endfor %}
                         
                         <!-- Add empty rows to fill space -->
-                        {% set total_rows = namespace(value=0) %}
-                        {% for loan_item in loans_with_collections %}
-                            {% set total_rows.value = total_rows.value + loan_item.collections|length %}
-                        {% endfor %}
-                        {% for i in range(10 - total_rows.value) %}
-                        <tr>
-                            <td style="height: 28px;">&nbsp;</td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                        {% endfor %}
+                        {% set total_rows = loans_with_collections[0].collections|length %}
+                        {% if total_rows < 10 %}
+                            {% for i in range(10 - total_rows) %}
+                            <tr>
+                                <td style="height: 28px;">&nbsp;</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            {% endfor %}
+                        {% endif %}
                     {% else %}
                         {% for i in range(10) %}
                         <tr>
