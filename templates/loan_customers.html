@@ -148,7 +148,11 @@
               <td><span class="badge bg-success savings-amount">৳{{ "{:,.0f}".format(customer.savings_balance) }}</span></td>
               <td><span class="badge bg-info staff-name">{{ customer.staff.name if customer.staff else 'N/A' }}</span></td>
               <td class="no-print">
-                <a href="{{ url_for('customer_details', id=customer.id) }}" class="btn btn-sm btn-info"><i class="fas fa-eye"></i> Details</a>
+                {% if customer.remaining_loan > 0 %}
+                <a href="{{ url_for('customer_details', id=customer.id) }}" class="btn btn-sm btn-danger"><i class="fas fa-eye"></i> Details</a>
+                {% else %}
+                <a href="{{ url_for('customer_details', id=customer.id) }}" class="btn btn-sm btn-success"><i class="fas fa-eye"></i> Details</a>
+                {% endif %}
               </td>
             </tr>
             {% endfor %}

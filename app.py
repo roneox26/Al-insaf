@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 import os
 from flask import Flask, render_template, redirect, url_for, flash, request, make_response
 from flask_sqlalchemy import SQLAlchemy
@@ -1198,8 +1198,12 @@ def loan_sheet(loan_id):
         
         staff = User.query.get(customer.staff_id) if customer.staff_id else None
         
+        # Get all loans for navigation
+        all_loans = Loan.query.filter_by(customer_name=customer.name).order_by(Loan.loan_date).all()
+        
         return render_template('customer_loan_sheet.html',
                              customer=customer,
+                             loans=all_loans,
                              loans_with_collections=[{
                                  'loan': loan,
                                  'collections': collections_with_savings,
@@ -1902,22 +1906,46 @@ def collect_loan():
             flash(f'নাম? নাম? নাম (৳{customer.remaining_loan}) নেওয়া হয়েছে, আবার নেওয়া যাবে না!', 'danger')
             return redirect(url_for('loan_collection'))
         
-        # Create collection without loan_id
-        collection = LoanCollection(
-            customer_id=customer_id,
-            amount=amount,
-            staff_id=current_user.id
-        )
+        # FIFO: Get oldest unpaid loans first
+        loans = Loan.query.filter_by(customer_name=customer.name).order_by(Loan.loan_date.asc()).all()
         
+        remaining_amount = amount
+        
+        for loan in loans:
+            if remaining_amount <= 0:
+                break
+            
+            # Calculate how much is already paid for this loan
+            paid_for_loan = db.session.query(db.func.sum(LoanCollection.amount)).filter_by(loan_id=loan.id).scalar() or 0
+            loan_with_interest = loan.amount + (loan.amount * loan.interest / 100)
+            loan_remaining = loan_with_interest - paid_for_loan
+            
+            if loan_remaining <= 0:
+                continue  # This loan is fully paid, move to next
+            
+            # Pay as much as possible for this loan
+            payment_for_this_loan = min(remaining_amount, loan_remaining)
+            
+            # Create collection record with loan_id
+            collection = LoanCollection(
+                customer_id=customer_id,
+                loan_id=loan.id,
+                amount=payment_for_this_loan,
+                staff_id=current_user.id
+            )
+            db.session.add(collection)
+            
+            remaining_amount -= payment_for_this_loan
+        
+        # Update customer remaining loan
         customer.remaining_loan -= amount
         
+        # Update cash balance
         cash_balance_record = CashBalance.query.first()
         if not cash_balance_record:
             cash_balance_record = CashBalance(balance=0)
             db.session.add(cash_balance_record)
         cash_balance_record.balance += amount
-        
-        db.session.add(collection)
         
         # Update collection schedule
         schedule = CollectionSchedule.query.filter_by(

@@ -117,7 +117,11 @@
               <td><small>{{ customer.created_date.strftime('%d-%m-%Y') if customer.created_date else 'N/A' }}</small></td>
               <td>
                 <div class="btn-group" role="group">
-                  <a href="{{ url_for('customer_details', id=customer.id) }}" class="btn btn-sm btn-info action-btn" title="Details"><i class="fas fa-eye"></i></a>
+                  {% if customer.remaining_loan > 0 %}
+                  <a href="{{ url_for('customer_details', id=customer.id) }}" class="btn btn-sm btn-danger action-btn" title="Details"><i class="fas fa-eye"></i></a>
+                  {% else %}
+                  <a href="{{ url_for('customer_details', id=customer.id) }}" class="btn btn-sm btn-success action-btn" title="Details"><i class="fas fa-eye"></i></a>
+                  {% endif %}
                   {% if current_user.role == 'admin' or (current_user.role == 'staff' and not (current_user.is_monitor if current_user.is_monitor is defined else false)) %}
                   <a href="{{ url_for('edit_customer', id=customer.id) }}" class="btn btn-sm btn-warning action-btn" title="Edit"><i class="fas fa-edit"></i></a>
                   {% endif %}

@@ -123,14 +123,25 @@ python fix_database_universal.py
 python quick_fix.py
 ```
 
+### Individual Loan Sheet Fix (FIFO Implementation)
+```bash
+python migrate_add_loan_id.py
+```
+**অথবা Windows এ:**
+```bash
+run_migration.bat
+```
+
 **Note:** Deploy করার পরে যদি "loan_id" বা "column does not exist" error দেখো, তাহলে এই command run করো।
+
+**বিস্তারিত নির্দেশনা:** [LOAN_SHEET_FIX.md](LOAN_SHEET_FIX.md) দেখুন
 
 **Render.com এ Fix করতে:**
 1. Dashboard > Shell tab এ যাও
-2. Run: `python quick_fix.py`
+2. Run: `python migrate_add_loan_id.py`
 3. Application restart করো
 
-**বিস্তারিত নির্দেশনা:** [RENDER_FIX.md](RENDER_FIX.md) দেখুন
+**বিস্তারিত নির্দেশনা:** [LOAN_SHEET_FIX.md](LOAN_SHEET_FIX.md) দেখুন
 
 ## 🌐 Deploy করার নিয়ম
 
@@ -196,8 +207,9 @@ SECRET_KEY=your-secret-key-here
 
 **Database migration করতে (deploy এর পরে প্রথমবার):**
 - Console tab > "Run command"
-- Command: `python migrate_loan_id.py`
+- Command: `python migrate_add_loan_id.py`
 - এটা `loan_collections` table এ `loan_id` column add করবে
+- Individual Loan Sheets সঠিকভাবে কাজ করবে
 
 **Code update করতে:**
 - GitHub এ push করলে automatic deploy হবে
@@ -286,9 +298,14 @@ python create_db.py
 **Database migration করতে (deploy এর পরে প্রথমবার):**
 ```bash
 cd ~/Al-insaf
-python migrate_loan_id.py
+python migrate_add_loan_id.py
 # Web tab এ Reload button ক্লিক করো
 ```
+
+**Individual Loan Sheet সমস্যা হলে:**
+- Migration script run করো (uporer command)
+- Browser cache clear করো
+- Application reload করো
 
 **Code update করতে:**
 ```bash

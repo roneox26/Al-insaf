@@ -387,17 +387,23 @@
         </div>
 
         <!-- Loan Sheets Navigation -->
-        <div class="no-print" style="padding: 10px; background: #f8f9fa; border-bottom: 2px solid #000;">
-            <strong>Individual Loan Sheets:</strong>
+        <div class="no-print" style="padding: 15px; background: #e3f2fd; border: 2px solid #2196F3; border-radius: 8px; margin-bottom: 15px;">
+            <h5 style="margin: 0 0 10px 0; color: #1976D2;">📄 Individual Loan Sheets</h5>
             {% if loans %}
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
                 {% for loan in loans %}
                     <a href="{{ url_for('loan_sheet', loan_id=loan.id) }}" 
-                       style="background: #4CAF50; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; font-size: 13px; margin-left: 5px; display: inline-block;">
+                       style="background: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: all 0.3s;" 
+                       onmouseover="this.style.background='#45a049'" 
+                       onmouseout="this.style.background='#4CAF50'">
                         📄 Loan #{{ loop.index }} Sheet (৳{{ "{:,.0f}".format(loan.amount) }})
                     </a>
                 {% endfor %}
+                </div>
             {% else %}
-                <span style="color: #999; margin-left: 10px;">কোনো loan নেই</span>
+                <div style="padding: 20px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; text-align: center;">
+                    <span style="color: #856404; font-size: 14px;">⚠️ কোনো loan নেই</span>
+                </div>
             {% endif %}
         </div>
 

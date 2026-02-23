@@ -131,7 +131,11 @@
         </td>
         <td>{{ loan.staff.name if loan.staff else 'N/A' }}</td>
         <td>
-          <a href="{{ url_for('loan_sheet', loan_id=loan.id) }}" class="btn btn-sm btn-info" target="_blank">📄 Loan Sheet</a>
+          {% if loan.status == 'Paid' %}
+          <a href="{{ url_for('loan_sheet', loan_id=loan.id) }}" class="btn btn-sm btn-success" target="_blank">📄 Loan Sheet</a>
+          {% else %}
+          <a href="{{ url_for('loan_sheet', loan_id=loan.id) }}" class="btn btn-sm btn-danger" target="_blank">📄 Loan Sheet</a>
+          {% endif %}
           <a href="{{ url_for('edit_loan', id=loan.id) }}" class="btn btn-sm btn-warning">✏️ Edit</a>
         </td>
       </tr>
