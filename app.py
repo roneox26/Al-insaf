@@ -1819,11 +1819,7 @@ def collection():
                 flash(f'?? ???? ???????? ?? (?{customer.remaining_loan}) ?????? ??????, ???? ?????? ???? ??!', 'danger')
                 return redirect(url_for('collection'))
             
-            loan_collection = LoanCollection(
-                customer_id=customer_id,
-                amount=loan_amount,
-                staff_id=current_user.id
-            )
+            loan_collection = LoanCollection(customer_id=customer_id, amount=payment_for_this_loan, staff_id=current_user.id)
             customer.remaining_loan -= loan_amount
             cash_balance_record.balance += loan_amount
             db.session.add(loan_collection)
@@ -1927,10 +1923,7 @@ def collect_loan():
             payment_for_this_loan = min(remaining_amount, loan_remaining)
             
             # Create collection record with loan_id
-            collection = LoanCollection(`n                customer_id=customer_id,
-                amount=payment_for_this_loan,
-                staff_id=current_user.id
-            )
+            collection = LoanCollection(customer_id=customer_id, amount=payment_for_this_loan, staff_id=current_user.id)
             db.session.add(collection)
             
             remaining_amount -= payment_for_this_loan
