@@ -42,6 +42,7 @@
       📊 দৈনিক কালেকশন
     </span>
     <div class="d-flex gap-2">
+      <button onclick="window.print()" class="btn btn-light btn-sm">🖨️ প্রিন্ট</button>
       <form method="GET" class="d-flex gap-2">
         <input type="date" name="date" class="form-control form-control-sm" value="{{ selected_date.strftime('%Y-%m-%d') }}" style="width: 150px;">
         <button type="submit" class="btn btn-light btn-sm">দেখুন</button>
@@ -131,10 +132,7 @@
       </tbody>
     </table>
 
-    <div class="no-print mt-3">
-      <button onclick="window.print()" class="btn btn-primary">🖨️ প্রিন্ট</button>
-      <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">⬅️ ফিরে যান</a>
-    </div>
+
   </div>
 </body>
 </html>

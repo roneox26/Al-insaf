@@ -20,6 +20,7 @@
 
   <h2 class="mb-4">💸 Manage Expenses</h2>
   <div class="mb-3">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">⬅️ Dashboard</a>
     <a href="{{ url_for('expenses_print') }}?filter_type={{ filter_type }}&month={{ month }}&year={{ year }}" class="btn btn-primary" target="_blank">🖨️ Print Expenses Report</a>
     <a href="{{ url_for('manage_scheduled_expenses') }}" class="btn btn-success">📅 শিডিউল ব্যয়</a>
   </div>
@@ -180,7 +181,5 @@
       </tbody>
     </table>
   </div>
-
-  <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-4">⬅️ Back to Dashboard</a>
 </body>
 </html>

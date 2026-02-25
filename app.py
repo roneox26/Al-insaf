@@ -200,7 +200,7 @@ def dashboard():
         today_saving = db.session.query(db.func.sum(SavingCollection.amount)).filter(SavingCollection.collection_date >= today_start).scalar() or 0
         
         if current_user.role == 'admin':
-            staff_count = User.query.filter_by(role='staff').count() or 0
+            staff_count = User.query.filter(User.role != 'admin').count() or 0
             try:
                 notes_count = Note.query.count() or 0
             except:
@@ -222,6 +222,38 @@ def dashboard():
                                  welfare_fee_total=welfare_fee_total or 0,
                                  application_fee_total=application_fee_total or 0)
         else:
+            # Get unread messages count for staff
+            try:
+                admin = User.query.filter_by(role='admin').first()
+                unread_messages = Message.query.filter_by(
+                    sender_id=admin.id if admin else 0,
+                    receiver_id=current_user.id,
+                    is_read=False
+                ).count() if admin else 0
+            except:
+                unread_messages = 0
+            
+            # Get staff-specific data
+            my_customers = Customer.query.filter_by(staff_id=current_user.id, is_active=True).count()
+            total_remaining = db.session.query(db.func.sum(Customer.remaining_loan)).filter_by(staff_id=current_user.id).scalar() or 0
+            due_customers = Customer.query.filter_by(staff_id=current_user.id).filter(Customer.remaining_loan > 0).count()
+            
+            # Today's collections count
+            today_loan_count = LoanCollection.query.filter_by(staff_id=current_user.id).filter(LoanCollection.collection_date >= today_start).count()
+            today_saving_count = SavingCollection.query.filter_by(staff_id=current_user.id).filter(SavingCollection.collection_date >= today_start).count()
+            today_collections = today_loan_count + today_saving_count
+            
+            # Check if office staff
+            is_office_staff = hasattr(current_user, 'is_office_staff') and current_user.is_office_staff
+            
+            # Get all staff for office staff
+            all_staff = User.query.filter(User.role != 'admin', User.id != current_user.id).all() if is_office_staff else []
+            
+            # Check logo
+            import os
+            logo_path = os.path.join('static', 'images', 'logo.jpg')
+            logo_exists = os.path.exists(logo_path)
+            
             return render_template('staff_dashboard.html',
                                  name=current_user.name or 'Staff',
                                  role=current_user.role or 'staff',
@@ -230,11 +262,23 @@ def dashboard():
                                  total_savings=total_savings or 0,
                                  cash_balance=cash_balance or 0,
                                  today_loan=today_loan or 0,
-                                 today_saving=today_saving or 0)
+                                 today_saving=today_saving or 0,
+                                 unread_messages=unread_messages or 0,
+                                 my_customers=my_customers or 0,
+                                 total_remaining=total_remaining or 0,
+                                 due_customers=due_customers or 0,
+                                 today_collections=today_collections or 0,
+                                 is_office_staff=is_office_staff,
+                                 all_staff=all_staff,
+                                 logo_exists=logo_exists,
+                                 today=today,
+                                 current_user=current_user)
     except Exception as e:
+        import traceback
+        error_msg = traceback.format_exc()
         print(f"Dashboard error: {e}")
-        flash('Error loading dashboard. Please contact admin.', 'danger')
-        return redirect(url_for('logout'))
+        print(error_msg)
+        return f"<h1>Dashboard Error</h1><pre>{error_msg}</pre>", 500
 
 @app.route('/manage_customers')
 @login_required
@@ -380,12 +424,12 @@ def delete_staff(id):
     # Check if staff has customers
     customer_count = Customer.query.filter_by(staff_id=id).count()
     if customer_count > 0:
-        flash(f'Cannot delete staff! {customer_count} customers are assigned to this staff.', 'danger')
+        flash(f'স্টাফ ডিলিট করা যাবে না! {customer_count} জন গ্রাহক এই স্টাফের অধীনে আছে। প্রথমে গ্রাহকদের অন্য স্টাফের কাছে transfer করুন।', 'danger')
         return redirect(url_for('manage_staff'))
     
     db.session.delete(staff)
     db.session.commit()
-    flash('Staff deleted successfully!', 'success')
+    flash('স্টাফ সফলভাবে ডিলিট করা হয়েছে!', 'success')
     return redirect(url_for('manage_staff'))
 
 @app.route('/staff/dashboard/<int:id>')
