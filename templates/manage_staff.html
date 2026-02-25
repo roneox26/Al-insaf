@@ -158,21 +158,15 @@
 
   <script>
   function deleteStaff(staffId, staffName) {
-    const password = prompt('Staff "' + staffName + '" ডিলিট করতে আপনার পাসওয়ার্ড দিন:');
-    if (password) {
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = '/admin/staff/delete/' + staffId;
-      
-      const passwordInput = document.createElement('input');
-      passwordInput.type = 'hidden';
-      passwordInput.name = 'password';
-      passwordInput.value = password;
-      
-      form.appendChild(passwordInput);
-      document.body.appendChild(form);
-      form.submit();
+    if (!confirm('আপনি কি নিশ্চিত যে "' + staffName + '" কে ডিলিট করতে চান?')) {
+      return;
     }
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/staff/delete/' + staffId;
+    
+    document.body.appendChild(form);
+    form.submit();
   }
 
   // Clear date inputs when period buttons are clicked

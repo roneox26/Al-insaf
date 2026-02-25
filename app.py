@@ -1,12 +1,29 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 import os
 from flask import Flask, render_template, redirect, url_for, flash, request, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_bcrypt import Bcrypt
+from jinja2 import Undefined, DebugUndefined
 from models.user_model import db, User
 import config
 from models.staff_model import Staff
+
+# Custom Undefined class to return 0 for formatting
+class SilentUndefined(DebugUndefined):
+    def __format__(self, format_spec):
+        return format(0, format_spec)
+    def __int__(self):
+        return 0
+    def __float__(self):
+        return 0.0
+    def __str__(self):
+        return '0'
+    def __bool__(self):
+        return False
+    def __iter__(self):
+        return iter([])
+
 from models.loan_model import Loan
 from models.saving_model import Saving
 from models.customer_model import Customer
@@ -21,6 +38,7 @@ from models.fee_model import FeeCollection
 from models.expense_model import Expense
 from models.message_model import Message
 from models.note_model import Note
+from models.note_model import Note
 from models.scheduled_expense_model import ScheduledExpense
 from models.collection_schedule_model import CollectionSchedule
 from datetime import datetime, timedelta, date
@@ -31,11 +49,70 @@ import pytz
 
 app = Flask(__name__)
 app.config.from_object(config)
+app.jinja_env.undefined = SilentUndefined
+
+# Add default values for ALL common variables to prevent undefined errors
+app.jinja_env.globals.update(
+    # Financial
+    total_withdrawn=0,
+    total_invested=0,
+    admission_fee_total=0,
+    welfare_fee_total=0,
+    application_fee_total=0,
+    cash_balance=0,
+    total_loan=0,
+    total_savings=0,
+    pending_loans=0,
+    
+    # Loan related
+    interest_rate=0,
+    interest_amount=0,
+    loan_amount=0,
+    loan_principal=0,
+    installment_count=0,
+    installment_type='Monthly',
+    installment_amount=0,
+    total_with_interest=0,
+    
+    # Counts
+    notes_count=0,
+    staff_count=0,
+    total_customers=0,
+    
+    # Collections
+    today_loan=0,
+    today_saving=0,
+    total_collected=0,
+    
+    # Dates
+    loan_date='',
+    collection_date='',
+    
+    # Others
+    name='',
+    role='',
+    customer=None,
+    customers=[],
+    loans=[],
+    collections=[],
+    staff=None,
+    staffs=[]
+)
 
 db.init_app(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
+
+# Custom Jinja2 filter to handle undefined variables
+@app.template_filter('default_zero')
+def default_zero(value):
+    try:
+        return value if value is not None else 0
+    except:
+        return 0
+
+app.jinja_env.globals.update(default_zero=default_zero)
 
 # Auto-initialize database on startup
 with app.app_context():
@@ -92,129 +169,152 @@ def login():
         password = request.form.get('password', '').strip()
         
         if not email or not password:
-            flash('???? ??? ????????!', 'danger')
+            flash('Email and password are required!', 'danger')
             return render_template('login.html')
-
+        
         user = User.query.filter_by(email=email).first()
         if user and bcrypt.check_password_hash(user.password, password):
             login_user(user)
-            flash('Login Successful!', 'success')
+            flash('Login successful!', 'success')
             return redirect(url_for('dashboard'))
         else:
-            flash('Invalid email or password', 'danger')
-
+            flash('Invalid email or password!', 'danger')
+            return render_template('login.html')
+    
     return render_template('login.html')
 
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    import os
-    logo_path = os.path.join('static', 'images', 'logo.jpg')
-    logo_exists = os.path.exists(logo_path)
-    if current_user.role == 'admin':
-        staff_count = User.query.filter_by(role='staff').count()
-        total_loans = db.session.query(db.func.sum(Customer.total_loan)).scalar() or 0
-        pending_loans = db.session.query(db.func.sum(Customer.remaining_loan)).scalar() or 0
+    try:
+        total_customers = Customer.query.filter_by(is_active=True).count()
+        total_loan = db.session.query(db.func.sum(Customer.remaining_loan)).scalar() or 0
         total_savings = db.session.query(db.func.sum(Customer.savings_balance)).scalar() or 0
-        total_customers = Customer.query.count()
-        due_customers = Customer.query.filter(Customer.remaining_loan > 0).count()
-        
         cash_balance_record = CashBalance.query.first()
         cash_balance = cash_balance_record.balance if cash_balance_record else 0
         
-        period = request.args.get('period', 'all')
+        from datetime import date
+        today = date.today()
+        today_start = datetime.combine(today, datetime.min.time())
+        today_loan = db.session.query(db.func.sum(LoanCollection.amount)).filter(LoanCollection.collection_date >= today_start).scalar() or 0
+        today_saving = db.session.query(db.func.sum(SavingCollection.amount)).filter(SavingCollection.collection_date >= today_start).scalar() or 0
         
-        admission_fee_total = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(fee_type='admission').scalar() or 0
-        welfare_fee_total = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(fee_type='welfare').scalar() or 0
-        application_fee_total = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(fee_type='application').scalar() or 0
-        notes_count = Note.query.count()
-        
-        return render_template('admin_dashboard.html', name=current_user.name, staff_count=staff_count, total_loans=total_loans, pending_loans=pending_loans, total_savings=total_savings, total_customers=total_customers, cash_balance=cash_balance, period=period, admission_fee_total=admission_fee_total, welfare_fee_total=welfare_fee_total, application_fee_total=application_fee_total, due_customers=due_customers, notes_count=notes_count)
-    elif current_user.role == 'staff':
-        my_customers = Customer.query.filter_by(staff_id=current_user.id).count()
-        total_remaining = db.session.query(db.func.sum(Customer.remaining_loan)).filter_by(staff_id=current_user.id).scalar() or 0
-        due_customers = Customer.query.filter_by(staff_id=current_user.id).filter(Customer.remaining_loan > 0).count()
-        today = datetime.now().replace(hour=0, minute=0, second=0)
-        today_loan_collections = LoanCollection.query.filter_by(staff_id=current_user.id).filter(LoanCollection.collection_date >= today).count()
-        today_saving_collections = SavingCollection.query.filter_by(staff_id=current_user.id).filter(SavingCollection.collection_date >= today).count()
-        today_collections = today_loan_collections + today_saving_collections
-        unread_messages = Message.query.filter_by(receiver_id=current_user.id, is_read=False).count()
-        is_monitor = current_user.is_monitor if hasattr(current_user, 'is_monitor') else False
-        
-        # Get all staff for office staff
-        all_staff = []
-        is_office = hasattr(current_user, 'is_office_staff') and current_user.is_office_staff
-        if is_office:
-            all_staff = User.query.filter_by(role='staff').filter(User.id != current_user.id).order_by(User.name).all()
-        
-        import os
-        logo_path = os.path.join('static', 'images', 'logo.jpg')
-        logo_exists = os.path.exists(logo_path)
-        return render_template('staff_dashboard.html', name=current_user.name, my_customers=my_customers, total_remaining=total_remaining, today_collections=today_collections, unread_messages=unread_messages, due_customers=due_customers, is_monitor=is_monitor, logo_exists=logo_exists, today=datetime.now(), all_staff=all_staff, is_office_staff=is_office)
-    else:
-        flash('Invalid role!', 'danger')
+        if current_user.role == 'admin':
+            staff_count = User.query.filter_by(role='staff').count() or 0
+            try:
+                notes_count = Note.query.count() or 0
+            except:
+                notes_count = 0
+            
+            admission_fee_total = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(fee_type='admission').scalar() or 0
+            welfare_fee_total = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(fee_type='welfare').scalar() or 0
+            application_fee_total = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(fee_type='application').scalar() or 0
+            
+            return render_template('admin_dashboard.html',
+                                 name=current_user.name or 'Admin',
+                                 total_customers=total_customers or 0,
+                                 pending_loans=total_loan or 0,
+                                 total_savings=total_savings or 0,
+                                 cash_balance=cash_balance or 0,
+                                 staff_count=staff_count or 0,
+                                 notes_count=notes_count or 0,
+                                 admission_fee_total=admission_fee_total or 0,
+                                 welfare_fee_total=welfare_fee_total or 0,
+                                 application_fee_total=application_fee_total or 0)
+        else:
+            return render_template('staff_dashboard.html',
+                                 name=current_user.name or 'Staff',
+                                 role=current_user.role or 'staff',
+                                 total_customers=total_customers or 0,
+                                 total_loan=total_loan or 0,
+                                 total_savings=total_savings or 0,
+                                 cash_balance=cash_balance or 0,
+                                 today_loan=today_loan or 0,
+                                 today_saving=today_saving or 0)
+    except Exception as e:
+        print(f"Dashboard error: {e}")
+        flash('Error loading dashboard. Please contact admin.', 'danger')
         return redirect(url_for('logout'))
 
-@app.route('/admin/staffs')
+@app.route('/manage_customers')
+@login_required
+def manage_customers():
+    if current_user.role == 'staff' and (not hasattr(current_user, 'is_office_staff') or not current_user.is_office_staff):
+        customers = Customer.query.filter_by(is_active=True, staff_id=current_user.id).all()
+    else:
+        customers = Customer.query.filter_by(is_active=True).all()
+    return render_template('manage_customers.html', customers=customers)
+
+@app.route('/manage_staff')
 @login_required
 def manage_staff():
     if current_user.role != 'admin':
-        flash('Access denied! Only admin can view this page.', 'danger')
+        flash('Access denied!', 'danger')
         return redirect(url_for('dashboard'))
-
-    period = request.args.get('period', 'daily')
+    
+    period = request.args.get('period', 'all')
     from_date = request.args.get('from_date', '')
     to_date = request.args.get('to_date', '')
-    month = (lambda x: int(x) if x and x != '' else 0)(request.args.get('month', ''))
-    year = (lambda x: int(x) if x and x != '' else 0)(request.args.get('year', ''))
+    month = request.args.get('month', type=int)
+    year = request.args.get('year', type=int)
     
-    today = datetime.now()
-    
-    if from_date and to_date:
-        try:
-            start_date = datetime.strptime(from_date, '%Y-%m-%d').replace(hour=0, minute=0, second=0, microsecond=0)
-            end_date = datetime.strptime(to_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59, microsecond=999999)
-        except:
-            start_date = today.replace(hour=0, minute=0, second=0, microsecond=0)
-            end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
-    elif period == 'daily':
-        start_date = today.replace(hour=0, minute=0, second=0, microsecond=0)
-        end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
-    elif period == 'monthly':
-        if month and year:
-            import calendar
-            last_day = calendar.monthrange(year, month)[1]
-            start_date = datetime(year, month, 1, 0, 0, 0)
-            end_date = datetime(year, month, last_day, 23, 59, 59)
-        else:
-            start_date = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
-    else:
-        start_date = today.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-        end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
-    
-    staffs = User.query.filter_by(role='staff').all()
+    staffs = User.query.filter(User.role != 'admin').all()
     staff_data = []
     
-    query_loan = LoanCollection.query.filter(LoanCollection.collection_date >= start_date, LoanCollection.collection_date <= end_date)
-    query_saving = SavingCollection.query.filter(SavingCollection.collection_date >= start_date, SavingCollection.collection_date <= end_date)
-    
-    all_loan_collections = query_loan.all()
-    all_saving_collections = query_saving.all()
-    
     for staff in staffs:
-        loan_collection = sum(lc.amount for lc in all_loan_collections if lc.staff_id == staff.id)
-        saving_collection = sum(sc.amount for sc in all_saving_collections if sc.staff_id == staff.id)
-        total_collection = loan_collection + saving_collection
+        query_loan = LoanCollection.query.filter_by(staff_id=staff.id)
+        query_saving = SavingCollection.query.filter_by(staff_id=staff.id)
+        
+        if from_date:
+            start_date = datetime.strptime(from_date, '%Y-%m-%d')
+            query_loan = query_loan.filter(LoanCollection.collection_date >= start_date)
+            query_saving = query_saving.filter(SavingCollection.collection_date >= start_date)
+        
+        if to_date:
+            end_date = datetime.strptime(to_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+            query_loan = query_loan.filter(LoanCollection.collection_date <= end_date)
+            query_saving = query_saving.filter(SavingCollection.collection_date <= end_date)
+        
+        if period == 'daily':
+            today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            query_loan = query_loan.filter(LoanCollection.collection_date >= today)
+            query_saving = query_saving.filter(SavingCollection.collection_date >= today)
+        elif period == 'monthly':
+            if month and year:
+                import calendar
+                last_day = calendar.monthrange(year, month)[1]
+                start = datetime(year, month, 1)
+                end = datetime(year, month, last_day, 23, 59, 59)
+            else:
+                today = datetime.now()
+                start = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                end = today.replace(hour=23, minute=59, second=59, microsecond=999999)
+            query_loan = query_loan.filter(LoanCollection.collection_date >= start, LoanCollection.collection_date <= end)
+            query_saving = query_saving.filter(SavingCollection.collection_date >= start, SavingCollection.collection_date <= end)
+        elif period == 'yearly':
+            year_start = datetime.now().replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+            query_loan = query_loan.filter(LoanCollection.collection_date >= year_start)
+            query_saving = query_saving.filter(SavingCollection.collection_date >= year_start)
+        
+        loan_collections = query_loan.all()
+        saving_collections = query_saving.all()
+        total_loan = sum(lc.amount for lc in loan_collections)
+        total_saving = sum(sc.amount for sc in saving_collections)
         
         staff_data.append({
             'staff': staff,
-            'total_collection': total_collection
+            'total_collection': total_loan + total_saving
         })
     
-    return render_template('manage_staff.html', staff_data=staff_data, period=period, from_date=from_date, to_date=to_date, now=datetime.now())
+    return render_template('manage_staff.html', 
+                         staff_data=staff_data, 
+                         staffs=staffs, 
+                         period=period, 
+                         from_date=from_date, 
+                         to_date=to_date, 
+                         now=datetime.now())
 
-@app.route('/admin/staff/add', methods=['GET', 'POST'])
+@app.route('/staff/add', methods=['GET', 'POST'])
 @login_required
 def add_staff():
     if current_user.role != 'admin':
@@ -225,41 +325,27 @@ def add_staff():
         name = request.form.get('name', '').strip()
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '').strip()
-        staff_type = request.form.get('staff_type', 'field')
+        role = request.form.get('role', 'staff')
         
         if not name or not email or not password:
-            flash('?? ???? ???!', 'danger')
+            flash('All fields are required!', 'danger')
             return redirect(url_for('add_staff'))
         
         if User.query.filter_by(email=email).first():
             flash('Email already exists!', 'danger')
             return redirect(url_for('add_staff'))
         
-        photo_filename = None
-        if 'photo' in request.files:
-            photo = request.files['photo']
-            if photo and photo.filename:
-                import os
-                from werkzeug.utils import secure_filename
-                filename = secure_filename(photo.filename)
-                timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-                photo_filename = f"{timestamp}_{filename}"
-                photo_path = os.path.join('static', 'uploads', photo_filename)
-                photo.save(photo_path)
-        
         hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
-        is_office_staff = staff_type == 'office'
-        is_monitor = staff_type == 'monitor'
-        salary = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('salary', ''))
-        new_staff = User(name=name, email=email, password=hashed_pw, role='staff', is_office_staff=is_office_staff, is_monitor=is_monitor, phone=request.form.get('phone', '').strip(), nid=request.form.get('nid', '').strip(), address=request.form.get('address', '').strip(), salary=salary, photo=photo_filename, plain_password=password)
-        db.session.add(new_staff)
+        staff = User(name=name, email=email, password=hashed_pw, role=role)
+        db.session.add(staff)
         db.session.commit()
-        flash('Staff added successfully!', 'success')
+        
+        flash(f'Staff {name} added successfully!', 'success')
         return redirect(url_for('manage_staff'))
     
     return render_template('add_staff.html')
 
-@app.route('/admin/staff/edit/<int:id>', methods=['GET', 'POST'])
+@app.route('/staff/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit_staff(id):
     if current_user.role != 'admin':
@@ -267,56 +353,14 @@ def edit_staff(id):
         return redirect(url_for('dashboard'))
     
     staff = User.query.get_or_404(id)
-    if staff.role != 'staff':
-        flash('Invalid staff!', 'danger')
-        return redirect(url_for('manage_staff'))
     
     if request.method == 'POST':
-        name = request.form.get('name', '').strip()
-        email = request.form.get('email', '').strip()
+        staff.name = request.form.get('name', '').strip()
+        staff.email = request.form.get('email', '').strip()
+        password = request.form.get('password', '').strip()
         
-        if not name or not email:
-            flash('??? ??? ??? ??????!', 'danger')
-            return redirect(url_for('edit_staff', id=id))
-        
-        if request.form.get('remove_photo'):
-            if staff.photo:
-                import os
-                photo_path = os.path.join('static', 'uploads', staff.photo)
-                if os.path.exists(photo_path):
-                    os.remove(photo_path)
-                staff.photo = None
-        
-        if 'photo' in request.files:
-            photo = request.files['photo']
-            if photo and photo.filename:
-                import os
-                from werkzeug.utils import secure_filename
-                if staff.photo:
-                    old_photo_path = os.path.join('static', 'uploads', staff.photo)
-                    if os.path.exists(old_photo_path):
-                        os.remove(old_photo_path)
-                filename = secure_filename(photo.filename)
-                timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-                photo_filename = f"{timestamp}_{filename}"
-                photo_path = os.path.join('static', 'uploads', photo_filename)
-                photo.save(photo_path)
-                staff.photo = photo_filename
-        
-        staff.name = name
-        staff.email = email
-        staff_type = request.form.get('staff_type', 'field')
-        staff.is_office_staff = staff_type == 'office'
-        staff.is_monitor = staff_type == 'monitor'
-        staff.phone = request.form.get('phone', '').strip()
-        staff.nid = request.form.get('nid', '').strip()
-        staff.address = request.form.get('address', '').strip()
-        staff.status = request.form.get('status', 'active')
-        staff.salary = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('salary', ''))
-        
-        if request.form.get('password'):
-            staff.password = bcrypt.generate_password_hash(request.form['password']).decode('utf-8')
-            staff.plain_password = request.form['password']
+        if password:
+            staff.password = bcrypt.generate_password_hash(password).decode('utf-8')
         
         db.session.commit()
         flash('Staff updated successfully!', 'success')
@@ -324,96 +368,269 @@ def edit_staff(id):
     
     return render_template('edit_staff.html', staff=staff)
 
-@app.route('/staff/collection_report/<int:id>')
+@app.route('/staff/delete/<int:id>', methods=['POST'])
 @login_required
-def staff_collection_report(id):
-    # Allow admin and office_staff to view any staff report, field staff can only view their own
-    if current_user.role == 'staff':
-        is_office = hasattr(current_user, 'is_office_staff') and current_user.is_office_staff
-        if not is_office and current_user.id != id:
-            flash('Access denied!', 'danger')
-            return redirect(url_for('dashboard'))
-    elif current_user.role != 'admin':
+def delete_staff(id):
+    if current_user.role != 'admin':
         flash('Access denied!', 'danger')
         return redirect(url_for('dashboard'))
     
     staff = User.query.get_or_404(id)
-    if staff.role != 'staff':
-        flash('Invalid staff!', 'danger')
+    
+    # Check if staff has customers
+    customer_count = Customer.query.filter_by(staff_id=id).count()
+    if customer_count > 0:
+        flash(f'Cannot delete staff! {customer_count} customers are assigned to this staff.', 'danger')
         return redirect(url_for('manage_staff'))
     
-    period = request.args.get('period', 'daily')
+    db.session.delete(staff)
+    db.session.commit()
+    flash('Staff deleted successfully!', 'success')
+    return redirect(url_for('manage_staff'))
+
+@app.route('/staff/dashboard/<int:id>')
+@login_required
+def staff_dashboard_view(id):
+    if current_user.role != 'admin':
+        flash('Access denied!', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    staff = User.query.get_or_404(id)
+    customers = Customer.query.filter_by(staff_id=id).all()
+    
+    total_loan = db.session.query(db.func.sum(LoanCollection.amount)).filter_by(staff_id=id).scalar() or 0
+    total_saving = db.session.query(db.func.sum(SavingCollection.amount)).filter_by(staff_id=id).scalar() or 0
+    
+    return render_template('staff_dashboard_view.html', staff=staff, customers=customers, 
+                         total_loan=total_loan, total_saving=total_saving)
+
+@app.route('/loan_customers')
+@login_required
+def loan_customers():
+    customers = Customer.query.filter(Customer.remaining_loan > 0).all()
+    return render_template('loan_customers.html', customers=customers)
+
+@app.route('/manage_loans')
+@login_required
+def manage_loans():
+    if current_user.role != 'admin':
+        flash('Access denied!', 'danger')
+        return redirect(url_for('dashboard'))
+    loans = Loan.query.order_by(Loan.loan_date.desc()).all()
+    return render_template('manage_loans.html', loans=loans)
+
+@app.route('/loan_collections_history')
+@login_required
+def loan_collections_history():
+    collections = LoanCollection.query.order_by(LoanCollection.collection_date.desc()).all()
+    return render_template('loan_collections_history.html', collections=collections)
+
+@app.route('/manage_savings')
+@login_required
+def manage_savings():
+    collections = SavingCollection.query.order_by(SavingCollection.collection_date.desc()).all()
+    return render_template('manage_savings.html', collections=collections)
+
+@app.route('/all_customers_print')
+@login_required
+def all_customers_print():
+    customers = Customer.query.filter_by(is_active=True).order_by(Customer.member_no).all()
+    return render_template('all_customers_print.html', customers=customers)
+
+@app.route('/individual_loan_sheet/<int:customer_id>')
+@login_required
+def individual_loan_sheet(customer_id):
+    customer = Customer.query.get_or_404(customer_id)
+    loans = Loan.query.filter_by(customer_name=customer.name).order_by(Loan.loan_date).all()
+    collections = LoanCollection.query.filter_by(customer_id=customer_id).order_by(LoanCollection.collection_date).all()
+    return render_template('individual_loan_sheet.html', customer=customer, loans=loans, collections=collections)
+
+@app.route('/customer_loan_sheet/<int:id>')
+@login_required
+def customer_loan_sheet(id):
+    customer = Customer.query.get_or_404(id)
+    loans = Loan.query.filter_by(customer_name=customer.name).order_by(Loan.loan_date).all()
+    
+    # Calculate financial data
+    total_loan_disbursed = sum(loan.amount for loan in loans)
+    total_interest = sum(loan.amount * loan.interest / 100 for loan in loans)
+    total_loan_collected = db.session.query(db.func.sum(LoanCollection.amount)).filter_by(customer_id=id).scalar() or 0
+    total_savings = db.session.query(db.func.sum(SavingCollection.amount)).filter_by(customer_id=id).scalar() or 0
+    total_withdrawn = db.session.query(db.func.sum(Withdrawal.amount)).filter_by(customer_id=id).scalar() or 0
+    
+    actual_remaining = total_loan_disbursed + total_interest - total_loan_collected
+    actual_savings_balance = total_savings - total_withdrawn
+    
+    # Get latest loan info
+    latest_loan = loans[-1] if loans else None
+    loan_date = latest_loan.loan_date.strftime('%d-%m-%Y') if latest_loan else ''
+    loan_end_date = latest_loan.due_date.strftime('%d-%m-%Y') if latest_loan and latest_loan.due_date else ''
+    loan_principal = latest_loan.amount if latest_loan else 0
+    interest_rate = latest_loan.interest if latest_loan else 0
+    interest_amount = loan_principal * interest_rate / 100 if latest_loan else 0
+    installment_count = latest_loan.installment_count if latest_loan else 0
+    weekly_installment = latest_loan.installment_amount if latest_loan else 0
+    
+    # Get fees
+    admission_fee = customer.admission_fee or 0
+    welfare_fee = customer.welfare_fee or 0
+    application_fee = customer.application_fee or 0
+    
+    # Prepare collections with loan info
+    loan_collections = LoanCollection.query.filter_by(customer_id=id).order_by(LoanCollection.collection_date).all()
+    saving_collections = SavingCollection.query.filter_by(customer_id=id).order_by(SavingCollection.collection_date).all()
+    
+    loans_with_collections = []
+    if loans:
+        collections_data = []
+        for lc in loan_collections:
+            collections_data.append({
+                'collection': lc,
+                'loan_amount': lc.amount,
+                'saving_amount': 0
+            })
+        for sc in saving_collections:
+            # Find if there's already an entry for this date
+            found = False
+            for cd in collections_data:
+                if cd['collection'].collection_date.date() == sc.collection_date.date():
+                    cd['saving_amount'] = sc.amount
+                    found = True
+                    break
+            if not found:
+                collections_data.append({
+                    'collection': sc,
+                    'loan_amount': 0,
+                    'saving_amount': sc.amount
+                })
+        
+        collections_data.sort(key=lambda x: x['collection'].collection_date)
+        loans_with_collections.append({'loan': latest_loan, 'collections': collections_data})
+    
+    return render_template('customer_loan_sheet.html', 
+                         customer=customer, 
+                         loans=loans,
+                         total_loan_disbursed=total_loan_disbursed,
+                         total_interest=total_interest,
+                         total_loan_collected=total_loan_collected,
+                         total_savings=total_savings,
+                         total_withdrawn=total_withdrawn,
+                         actual_remaining=actual_remaining,
+                         actual_savings_balance=actual_savings_balance,
+                         loan_date=loan_date,
+                         loan_end_date=loan_end_date,
+                         loan_principal=loan_principal,
+                         interest_rate=interest_rate,
+                         interest_amount=interest_amount,
+                         installment_count=installment_count,
+                         weekly_installment=weekly_installment,
+                         admission_fee=admission_fee,
+                         welfare_fee=welfare_fee,
+                         application_fee=application_fee,
+                         staff=customer.staff,
+                         loans_with_collections=loans_with_collections,
+                         now=datetime.now())
+
+@app.route('/staff_collection_report')
+@login_required
+def staff_collection_report():
+    if current_user.role != 'admin':
+        flash('Access denied!', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Get parameters
+    staff_id = request.args.get('id', type=int)
+    period = request.args.get('period', 'all')
     from_date = request.args.get('from_date', '')
     to_date = request.args.get('to_date', '')
-    month = (lambda x: int(x) if x and x != '' else 0)(request.args.get('month', ''))
-    year = (lambda x: int(x) if x and x != '' else 0)(request.args.get('year', ''))
+    month = request.args.get('month', type=int)
+    year = request.args.get('year', type=int)
     
-    today = datetime.now()
+    if not staff_id:
+        flash('Staff ID required!', 'danger')
+        return redirect(url_for('manage_staff'))
     
-    if from_date and to_date:
-        try:
-            start_date = datetime.strptime(from_date, '%Y-%m-%d').replace(hour=0, minute=0, second=0, microsecond=0)
-            end_date = datetime.strptime(to_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59, microsecond=999999)
-        except:
-            start_date = today.replace(hour=0, minute=0, second=0, microsecond=0)
-            end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
-    elif period == 'daily':
-        start_date = today.replace(hour=0, minute=0, second=0, microsecond=0)
-        end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
+    staff = User.query.get_or_404(staff_id)
+    
+    query_loan = LoanCollection.query.filter_by(staff_id=staff_id)
+    query_saving = SavingCollection.query.filter_by(staff_id=staff_id)
+    
+    # Apply date filters
+    if from_date:
+        start_date = datetime.strptime(from_date, '%Y-%m-%d')
+        query_loan = query_loan.filter(LoanCollection.collection_date >= start_date)
+        query_saving = query_saving.filter(SavingCollection.collection_date >= start_date)
+    
+    if to_date:
+        end_date = datetime.strptime(to_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+        query_loan = query_loan.filter(LoanCollection.collection_date <= end_date)
+        query_saving = query_saving.filter(SavingCollection.collection_date <= end_date)
+    
+    # Apply period filters
+    period_display = 'সকল'
+    if period == 'daily':
+        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        query_loan = query_loan.filter(LoanCollection.collection_date >= today)
+        query_saving = query_saving.filter(SavingCollection.collection_date >= today)
+        period_display = f'দৈনিক - {today.strftime("%d-%m-%Y")}'
     elif period == 'monthly':
         if month and year:
             import calendar
             last_day = calendar.monthrange(year, month)[1]
-            start_date = datetime(year, month, 1, 0, 0, 0)
-            end_date = datetime(year, month, last_day, 23, 59, 59)
+            start = datetime(year, month, 1)
+            end = datetime(year, month, last_day, 23, 59, 59)
         else:
-            start_date = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
-    else:
-        start_date = today.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-        end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
+            today = datetime.now()
+            month = today.month
+            year = today.year
+            start = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            end = today.replace(hour=23, minute=59, second=59, microsecond=999999)
+        query_loan = query_loan.filter(LoanCollection.collection_date >= start, LoanCollection.collection_date <= end)
+        query_saving = query_saving.filter(SavingCollection.collection_date >= start, SavingCollection.collection_date <= end)
+        month_names = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর']
+        period_display = f'মাসিক - {month_names[month-1]} {year}'
+    elif period == 'yearly':
+        year_start = datetime.now().replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        query_loan = query_loan.filter(LoanCollection.collection_date >= year_start)
+        query_saving = query_saving.filter(SavingCollection.collection_date >= year_start)
+        period_display = f'বার্ষিক - {datetime.now().year}'
     
-    query_loan = LoanCollection.query.filter_by(staff_id=id).filter(LoanCollection.collection_date >= start_date, LoanCollection.collection_date <= end_date)
-    query_saving = SavingCollection.query.filter_by(staff_id=id).filter(SavingCollection.collection_date >= start_date, SavingCollection.collection_date <= end_date)
+    if from_date and to_date:
+        period_display = f'{from_date} থেকে {to_date}'
     
     loan_collections = query_loan.all()
     saving_collections = query_saving.all()
     
+    # Calculate totals
+    total_loan = sum(lc.amount for lc in loan_collections)
+    total_saving = sum(sc.amount for sc in saving_collections)
+    
+    # Group collections by date
     daily_collections = {}
     for lc in loan_collections:
-        date_key = lc.collection_date.strftime('%Y-%m-%d')
+        date_key = lc.collection_date.strftime('%d-%m-%Y')
         if date_key not in daily_collections:
             daily_collections[date_key] = {'loan': 0, 'saving': 0}
         daily_collections[date_key]['loan'] += lc.amount
     
     for sc in saving_collections:
-        date_key = sc.collection_date.strftime('%Y-%m-%d')
+        date_key = sc.collection_date.strftime('%d-%m-%Y')
         if date_key not in daily_collections:
             daily_collections[date_key] = {'loan': 0, 'saving': 0}
         daily_collections[date_key]['saving'] += sc.amount
     
-    daily_collections = dict(sorted(daily_collections.items(), reverse=True))
-    total_loan = sum(lc.amount for lc in loan_collections)
-    total_saving = sum(sc.amount for sc in saving_collections)
-    
-    # Format dates for display
-    period_display = ''
-    if from_date and to_date:
-        from_dt = datetime.strptime(from_date, '%Y-%m-%d')
-        to_dt = datetime.strptime(to_date, '%Y-%m-%d')
-        period_display = f"{from_dt.strftime('%d-%m-%Y')} ???? {to_dt.strftime('%d-%m-%Y')}"
-    elif period == 'daily':
-        period_display = f"????? ??????? - {today.strftime('%d-%m-%Y')}"
-    elif period == 'monthly':
-        month_names = ['', '?????????', '???????????', '?????', '??????', '??', '???', '?????', '?????', '??????????', '???????', '???????', '????????']
-        if month and year:
-            period_display = f"????? ??????? - {month_names[month]} {year}"
-        else:
-            period_display = f"????? ??????? - {month_names[today.month]} {today.year}"
-    else:
-        period_display = f"??????? ??????? - {today.year}"
-    
-    return render_template('staff_collection_report.html', staff=staff, daily_collections=daily_collections, total_loan=total_loan, total_saving=total_saving, period=period, from_date=from_date, to_date=to_date, period_display=period_display, now=datetime.now(), month=month, year=year)
+    return render_template('staff_collection_report.html', 
+                         staff=staff,
+                         period=period,
+                         period_display=period_display,
+                         month=month,
+                         year=year,
+                         total_loan=total_loan, 
+                         total_saving=total_saving,
+                         daily_collections=daily_collections,
+                         from_date=from_date,
+                         to_date=to_date,
+                         now=datetime.now())
 
 @app.route('/all_staff_report_print')
 @login_required
@@ -422,47 +639,56 @@ def all_staff_report_print():
         flash('Access denied!', 'danger')
         return redirect(url_for('dashboard'))
     
-    period = request.args.get('period', 'daily')
+    period = request.args.get('period', 'all')
     from_date = request.args.get('from_date', '')
     to_date = request.args.get('to_date', '')
-    month = (lambda x: int(x) if x and x != '' else 0)(request.args.get('month', ''))
-    year = (lambda x: int(x) if x and x != '' else 0)(request.args.get('year', ''))
+    month = request.args.get('month', type=int)
+    year = request.args.get('year', type=int)
     
-    today = datetime.now()
-    
-    if from_date and to_date:
-        try:
-            start_date = datetime.strptime(from_date, '%Y-%m-%d').replace(hour=0, minute=0, second=0, microsecond=0)
-            end_date = datetime.strptime(to_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59, microsecond=999999)
-        except:
-            start_date = today.replace(hour=0, minute=0, second=0, microsecond=0)
-            end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
-    elif period == 'daily':
-        start_date = today.replace(hour=0, minute=0, second=0, microsecond=0)
-        end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
-    elif period == 'monthly':
-        if month and year:
-            import calendar
-            last_day = calendar.monthrange(year, month)[1]
-            start_date = datetime(year, month, 1, 0, 0, 0)
-            end_date = datetime(year, month, last_day, 23, 59, 59)
-        else:
-            start_date = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
-    else:
-        start_date = today.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-        end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
-    
-    staffs = User.query.filter_by(role='staff').all()
+    staffs = User.query.filter(User.role != 'admin').all()
     staff_data = []
     
-    query_loan = LoanCollection.query.filter(LoanCollection.collection_date >= start_date, LoanCollection.collection_date <= end_date)
-    query_saving = SavingCollection.query.filter(SavingCollection.collection_date >= start_date, SavingCollection.collection_date <= end_date)
-    
     for staff in staffs:
+        query_loan = LoanCollection.query.filter_by(staff_id=staff.id)
+        query_saving = SavingCollection.query.filter_by(staff_id=staff.id)
+        
+        if from_date:
+            start_date = datetime.strptime(from_date, '%Y-%m-%d')
+            query_loan = query_loan.filter(LoanCollection.collection_date >= start_date)
+            query_saving = query_saving.filter(SavingCollection.collection_date >= start_date)
+        
+        if to_date:
+            end_date = datetime.strptime(to_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+            query_loan = query_loan.filter(LoanCollection.collection_date <= end_date)
+            query_saving = query_saving.filter(SavingCollection.collection_date <= end_date)
+        
+        if period == 'daily':
+            today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            query_loan = query_loan.filter(LoanCollection.collection_date >= today)
+            query_saving = query_saving.filter(SavingCollection.collection_date >= today)
+        elif period == 'monthly':
+            if month and year:
+                import calendar
+                last_day = calendar.monthrange(year, month)[1]
+                start = datetime(year, month, 1)
+                end = datetime(year, month, last_day, 23, 59, 59)
+            else:
+                today = datetime.now()
+                start = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                end = today.replace(hour=23, minute=59, second=59, microsecond=999999)
+            query_loan = query_loan.filter(LoanCollection.collection_date >= start, LoanCollection.collection_date <= end)
+            query_saving = query_saving.filter(SavingCollection.collection_date >= start, SavingCollection.collection_date <= end)
+        elif period == 'yearly':
+            year_start = datetime.now().replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+            query_loan = query_loan.filter(LoanCollection.collection_date >= year_start)
+            query_saving = query_saving.filter(SavingCollection.collection_date >= year_start)
+        
+        loan_collections = query_loan.all()
+        saving_collections = query_saving.all()
+        total_loan = sum(lc.amount for lc in loan_collections)
+        total_saving = sum(sc.amount for sc in saving_collections)
+        
         customers = Customer.query.filter_by(staff_id=staff.id).count()
-        total_loan = query_loan.filter_by(staff_id=staff.id).with_entities(db.func.sum(LoanCollection.amount)).scalar() or 0
-        total_saving = query_saving.filter_by(staff_id=staff.id).with_entities(db.func.sum(SavingCollection.amount)).scalar() or 0
         remaining_loan = db.session.query(db.func.sum(Customer.remaining_loan)).filter_by(staff_id=staff.id).scalar() or 0
         
         staff_data.append({
@@ -470,911 +696,115 @@ def all_staff_report_print():
             'customers': customers,
             'total_loan': total_loan,
             'total_saving': total_saving,
-            'remaining_loan': remaining_loan,
-            'total_collection': total_loan + total_saving
+            'total_collection': total_loan + total_saving,
+            'remaining_loan': remaining_loan
         })
     
-    return render_template('all_staff_report_print.html', staff_data=staff_data, period=period, from_date=from_date, to_date=to_date, month=month, year=year)
-
-@app.route('/admin/staff/delete/<int:id>', methods=['POST'])
-@login_required
-def delete_staff(id):
-    if current_user.role != 'admin':
-        flash('Access denied!', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    password = request.form.get('password', '').strip()
-    if not password:
-        flash('?????? ???!', 'danger')
-        return redirect(url_for('manage_staff'))
-    
-    if not bcrypt.check_password_hash(current_user.password, password):
-        flash('?????? ???! Staff ????? ?????? ??', 'danger')
-        return redirect(url_for('manage_staff'))
-    
-    staff = User.query.get_or_404(id)
-    if staff.role != 'staff':
-        flash('Invalid staff!', 'danger')
-        return redirect(url_for('manage_staff'))
-    
-    db.session.delete(staff)
-    db.session.commit()
-    flash('Staff ??????? ???? ???? ??????!', 'success')
-    return redirect(url_for('manage_staff'))
-
-@app.route('/admin/staff/view/<int:id>')
-@login_required
-def staff_dashboard_view(id):
-    if current_user.role != 'admin':
-        flash('Access denied!', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    staff = User.query.get_or_404(id)
-    if staff.role != 'staff':
-        flash('Invalid staff!', 'danger')
-        return redirect(url_for('manage_staff'))
-    
-    my_customers = Customer.query.filter_by(staff_id=staff.id).count()
-    total_remaining = db.session.query(db.func.sum(Customer.remaining_loan)).filter_by(staff_id=staff.id).scalar() or 0
-    due_customers = Customer.query.filter_by(staff_id=staff.id).filter(Customer.remaining_loan > 0).count()
-    today = datetime.now().replace(hour=0, minute=0, second=0)
-    today_loan_collections = LoanCollection.query.filter_by(staff_id=staff.id).filter(LoanCollection.collection_date >= today).count()
-    today_saving_collections = SavingCollection.query.filter_by(staff_id=staff.id).filter(SavingCollection.collection_date >= today).count()
-    today_collections = today_loan_collections + today_saving_collections
-    unread_messages = Message.query.filter_by(staff_id=staff.id, is_read=False).count()
-    is_monitor = staff.is_monitor if hasattr(staff, 'is_monitor') else False
-    
-    return render_template('staff_dashboard_view.html', staff=staff, name=staff.name, my_customers=my_customers, total_remaining=total_remaining, today_collections=today_collections, unread_messages=unread_messages, due_customers=due_customers, is_monitor=is_monitor)
-
-
-
-
-@app.route('/loans')
-@login_required
-def manage_loans():
-    filter_type = request.args.get('filter_type', 'all')
-    month = (lambda x: int(x) if x and x != '' else 0)(request.args.get('month', ''))
-    year = (lambda x: int(x) if x and x != '' else 0)(request.args.get('year', ''))
-    
-    query = Loan.query
-    
-    if filter_type == 'month' and month and year:
-        import calendar
-        last_day = calendar.monthrange(year, month)[1]
-        month_start = datetime(year, month, 1)
-        month_end = datetime(year, month, last_day, 23, 59, 59)
-        query = query.filter(Loan.loan_date >= month_start, Loan.loan_date <= month_end)
-    elif filter_type == 'year' and year:
-        year_start = datetime(year, 1, 1)
-        year_end = datetime(year, 12, 31, 23, 59, 59)
-        query = query.filter(Loan.loan_date >= year_start, Loan.loan_date <= year_end)
-    
-    loans = query.order_by(Loan.loan_date.desc()).all()
-    total_amount = sum(l.amount for l in loans)
-    total_interest = sum((l.amount * l.interest / 100) for l in loans)
-    staffs = User.query.filter_by(role='staff').all()
-    return render_template('manage_loans.html', loans=loans, staffs=staffs, filter_type=filter_type, month=month, year=year, total_amount=total_amount, total_interest=total_interest)
-
-@app.route('/loans_print')
-@login_required
-def loans_print():
-    filter_type = request.args.get('filter_type', 'all')
-    month = (lambda x: int(x) if x and x != '' else 0)(request.args.get('month', ''))
-    year = (lambda x: int(x) if x and x != '' else 0)(request.args.get('year', ''))
-    
-    query = Loan.query
-    
-    if filter_type == 'month' and month and year:
-        import calendar
-        last_day = calendar.monthrange(year, month)[1]
-        month_start = datetime(year, month, 1)
-        month_end = datetime(year, month, last_day, 23, 59, 59)
-        query = query.filter(Loan.loan_date >= month_start, Loan.loan_date <= month_end)
-    elif filter_type == 'year' and year:
-        year_start = datetime(year, 1, 1)
-        year_end = datetime(year, 12, 31, 23, 59, 59)
-        query = query.filter(Loan.loan_date >= year_start, Loan.loan_date <= year_end)
-    
-    loans = query.order_by(Loan.loan_date.desc()).all()
-    total_amount = sum(l.amount for l in loans)
-    total_interest = sum((l.amount * l.interest / 100) for l in loans)
-    total_with_interest = total_amount + total_interest
-    return render_template('loans_print.html', loans=loans, filter_type=filter_type, month=month, year=year, total_amount=total_amount, total_interest=total_interest, total_with_interest=total_with_interest)
-
-@app.route('/loan_collections_history')
-@login_required
-def loan_collections_history():
-    staff_filter = (lambda x: int(x) if x and x != '' else 0)(request.args.get('staff_id', ''))
-    customer_filter = request.args.get('customer', '')
-    from_date = request.args.get('from_date', '')
-    to_date = request.args.get('to_date', '')
-    
-    if current_user.role == 'staff':
-        query = LoanCollection.query.filter_by(staff_id=current_user.id)
-    else:
-        query = LoanCollection.query
-        if staff_filter:
-            query = query.filter_by(staff_id=staff_filter)
-    
-    if customer_filter:
-        query = query.join(Customer).filter(Customer.name.contains(customer_filter))
-    
-    if from_date:
-        try:
-            from_datetime = datetime.strptime(from_date, '%Y-%m-%d')
-            query = query.filter(LoanCollection.collection_date >= from_datetime)
-        except ValueError:
-            flash('Invalid from date format!', 'danger')
-    
-    if to_date:
-        try:
-            to_datetime = datetime.strptime(to_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
-            query = query.filter(LoanCollection.collection_date <= to_datetime)
-        except ValueError:
-            flash('Invalid to date format!', 'danger')
-    
-    loan_collections = query.order_by(LoanCollection.collection_date.desc()).all()
-    total = sum(lc.amount for lc in loan_collections)
-    staffs = User.query.filter_by(role='staff').all()
-    return render_template('loan_collections_history.html', loan_collections=loan_collections, staffs=staffs, total=total, from_date=from_date, to_date=to_date)
-
-@app.route('/loan/add', methods=['GET', 'POST'])
-@login_required
-def add_loan():
-    if current_user.role != 'admin':
-        flash('??????? Admin ???? ???? ???? ??!', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    if request.method == 'POST':
-        try:
-            customer_id_str = request.form.get('customer_id', '').strip()
-            customer_id = int(customer_id_str) if customer_id_str else None
-            amount_str = request.form.get('amount', '').strip()
-            amount = float(amount_str) if amount_str else 0
-            interest_rate_str = request.form.get('interest', '').strip()
-            interest_rate = float(interest_rate_str) if interest_rate_str else 0
-            
-            if not customer_id or amount <= 0:
-                flash('?? ???? ???????? ???!', 'danger')
-                return redirect(url_for('add_loan'))
-            customer = Customer.query.get_or_404(customer_id)
-            
-            cash_balance_record = CashBalance.query.first()
-            if not cash_balance_record:
-                cash_balance_record = CashBalance(balance=0)
-                db.session.add(cash_balance_record)
-            
-            if cash_balance_record.balance < amount:
-                flash(f'???????? ???? ???! ??????? ?????????: ?{cash_balance_record.balance}', 'danger')
-                return redirect(url_for('add_loan'))
-            
-            interest_amount = (amount * interest_rate) / 100
-            
-            # Safe float conversion for fees
-            welfare_fee_str = request.form.get('welfare_fee', '0').strip()
-            welfare_fee = float(welfare_fee_str) if welfare_fee_str else 0.0
-            
-            application_fee_str = request.form.get('application_fee', '0').strip()
-            application_fee = float(application_fee_str) if application_fee_str else 0.0
-            
-            # Total loan amount = principal + interest
-            total_with_interest = amount + interest_amount
-            
-            loan_date_str = request.form.get('loan_date')
-            loan_date = datetime.strptime(loan_date_str, '%Y-%m-%d') if loan_date_str else datetime.now()
-            
-            loan = Loan(
-                customer_name=customer.name,
-                amount=amount,
-                interest=interest_rate,
-                loan_date=loan_date,
-                due_date=datetime.strptime(request.form['due_date'], '%Y-%m-%d'),
-                installment_count=(lambda x: int(x) if x and x != '' else 0)(request.form.get('installment_count', '')),
-                installment_amount=(lambda x: float(x) if x and x != '' else 0.0)(request.form.get('installment_amount', '')),
-                service_charge=0,
-                installment_type=request.form.get('installment_type', ''),
-                staff_id=customer.staff_id
-            )
-            
-            # Update customer loan amounts (principal + interest only)
-            customer.total_loan += total_with_interest
-            customer.remaining_loan += total_with_interest
-            
-            # Update cash balance: deduct loan amount, add fees
-            cash_balance_record.balance -= amount
-            cash_balance_record.balance += welfare_fee + application_fee
-            
-            # Add fee collections
-            if welfare_fee > 0:
-                fee_col = FeeCollection(customer_id=customer.id, fee_type='welfare', amount=welfare_fee, collected_by=current_user.id)
-                db.session.add(fee_col)
-            if application_fee > 0:
-                fee_col = FeeCollection(customer_id=customer.id, fee_type='application', amount=application_fee, collected_by=current_user.id)
-                db.session.add(fee_col)
-            
-            db.session.add(loan)
-            
-            # Generate collection schedules
-            if loan.installment_count > 0:
-                for i in range(loan.installment_count):
-                    if loan.installment_type == 'Daily':
-                        scheduled_date = loan_date + timedelta(days=i+1)
-                    elif loan.installment_type == 'Weekly':
-                        scheduled_date = loan_date + timedelta(weeks=i+1)
-                    elif loan.installment_type == 'Monthly':
-                        scheduled_date = loan_date + timedelta(days=30*(i+1))
-                    else:
-                        continue
-                    
-                    schedule = CollectionSchedule(
-                        customer_id=customer.id,
-                        loan_id=loan.id,
-                        scheduled_date=scheduled_date,
-                        expected_amount=loan.installment_amount,
-                        collection_type='loan',
-                        status='pending',
-                        staff_id=customer.staff_id
-                    )
-                    db.session.add(schedule)
-            
-            db.session.commit()
-            flash(f'??? ?????? ??????! ??????: ?{amount}, ???: ?{interest_amount}, ???: ?{total_with_interest}, ?????? ??: ?{welfare_fee}, ????? ??: ?{application_fee}', 'success')
-            # Redirect to individual loan sheet for this specific loan
-            return redirect(url_for('loan_sheet'))
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Error: {str(e)}', 'danger')
-            return redirect(url_for('add_loan'))
-    
-    cash_balance_record = CashBalance.query.first()
-    cash_balance = cash_balance_record.balance if cash_balance_record else 0
-    customers = Customer.query.all()
-    return render_template('add_loan.html', customers=customers, cash_balance=cash_balance)
-
-@app.route('/loan/edit/<int:id>', methods=['GET', 'POST'])
-@login_required
-def edit_loan(id):
-    loan = Loan.query.get_or_404(id)
-    
-    if request.method == 'POST':
-        try:
-            customer_name = request.form.get('customer_name', '').strip()
-            amount = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('amount', ''))
-            interest = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('interest', ''))
-            due_date_str = request.form.get('due_date', '')
-            status = request.form.get('status', '')
-            
-            if not customer_name or amount <= 0 or not due_date_str:
-                flash('?? ???? ???????? ???!', 'danger')
-                return redirect(url_for('edit_loan', id=id))
-            
-            loan.customer_name = customer_name
-            loan.amount = amount
-            loan.interest = interest
-            loan.due_date = datetime.strptime(due_date_str, '%Y-%m-%d')
-            loan.status = status
-            db.session.commit()
-            flash('Loan updated successfully!', 'success')
-            return redirect(url_for('manage_loans'))
-        except ValueError:
-            flash('Invalid date format!', 'danger')
-            return redirect(url_for('edit_loan', id=id))
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Error: {str(e)}', 'danger')
-            return redirect(url_for('edit_loan', id=id))
-    
-    return render_template('edit_loan.html', loan=loan)
-
-@app.route('/loan/mark_paid/<int:id>')
-@login_required
-def mark_paid(id):
-    loan = Loan.query.get_or_404(id)
-    loan.status = 'Paid'
-    db.session.commit()
-    flash('Loan marked as paid!', 'success')
-    return redirect(url_for('manage_loans'))
-
-@app.route('/savings')
-@login_required
-def manage_savings():
-    staff_filter = (lambda x: int(x) if x and x != '' else 0)(request.args.get('staff_id', ''))
-    customer_filter = request.args.get('customer', '')
-    from_date = request.args.get('from_date', '')
-    to_date = request.args.get('to_date', '')
-    
-    query = SavingCollection.query
-    if staff_filter:
-        query = query.filter_by(staff_id=staff_filter)
-    if customer_filter:
-        query = query.join(Customer).filter(Customer.name.contains(customer_filter))
-    
-    if from_date:
-        try:
-            from_datetime = datetime.strptime(from_date, '%Y-%m-%d')
-            query = query.filter(SavingCollection.collection_date >= from_datetime)
-        except ValueError:
-            flash('Invalid from date format!', 'danger')
-    
-    if to_date:
-        try:
-            to_datetime = datetime.strptime(to_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
-            query = query.filter(SavingCollection.collection_date <= to_datetime)
-        except ValueError:
-            flash('Invalid to date format!', 'danger')
-    
-    savings = query.all()
-    total = sum(s.amount for s in savings)
-    staffs = User.query.filter_by(role='staff').all()
-    return render_template('manage_savings.html', savings=savings, staffs=staffs, total=total, from_date=from_date, to_date=to_date)
-
-@app.route('/saving/add', methods=['GET', 'POST'])
-@login_required
-def add_saving():
-    if request.method == 'POST':
-        customer_id = (lambda x: int(x) if x and x != '' else 0)(request.form.get('customer_id', ''))
-        amount = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('amount', ''))
-        
-        if not customer_id or amount <= 0:
-            flash('?? ???? ???????? ???!', 'danger')
-            return redirect(url_for('add_saving'))
-        
-        customer = Customer.query.get_or_404(customer_id)
-        
-        saving = Saving(
-            customer_name=customer.name,
-            amount=amount,
-            staff_id=current_user.id
-        )
-        
-        customer.savings_balance += amount
-        
-        db.session.add(saving)
-        db.session.commit()
-        flash('Saving added successfully!', 'success')
-        return redirect(url_for('manage_savings'))
-    
-    if current_user.role == 'staff':
-        customers = Customer.query.filter_by(staff_id=current_user.id).all()
-    else:
-        customers = Customer.query.all()
-    return render_template('add_saving.html', customers=customers)
-
-@app.route('/reports')
-@login_required
-def reports():
-    period = request.args.get('period', 'daily')
-    staff_id = (lambda x: int(x) if x and x != '' else 0)(request.args.get('staff_id', ''))
-    
-    today = datetime.now()
-    if period == 'daily':
-        start_date = today.replace(hour=0, minute=0, second=0)
-    elif period == 'weekly':
-        start_date = today - timedelta(days=7)
-    else:  # monthly
-        start_date = today - timedelta(days=30)
-    
-    loan_collection_query = LoanCollection.query.filter(LoanCollection.collection_date >= start_date)
-    saving_collection_query = SavingCollection.query.filter(SavingCollection.collection_date >= start_date)
-    
-    if staff_id:
-        loan_collection_query = loan_collection_query.filter_by(staff_id=staff_id)
-        saving_collection_query = saving_collection_query.filter_by(staff_id=staff_id)
-    
-    loan_collections = loan_collection_query.all()
-    saving_collections = saving_collection_query.all()
-    
-    total_loans = sum(l.amount for l in loan_collections)
-    total_savings = sum(s.amount for s in saving_collections)
-    total_payments = total_loans
-    
-    staffs = User.query.filter_by(role='staff').all()
-    
-    return render_template('reports.html', 
-                         loan_collections=loan_collections, saving_collections=saving_collections,
-                         total_loans=total_loans, total_savings=total_savings, 
-                         total_payments=total_payments, staffs=staffs, period=period)
-
-@app.route('/reports/export/csv')
-@login_required
-def export_csv():
-    period = request.args.get('period', 'daily')
-    staff_id = (lambda x: int(x) if x and x != '' else 0)(request.args.get('staff_id', ''))
-    
-    today = datetime.now()
-    if period == 'daily':
-        start_date = today.replace(hour=0, minute=0, second=0)
-    elif period == 'weekly':
-        start_date = today - timedelta(days=7)
-    else:
-        start_date = today - timedelta(days=30)
-    
-    loan_collection_query = LoanCollection.query.filter(LoanCollection.collection_date >= start_date)
-    saving_collection_query = SavingCollection.query.filter(SavingCollection.collection_date >= start_date)
-    
-    if staff_id:
-        loan_collection_query = loan_collection_query.filter_by(staff_id=staff_id)
-        saving_collection_query = saving_collection_query.filter_by(staff_id=staff_id)
-    
-    loan_collections = loan_collection_query.all()
-    saving_collections = saving_collection_query.all()
-    
-    output = io.StringIO()
-    writer = csv.writer(output)
-    
-    writer.writerow(['LOAN COLLECTIONS REPORT'])
-    writer.writerow(['Customer', 'Amount', 'Date', 'Staff'])
-    for lc in loan_collections:
-        writer.writerow([lc.customer.name, lc.amount, 
-                        lc.collection_date.strftime('%Y-%m-%d %H:%M'), 
-                        lc.staff.name if lc.staff else 'N/A'])
-    
-    writer.writerow([])
-    writer.writerow(['SAVINGS COLLECTIONS REPORT'])
-    writer.writerow(['Customer', 'Amount', 'Date', 'Staff'])
-    for sc in saving_collections:
-        writer.writerow([sc.customer.name, sc.amount, 
-                        sc.collection_date.strftime('%Y-%m-%d %H:%M'), 
-                        sc.staff.name if sc.staff else 'N/A'])
-    
-    response = make_response(output.getvalue())
-    response.headers['Content-Disposition'] = f'attachment; filename=report_{period}.csv'
-    response.headers['Content-Type'] = 'text/csv'
-    return response
-
-@app.route('/customers')
-@login_required
-def manage_customers():
-    try:
-        # Monitor staff can view but not edit
-        is_monitor = hasattr(current_user, 'is_monitor') and current_user.is_monitor
-        
-        # Get filter parameters
-        month = (lambda x: int(x) if x and x != '' else 0)(request.args.get('month', ''))
-        year = (lambda x: int(x) if x and x != '' else 0)(request.args.get('year', ''))
-        
-        if current_user.role == 'staff':
-            # Office staff and monitor can see all customers
-            is_office = hasattr(current_user, 'is_office_staff') and current_user.is_office_staff
-            if is_office or is_monitor:
-                query = Customer.query.filter_by(is_active=True)
-            else:
-                # Field staff can only see their own customers
-                query = Customer.query.filter_by(staff_id=current_user.id, is_active=True)
-        else:
-            # Admin can see all customers
-            query = Customer.query.filter_by(is_active=True)
-        
-        # Apply date filter if provided
-        if month and year:
-            import calendar
-            last_day = calendar.monthrange(year, month)[1]
-            start_date = datetime(year, month, 1)
-            end_date = datetime(year, month, last_day, 23, 59, 59)
-            query = query.filter(Customer.created_date >= start_date, Customer.created_date <= end_date)
-        
-        customers = query.all()
-        
-        return render_template('manage_customers.html', customers=customers, month=month, year=year)
-    except Exception as e:
-        flash(f'Error loading customers: {str(e)}', 'danger')
-        return redirect(url_for('dashboard'))
-
-@app.route('/all_customers_print')
-@login_required
-def all_customers_print():
-    month = (lambda x: int(x) if x and x != '' else 0)(request.args.get('month', ''))
-    year = (lambda x: int(x) if x and x != '' else 0)(request.args.get('year', ''))
-    
-    if current_user.role == 'staff' and (not hasattr(current_user, 'is_office_staff') or not current_user.is_office_staff):
-        query = Customer.query.filter_by(staff_id=current_user.id).order_by(Customer.member_no)
-    else:
-        query = Customer.query.order_by(Customer.member_no)
-    
-    if month and year:
-        import calendar
-        last_day = calendar.monthrange(year, month)[1]
-        start_date = datetime(year, month, 1)
-        end_date = datetime(year, month, last_day, 23, 59, 59)
-        query = query.filter(Customer.created_date >= start_date, Customer.created_date <= end_date)
-    
-    customers = query.all()
-    return render_template('all_customers_print.html', customers=customers, month=month, year=year)
-
-@app.route('/loan_customers')
-@login_required
-def loan_customers():
-    from_date = request.args.get('from_date', '').strip()
-    to_date = request.args.get('to_date', '').strip()
-    month = (lambda x: int(x) if x and x != '' else 0)(request.args.get('month', ''))
-    year = (lambda x: int(x) if x and x != '' else 0)(request.args.get('year', ''))
-    
-    if current_user.role == 'staff' and not current_user.is_office_staff and not current_user.is_monitor:
-        query = Customer.query.filter_by(staff_id=current_user.id).filter(Customer.total_loan > 0)
-    else:
-        query = Customer.query.filter(Customer.total_loan > 0)
-    
-    from_date_display = ''
-    to_date_display = ''
-    
-    # Month filter
-    if month and year:
-        import calendar
-        last_day = calendar.monthrange(year, month)[1]
-        start = datetime(year, month, 1, 0, 0, 0)
-        end = datetime(year, month, last_day, 23, 59, 59)
-        from_date_display = start.strftime('%d %B %Y')
-        to_date_display = end.strftime('%d %B %Y')
-        
-        customer_ids = db.session.query(Customer.id).join(
-            Loan, Customer.name == Loan.customer_name
-        ).filter(
-            Loan.loan_date >= start,
-            Loan.loan_date <= end
-        ).distinct().all()
-        
-        ids = [cid[0] for cid in customer_ids]
-        if ids:
-            query = query.filter(Customer.id.in_(ids))
-        else:
-            query = query.filter(Customer.id == -1)
-    
-    # Date range filter
-    elif from_date or to_date:
-        try:
-            if from_date and to_date:
-                start = datetime.strptime(from_date, '%Y-%m-%d').replace(hour=0, minute=0, second=0)
-                end = datetime.strptime(to_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
-                from_date_display = start.strftime('%d %B %Y')
-                to_date_display = end.strftime('%d %B %Y')
-                
-                customer_ids = db.session.query(Customer.id).join(
-                    Loan, Customer.name == Loan.customer_name
-                ).filter(
-                    Loan.loan_date >= start,
-                    Loan.loan_date <= end
-                ).distinct().all()
-            elif from_date:
-                start = datetime.strptime(from_date, '%Y-%m-%d').replace(hour=0, minute=0, second=0)
-                from_date_display = start.strftime('%d %B %Y')
-                
-                customer_ids = db.session.query(Customer.id).join(
-                    Loan, Customer.name == Loan.customer_name
-                ).filter(
-                    Loan.loan_date >= start
-                ).distinct().all()
-            elif to_date:
-                end = datetime.strptime(to_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
-                to_date_display = end.strftime('%d %B %Y')
-                
-                customer_ids = db.session.query(Customer.id).join(
-                    Loan, Customer.name == Loan.customer_name
-                ).filter(
-                    Loan.loan_date <= end
-                ).distinct().all()
-            
-            ids = [cid[0] for cid in customer_ids]
-            if ids:
-                query = query.filter(Customer.id.in_(ids))
-            else:
-                query = query.filter(Customer.id == -1)
-        except Exception as e:
-            print(f"Date filter error: {e}")
-            flash(f'????? ??????? ? ?????? ??????!', 'danger')
-    
-    customers = query.all()
-    return render_template('loan_customers.html', customers=customers, from_date=from_date, to_date=to_date, from_date_display=from_date_display, to_date_display=to_date_display, now=datetime.now(), month=month, year=year)
-
-@app.route('/customer_details/<int:id>')
-@login_required
-def customer_details(id):
-    customer = Customer.query.get_or_404(id)
-    
-    if current_user.role == 'staff' and not current_user.is_office_staff and not current_user.is_monitor and customer.staff_id != current_user.id:
-        flash('Access denied!', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    loan_collections = LoanCollection.query.filter_by(customer_id=id).order_by(LoanCollection.collection_date.desc()).all()
-    saving_collections = SavingCollection.query.filter_by(customer_id=id).order_by(SavingCollection.collection_date.desc()).all()
-    withdrawals = Withdrawal.query.filter_by(customer_id=id).order_by(Withdrawal.date.desc()).all() if hasattr(Withdrawal, 'customer_id') else []
-    
-    # Create individual collection records instead of grouping
-    all_collections = []
-    
-    # Add each loan collection separately
-    for lc in loan_collections:
-        all_collections.append({
-            'loan': lc.amount,
-            'saving': 0,
-            'date': lc.collection_date,
-            'staff': lc.staff.name
-        })
-    
-    # Add each saving collection separately
-    for sc in saving_collections:
-        all_collections.append({
-            'loan': 0,
-            'saving': sc.amount,
-            'date': sc.collection_date,
-            'staff': sc.staff.name
-        })
-    
-    # Sort by date descending
-    all_collections.sort(key=lambda x: x['date'], reverse=True)
-    
-    total_collected = sum(lc.amount for lc in loan_collections)
-    total_withdrawn = sum(w.amount for w in withdrawals)
-    
-    return render_template('customer_details.html', customer=customer, all_collections=all_collections, total_collected=total_collected, withdrawals=withdrawals, total_withdrawn=total_withdrawn)
-
-@app.route('/customer_details_print/<int:id>')
-@login_required
-def customer_details_print(id):
-    customer = Customer.query.get_or_404(id)
-    loan_collections = LoanCollection.query.filter_by(customer_id=id).order_by(LoanCollection.collection_date.desc()).all()
-    saving_collections = SavingCollection.query.filter_by(customer_id=id).order_by(SavingCollection.collection_date.desc()).all()
-    withdrawals = Withdrawal.query.filter_by(customer_id=id).order_by(Withdrawal.date.desc()).all() if hasattr(Withdrawal, 'customer_id') else []
-    
-    # Create individual collection records
-    all_collections = []
-    
-    for lc in loan_collections:
-        all_collections.append({
-            'loan': lc.amount,
-            'saving': 0,
-            'date': lc.collection_date,
-            'staff': lc.staff.name
-        })
-    
-    for sc in saving_collections:
-        all_collections.append({
-            'loan': 0,
-            'saving': sc.amount,
-            'date': sc.collection_date,
-            'staff': sc.staff.name
-        })
-    
-    all_collections.sort(key=lambda x: x['date'], reverse=True)
-    
-    total_loan_collected = sum(lc.amount for lc in loan_collections)
-    total_saving_collected = sum(sc.amount for sc in saving_collections)
-    total_withdrawn = sum(w.amount for w in withdrawals)
-    return render_template('customer_details_print.html', customer=customer, all_collections=all_collections, withdrawals=withdrawals, total_loan_collected=total_loan_collected, total_saving_collected=total_saving_collected, total_withdrawn=total_withdrawn)
-
-@app.route('/loan_sheet/<int:loan_id>')
-@login_required
-def loan_sheet(loan_id):
-    """Individual loan sheet for a specific loan"""
-    try:
-        loan = Loan.query.get_or_404(loan_id)
-        customer = Customer.query.filter_by(name=loan.customer_name).first()
-        
-        if not customer:
-            flash('Customer not found!', 'danger')
-            return redirect(url_for('manage_loans'))
-        
-        # Get collections for this specific loan
-        loan_collections = LoanCollection.query.filter_by(customer_id=customer.id).order_by(LoanCollection.collection_date).all()
-        saving_collections = SavingCollection.query.filter_by(customer_id=customer.id).order_by(SavingCollection.collection_date).all()
-        withdrawals = Withdrawal.query.filter_by(customer_id=customer.id).order_by(Withdrawal.date).all()
-        
-        # Calculate loan specific data
-        loan_with_interest = loan.amount + (loan.amount * loan.interest / 100)
-        total_collected = sum(lc.amount for lc in loan_collections)
-        remaining = loan_with_interest - total_collected
-        
-        # Savings data
-        total_savings_collected = sum(sc.amount for sc in saving_collections)
-        total_withdrawn = sum(w.amount for w in withdrawals)
-        actual_savings_balance = total_savings_collected - total_withdrawn
-        
-        # Create collection list with savings
-        collections_with_savings = []
-        for lc in loan_collections:
-            saving_on_date = sum(sc.amount for sc in saving_collections if sc.collection_date.date() == lc.collection_date.date())
-            collections_with_savings.append({
-                'collection': lc,
-                'loan_amount': lc.amount,
-                'saving_amount': saving_on_date
-            })
-        
-        # Get fees
-        from models.fee_model import FeeCollection
-        admission_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=customer.id, fee_type='admission').scalar() or 0
-        welfare_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=customer.id, fee_type='welfare').scalar() or 0
-        application_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=customer.id, fee_type='application').scalar() or 0
-        
-        # Loan details
-        loan_date = loan.loan_date.strftime('%d-%m-%Y')
-        loan_end_date = ''
-        if loan.installment_count > 0:
-            from datetime import timedelta
-            if loan.installment_type in ['Daily', '?????']:
-                loan_end_date = (loan.loan_date + timedelta(days=loan.installment_count)).strftime('%d-%m-%Y')
-            elif loan.installment_type in ['Weekly', '?????????']:
-                loan_end_date = (loan.loan_date + timedelta(weeks=loan.installment_count)).strftime('%d-%m-%Y')
-            else:
-                loan_end_date = (loan.loan_date + timedelta(days=30*loan.installment_count)).strftime('%d-%m-%Y')
-        
-        staff = User.query.get(customer.staff_id) if customer.staff_id else None
-        
-        # Get all loans for navigation
-        all_loans = Loan.query.filter_by(customer_name=customer.name).order_by(Loan.loan_date).all()
-        
-        return render_template('customer_loan_sheet.html',
-                             customer=customer,
-                             loans=all_loans,
-                             loans_with_collections=[{
-                                 'loan': loan,
-                                 'collections': collections_with_savings,
-                                 'total_collected': total_collected,
-                                 'total_with_interest': loan_with_interest,
-                                 'remaining': remaining,
-                                 'status': '????????' if remaining <= 0 else '?????'
-                             }],
-                             total_loan_disbursed=loan.amount,
-                             total_interest=loan.amount * loan.interest / 100,
-                             total_loan_collected=total_collected,
-                             total_savings=total_savings_collected,
-                             total_withdrawn=total_withdrawn,
-                             actual_savings_balance=actual_savings_balance,
-                             actual_remaining=remaining,
-                             admission_fee=admission_fee,
-                             welfare_fee=welfare_fee,
-                             application_fee=application_fee,
-                             loan_principal=loan.amount,
-                             interest_amount=loan.amount * loan.interest / 100,
-                             loan_date=loan_date,
-                             loan_end_date=loan_end_date,
-                             interest_rate=loan.interest,
-                             installment_count=loan.installment_count,
-                             weekly_installment=loan.installment_amount,
-                             staff=staff,
-                             now=datetime.now())
-    except Exception as e:
-        import traceback
-        print(f"Error in loan_sheet: {e}")
-        traceback.print_exc()
-        flash(f'Error loading loan sheet: {str(e)}', 'danger')
-        return redirect(url_for('manage_loans'))
-
-@app.route('/customer_loan_sheet/<int:id>')
-@app.route('/customer_loan_sheet/<int:id>')
-@login_required
-def customer_loan_sheet(id):
-    try:
-        customer = Customer.query.get_or_404(id)
-        loans = Loan.query.filter_by(customer_name=customer.name).order_by(Loan.loan_date).all()
-        
-        if not loans:
-            flash('এই Customer এর কোনো Loan নেই!', 'warning')
-            return redirect(url_for('customer_details', id=id))
-        
-        all_loan_collections = LoanCollection.query.filter_by(customer_id=id).order_by(LoanCollection.collection_date).all()
-        
-        total_loan_disbursed = sum(loan.amount for loan in loans)
-        total_interest = sum(loan.amount * loan.interest / 100 for loan in loans)
-        total_loan_collected = sum(lc.amount for lc in all_loan_collections)
-        
-        # FIFO: Distribute collections to loans
-        loans_with_collections = []
-        remaining_collections = list(all_loan_collections)
-        
-        for loan in loans:
-            loan_with_interest = loan.amount + (loan.amount * loan.interest / 100)
-            loan_collections = []
-            loan_total_collected = 0
-            
-            while remaining_collections and loan_total_collected < loan_with_interest:
-                collection = remaining_collections[0]
-                remaining_to_pay = loan_with_interest - loan_total_collected
-                
-                if collection.amount <= remaining_to_pay:
-                    loan_collections.append(collection)
-                    loan_total_collected += collection.amount
-                    remaining_collections.pop(0)
-                else:
-                    loan_collections.append(collection)
-                    loan_total_collected += remaining_to_pay
-                    break
-            
-            loan_remaining = loan_with_interest - loan_total_collected
-            
-            loans_with_collections.append({
-                'loan': loan,
-                'collections': loan_collections,
-                'total_collected': loan_total_collected,
-                'total_with_interest': loan_with_interest,
-                'remaining': loan_remaining,
-                'status': 'পরিশোধিত' if loan_remaining <= 0 else 'বাকি'
-            })
-        
-        from models.fee_model import FeeCollection
-        admission_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=id, fee_type='admission').scalar() or 0
-        welfare_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=id, fee_type='welfare').scalar() or 0
-        application_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(customer_id=id, fee_type='application').scalar() or 0
-        
-        staff = User.query.get(customer.staff_id) if customer.staff_id else None
-        
-        return render_template('customer_loan_sheet.html', 
-                             customer=customer,
-                             loans_with_collections=loans_with_collections,
-                             total_loan_disbursed=total_loan_disbursed,
-                             total_interest=total_interest,
-                             total_loan_collected=total_loan_collected,
-                             total_savings=customer.savings_balance,
-                             admission_fee=admission_fee,
-                             welfare_fee=welfare_fee,
-                             application_fee=application_fee,
-                             staff=staff,
-                             now=datetime.now())
-    except Exception as e:
-        import traceback
-        print(f"Error: {e}")
-        traceback.print_exc()
-        flash(f'Error: {str(e)}', 'danger')
-        return redirect(url_for('customer_details', id=id))
-
+    return render_template('all_staff_report_print.html', 
+                         staff_data=staff_data, 
+                         period=period, 
+                         from_date=from_date, 
+                         to_date=to_date,
+                         month=month,
+                         year=year,
+                         now=datetime.now())
 
 @app.route('/customer/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit_customer(id):
     customer = Customer.query.get_or_404(id)
-    
-    if current_user.role == 'staff' and not current_user.is_office_staff and customer.staff_id != current_user.id:
-        flash('Access denied!', 'danger')
-        return redirect(url_for('manage_customers'))
-    
     if request.method == 'POST':
         customer.name = request.form.get('name', '').strip()
-        customer.member_no = request.form.get('member_no', '')
         customer.phone = request.form.get('phone', '').strip()
-        customer.father_husband = request.form.get('father_husband', '')
-        customer.village = request.form.get('village', '')
-        customer.post = request.form.get('post', '')
-        customer.thana = request.form.get('thana', '')
-        customer.district = request.form.get('district', '')
-        customer.granter = request.form.get('granter', '')
-        customer.profession = request.form.get('profession', '')
-        customer.nid_no = request.form.get('nid_no', '')
-        customer.address = request.form.get('address', '')
-        
-        if not customer.name or not customer.phone:
-            flash('??? ??? ??? ??? ??????!', 'danger')
-            return redirect(url_for('edit_customer', id=id))
-        
+        customer.member_no = request.form.get('member_no', '').strip()
+        customer.village = request.form.get('village', '').strip()
+        customer.address = request.form.get('address', '').strip()
         db.session.commit()
-        flash('??????? ??? ??? ??????!', 'success')
-        return redirect(url_for('manage_customers'))
-    
+        flash('Customer updated successfully!', 'success')
+        return redirect(url_for('customer_details', id=id))
     return render_template('edit_customer.html', customer=customer)
 
-@app.route('/customer/delete/<int:id>', methods=['POST'])
+@app.route('/loan/add', methods=['GET', 'POST'])
 @login_required
-def delete_customer(id):
+def add_loan():
+    if current_user.role == 'monitor':
+        flash('Access denied!', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        customer_id = int(request.form.get('customer_id', 0))
+        amount = float(request.form.get('amount', 0))
+        interest = float(request.form.get('interest', 0))
+        installment_count = int(request.form.get('installment_count', 0))
+        installment_type = request.form.get('installment_type', 'Monthly')
+        
+        customer = Customer.query.get_or_404(customer_id)
+        total_with_interest = amount + (amount * interest / 100)
+        installment_amount = total_with_interest / installment_count if installment_count > 0 else 0
+        
+        loan = Loan(
+            customer_name=customer.name,
+            amount=amount,
+            interest=interest,
+            installment_count=installment_count,
+            installment_type=installment_type,
+            installment_amount=installment_amount
+        )
+        
+        customer.total_loan += total_with_interest
+        customer.remaining_loan += total_with_interest
+        
+        cash_balance_record = CashBalance.query.first()
+        if cash_balance_record:
+            cash_balance_record.balance -= amount
+        
+        db.session.add(loan)
+        db.session.commit()
+        
+        flash(f'Loan of ৳{amount} added successfully!', 'success')
+        return redirect(url_for('customer_details', id=customer_id))
+    
+    if current_user.role == 'staff' and not current_user.is_office_staff:
+        customers = Customer.query.filter_by(is_active=True, staff_id=current_user.id).all()
+    else:
+        customers = Customer.query.filter_by(is_active=True).all()
+    return render_template('add_loan.html', customers=customers)
+
+@app.route('/customer/<int:id>')
+@login_required
+def customer_details(id):
+    customer = Customer.query.get_or_404(id)
+    loans = Loan.query.filter_by(customer_name=customer.name).all()
+    loan_collections = LoanCollection.query.filter_by(customer_id=id).order_by(LoanCollection.collection_date.desc()).all()
+    saving_collections = SavingCollection.query.filter_by(customer_id=id).order_by(SavingCollection.collection_date.desc()).all()
+    withdrawals = Withdrawal.query.filter_by(customer_id=id).order_by(Withdrawal.date.desc()).all()
+    return render_template('customer_details.html', customer=customer, loans=loans, 
+                         loan_collections=loan_collections, saving_collections=saving_collections,
+                         withdrawals=withdrawals)
+
+@app.route('/customer/print/<int:id>')
+@login_required
+def customer_details_print(id):
+    customer = Customer.query.get_or_404(id)
+    loans = Loan.query.filter_by(customer_name=customer.name).all()
+    loan_collections = LoanCollection.query.filter_by(customer_id=id).order_by(LoanCollection.collection_date).all()
+    saving_collections = SavingCollection.query.filter_by(customer_id=id).order_by(SavingCollection.collection_date).all()
+    withdrawals = Withdrawal.query.filter_by(customer_id=id).order_by(Withdrawal.date).all()
+    return render_template('customer_details_print.html', customer=customer, loans=loans,
+                         loan_collections=loan_collections, saving_collections=saving_collections,
+                         withdrawals=withdrawals)
+
+@app.route('/customer/deactivate/<int:id>', methods=['POST'])
+@login_required
+def deactivate_customer(id):
     if current_user.role != 'admin':
         flash('Access denied!', 'danger')
         return redirect(url_for('manage_customers'))
     
-    password = request.form.get('password', '').strip()
-    if not password:
-        flash('?????????? ????????!', 'danger')
-        return redirect(url_for('manage_customers'))
-    
-    if not bcrypt.check_password_hash(current_user.password, password):
-        flash('??? ??????????!', 'danger')
-        return redirect(url_for('manage_customers'))
-    
     customer = Customer.query.get_or_404(id)
-    
-    # Check if customer has loan or savings
-    if customer.remaining_loan > 0 or customer.savings_balance > 0:
-        flash(f'?? Customer ?? ??? (?{customer.remaining_loan}) ?? ?????? (?{customer.savings_balance}) ???! Deactivate ??? ???? ???', 'danger')
-        return redirect(url_for('manage_customers'))
-    
     customer.is_active = False
     db.session.commit()
-    flash('Customer ??????? Deactivate ??? ??????!', 'success')
+    flash('Customer successfully deactivated!', 'success')
     return redirect(url_for('manage_customers'))
 
 @app.route('/customer/activate/<int:id>', methods=['POST'])
@@ -1729,7 +1159,7 @@ def add_collection():
         amount = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('amount', ''))
         
         if not loan_id or amount <= 0:
-            flash('?? ???? ???????? ???!', 'danger')
+            flash('Please fill all required fields!', 'danger')
             return redirect(url_for('add_collection'))
         
         collection = Collection(
@@ -1752,7 +1182,7 @@ def add_collection():
 @login_required
 def collection():
     if current_user.role == 'staff' and hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff ??????? ???? ????? ??!', 'danger')
+        flash('Monitor staff cannot collect money!', 'danger')
         return redirect(url_for('dashboard'))
     
     if request.method == 'POST':
@@ -1761,11 +1191,11 @@ def collection():
         saving_amount = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('saving_amount', ''))
         
         if not customer_id:
-            flash('???????? ????? ?????? ??????!', 'danger')
+            flash('Please select a customer!', 'danger')
             return redirect(url_for('collection'))
         
         if loan_amount <= 0 and saving_amount <= 0:
-            flash('??? ??? ?? ???????? ?????? ??????!', 'danger')
+            flash('Please enter loan or saving amount!', 'danger')
             return redirect(url_for('collection'))
         
         customer = Customer.query.get_or_404(customer_id)
@@ -1778,10 +1208,10 @@ def collection():
         # Process loan collection
         if loan_amount > 0:
             if loan_amount > customer.remaining_loan:
-                flash(f'?? ???? ???????? ?? (?{customer.remaining_loan}) ?????? ??????, ???? ?????? ???? ??!', 'danger')
+                flash(f'Amount exceeds remaining loan (৳{customer.remaining_loan})!', 'danger')
                 return redirect(url_for('collection'))
             
-            loan_collection = LoanCollection(customer_id=customer_id, amount=payment_for_this_loan, staff_id=current_user.id)
+            loan_collection = LoanCollection(customer_id=customer_id, amount=loan_amount, staff_id=current_user.id)
             customer.remaining_loan -= loan_amount
             cash_balance_record.balance += loan_amount
             db.session.add(loan_collection)
@@ -1817,7 +1247,7 @@ def collection():
 @login_required
 def loan_collection():
     if current_user.role == 'staff' and hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff ??????? ???? ????? ??!', 'danger')
+        flash('Monitor staff cannot collect money!', 'danger')
         return redirect(url_for('dashboard'))
     
     if current_user.role == 'staff' and (not hasattr(current_user, 'is_office_staff') or not current_user.is_office_staff):
@@ -1830,7 +1260,7 @@ def loan_collection():
 @login_required
 def saving_collection():
     if current_user.role == 'staff' and hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff ??????? ???? ????? ??!', 'danger')
+        flash('Monitor staff cannot collect money!', 'danger')
         return redirect(url_for('dashboard'))
     
     if current_user.role == 'staff' and (not hasattr(current_user, 'is_office_staff') or not current_user.is_office_staff):
@@ -1843,7 +1273,7 @@ def saving_collection():
 @login_required
 def collect_loan():
     if current_user.role == 'staff' and hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff ??????? ???? ????? ??!', 'danger')
+        flash('Monitor staff cannot collect money!', 'danger')
         return redirect(url_for('dashboard'))
     
     try:
@@ -1851,17 +1281,17 @@ def collect_loan():
         amount = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('amount', ''))
         
         if not customer_id or amount <= 0:
-            flash('?? ???? ???????? ???!', 'danger')
+            flash('Please fill all required fields!', 'danger')
             return redirect(url_for('loan_collection'))
         
         customer = Customer.query.get_or_404(customer_id)
         
         if amount <= 0:
-            flash('????? ?????? ? ?? ???? ??? ???!', 'danger')
+            flash('Amount must be greater than 0!', 'danger')
             return redirect(url_for('loan_collection'))
         
         if amount > customer.remaining_loan:
-            flash(f'???? ???? ??? (?{customer.remaining_loan}) ?????? ??????, ???? ?????? ???? ??!', 'danger')
+            flash(f'Amount exceeds remaining loan (৳{customer.remaining_loan})!', 'danger')
             return redirect(url_for('loan_collection'))
         
         # FIFO: Get oldest unpaid loans first
@@ -1924,7 +1354,7 @@ def collect_loan():
 @login_required
 def collect_saving():
     if current_user.role == 'staff' and hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff ??????? ???? ????? ??!', 'danger')
+        flash('Monitor staff cannot collect money!', 'danger')
         return redirect(url_for('dashboard'))
     
     try:
@@ -1932,7 +1362,7 @@ def collect_saving():
         amount = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('amount', ''))
         
         if not customer_id or amount <= 0:
-            flash('?? ???? ???????? ???!', 'danger')
+            flash('Please fill all required fields!', 'danger')
             return redirect(url_for('saving_collection'))
         
         customer = Customer.query.get_or_404(customer_id)
@@ -2021,7 +1451,13 @@ def daily_collections():
     logo_path = os.path.join('static', 'images', 'logo.jpg')
     logo_exists = os.path.exists(logo_path)
     
-    return render_template('daily_collections.html', all_collections=all_collections, total_loan=total_loan, total_saving=total_saving, logo_exists=logo_exists, today=datetime.now(), selected_date=today_date)
+    return render_template('daily_collections.html', 
+                         all_collections=all_collections, 
+                         total_loan=total_loan, 
+                         total_saving=total_saving, 
+                         logo_exists=logo_exists, 
+                         today=datetime.now(), 
+                         selected_date=today_date)
 
 @app.route('/cash_balance', methods=['GET', 'POST'])
 @login_required
@@ -2036,7 +1472,7 @@ def manage_cash_balance():
             amount = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('amount', ''))
             
             if not action or amount <= 0:
-                flash('?? ???? ???????? ???!', 'danger')
+                flash('Please fill all required fields!', 'danger')
                 return redirect(url_for('manage_cash_balance'))
             
             cash_balance_record = CashBalance.query.first()
@@ -2149,7 +1585,7 @@ def manage_expenses():
             expense_date_str = request.form.get('expense_date')
             
             if not category or amount <= 0:
-                flash('?? ???? ???????? ???!', 'danger')
+                flash('Please fill all required fields!', 'danger')
                 return redirect(url_for('manage_expenses'))
             
             cash_balance_record = CashBalance.query.first()
@@ -2297,7 +1733,7 @@ def profit_loss():
     month_name = None
     display_year = today.year
     if period == 'monthly':
-        month_names = ['', '?????????', '???????????', '?????', '??????', '??', '???', '?????', '?????', '??????????', '???????', '???????', '????????']
+        month_names = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
         if month and year:
             month_name = month_names[month]
             display_year = year
@@ -2371,7 +1807,7 @@ def profit_loss_print():
     month_name = None
     display_year = today.year
     if period == 'monthly':
-        month_names = ['', '?????????', '???????????', '?????', '??????', '??', '???', '?????', '?????', '??????????', '???????', '???????', '????????']
+        month_names = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
         if month and year:
             month_name = month_names[month]
             display_year = year
@@ -2571,7 +2007,8 @@ def manage_investors():
         flash('Access denied!', 'danger')
         return redirect(url_for('dashboard'))
     investors = Investor.query.order_by(Investor.investor_id).all()
-    return render_template('manage_investors.html', investors=investors)
+    total_withdrawn = db.session.query(db.func.sum(Withdrawal.amount)).filter(Withdrawal.investor_id.isnot(None)).scalar() or 0
+    return render_template('manage_investors.html', investors=investors, total_withdrawn=total_withdrawn)
 
 @app.route('/manage_withdrawals', methods=['GET', 'POST'])
 @login_required
@@ -2587,7 +2024,7 @@ def manage_withdrawals():
             note = request.form.get('note', '')
             
             if not customer_id or amount <= 0:
-                flash('?? ???? ???????? ???!', 'danger')
+                flash('Please fill all required fields!', 'danger')
                 return redirect(url_for('manage_withdrawals'))
             
             customer = Customer.query.get_or_404(customer_id)
@@ -2845,7 +2282,7 @@ def monthly_report():
     month = int(request.args.get('month', today.month))
     year = int(request.args.get('year', today.year))
     
-    month_names = ['', '?????????', '???????????', '?????', '??????', '??', '???', '?????', '?????', '??????????', '???????', '???????', '????????']
+    month_names = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
     month_name = month_names[month]
     last_day = calendar.monthrange(year, month)[1]
     
@@ -3118,7 +2555,7 @@ def monthly_income_expense_print():
     month = int(request.args.get('month', today.month))
     year = int(request.args.get('year', today.year))
     
-    month_names = ['', '?????????', '???????????', '?????', '??????', '??', '???', '?????', '?????', '??????????', '???????', '???????', '????????']
+    month_names = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
     month_name = month_names[month]
     last_day = calendar.monthrange(year, month)[1]
     
@@ -3322,7 +2759,7 @@ def monthly_report():
     month = int(request.args.get('month', today.month))
     year = int(request.args.get('year', today.year))
     
-    month_names = ['', '?????????', '???????????', '?????', '??????', '??', '???', '?????', '?????', '??????????', '???????', '???????', '????????']
+    month_names = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
     month_name = month_names[month]
     last_day = calendar.monthrange(year, month)[1]
     
@@ -4374,7 +3811,7 @@ def manage_scheduled_expenses():
             start_date_str = request.form.get('start_date')
             
             if not category or amount <= 0 or not frequency:
-                flash('?? ???? ???????? ???!', 'danger')
+                flash('Please fill all required fields!', 'danger')
                 return redirect(url_for('manage_scheduled_expenses'))
             
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d') if start_date_str else datetime.now()
@@ -4447,7 +3884,12 @@ def investor_details(id):
     investments = Investment.query.filter_by(investor_id=id).order_by(Investment.date.desc()).all()
     withdrawals = Withdrawal.query.filter_by(investor_id=id).order_by(Withdrawal.date.desc()).all()
     
-    return render_template('investor_details.html', investor=investor, investments=investments, withdrawals=withdrawals)
+    total_invested = sum(inv.amount for inv in investments)
+    total_withdrawn = sum(wd.amount for wd in withdrawals)
+    
+    return render_template('investor_details.html', investor=investor, investments=investments, 
+                         withdrawals=withdrawals, total_invested=total_invested, 
+                         total_withdrawn=total_withdrawn)
 
 @app.route('/investor_details_print/<int:id>')
 @login_required
@@ -4460,7 +3902,12 @@ def investor_details_print(id):
     investments = Investment.query.filter_by(investor_id=id).order_by(Investment.date.desc()).all()
     withdrawals = Withdrawal.query.filter_by(investor_id=id).order_by(Withdrawal.date.desc()).all()
     
-    return render_template('investor_details_print.html', investor=investor, investments=investments, withdrawals=withdrawals)
+    total_invested = sum(inv.amount for inv in investments)
+    total_withdrawn = sum(wd.amount for wd in withdrawals)
+    
+    return render_template('investor_details_print.html', investor=investor, investments=investments, 
+                         withdrawals=withdrawals, total_invested=total_invested, 
+                         total_withdrawn=total_withdrawn)
 
 @app.route('/monthly_sheet')
 @login_required
@@ -4660,6 +4107,117 @@ def angikarnama_form():
         customers = Customer.query.filter_by(is_active=True).order_by(Customer.member_no).all()
     return render_template('angikarnama_form.html', customer=customer, customers=customers)
 
+@app.route('/loan_sheet/<int:loan_id>')
+@login_required
+def loan_sheet(loan_id):
+    loan = Loan.query.get_or_404(loan_id)
+    customer = Customer.query.filter_by(name=loan.customer_name).first()
+    
+    if not customer:
+        flash('Customer not found!', 'danger')
+        return redirect(url_for('manage_loans'))
+    
+    # Get all loans for this customer
+    loans = Loan.query.filter_by(customer_name=customer.name).order_by(Loan.loan_date).all()
+    
+    # Calculate financial data
+    total_loan_disbursed = sum(l.amount for l in loans)
+    total_interest = sum(l.amount * l.interest / 100 for l in loans)
+    total_loan_collected = db.session.query(db.func.sum(LoanCollection.amount)).filter_by(customer_id=customer.id).scalar() or 0
+    total_savings = db.session.query(db.func.sum(SavingCollection.amount)).filter_by(customer_id=customer.id).scalar() or 0
+    total_withdrawn = db.session.query(db.func.sum(Withdrawal.amount)).filter_by(customer_id=customer.id).scalar() or 0
+    
+    actual_remaining = total_loan_disbursed + total_interest - total_loan_collected
+    actual_savings_balance = total_savings - total_withdrawn
+    
+    # Current loan info
+    loan_date = loan.loan_date.strftime('%d-%m-%Y')
+    loan_end_date = loan.due_date.strftime('%d-%m-%Y') if loan.due_date else ''
+    loan_principal = loan.amount
+    interest_rate = loan.interest
+    interest_amount = loan_principal * interest_rate / 100
+    installment_count = loan.installment_count
+    weekly_installment = loan.installment_amount
+    
+    # Get fees
+    admission_fee = customer.admission_fee or 0
+    welfare_fee = customer.welfare_fee or 0
+    application_fee = customer.application_fee or 0
+    
+    # Get collections for this specific loan (filter by date range)
+    # Collections between this loan date and next loan date (or now)
+    loan_start_date = loan.loan_date
+    
+    # Find next loan date for this customer
+    next_loan = Loan.query.filter(
+        Loan.customer_name == customer.name,
+        Loan.loan_date > loan.loan_date
+    ).order_by(Loan.loan_date.asc()).first()
+    
+    collection_end_date = next_loan.loan_date if next_loan else datetime.now()
+    
+    # Get collections only for this loan period
+    loan_collections = LoanCollection.query.filter(
+        LoanCollection.customer_id == customer.id,
+        LoanCollection.collection_date >= loan_start_date,
+        LoanCollection.collection_date < collection_end_date
+    ).order_by(LoanCollection.collection_date).all()
+    
+    saving_collections = SavingCollection.query.filter(
+        SavingCollection.customer_id == customer.id,
+        SavingCollection.collection_date >= loan_start_date,
+        SavingCollection.collection_date < collection_end_date
+    ).order_by(SavingCollection.collection_date).all()
+    
+    # Prepare collections data
+    collections_data = []
+    for lc in loan_collections:
+        collections_data.append({
+            'collection': lc,
+            'loan_amount': lc.amount,
+            'saving_amount': 0
+        })
+    for sc in saving_collections:
+        found = False
+        for cd in collections_data:
+            if cd['collection'].collection_date.date() == sc.collection_date.date():
+                cd['saving_amount'] = sc.amount
+                found = True
+                break
+        if not found:
+            collections_data.append({
+                'collection': sc,
+                'loan_amount': 0,
+                'saving_amount': sc.amount
+            })
+    
+    collections_data.sort(key=lambda x: x['collection'].collection_date)
+    loans_with_collections = [{'loan': loan, 'collections': collections_data}]
+    
+    return render_template('customer_loan_sheet.html',
+                         customer=customer,
+                         loans=loans,
+                         total_loan_disbursed=total_loan_disbursed,
+                         total_interest=total_interest,
+                         total_loan_collected=total_loan_collected,
+                         total_savings=total_savings,
+                         total_withdrawn=total_withdrawn,
+                         actual_remaining=actual_remaining,
+                         actual_savings_balance=actual_savings_balance,
+                         loan_date=loan_date,
+                         loan_end_date=loan_end_date,
+                         loan_principal=loan_principal,
+                         interest_rate=interest_rate,
+                         interest_amount=interest_amount,
+                         installment_count=installment_count,
+                         weekly_installment=weekly_installment,
+                         admission_fee=admission_fee,
+                         welfare_fee=welfare_fee,
+                         application_fee=application_fee,
+                         staff=customer.staff,
+                         loans_with_collections=loans_with_collections,
+                         now=datetime.now())
+
 @app.route('/logout')
 @login_required
 def logout():
@@ -4797,6 +4355,13 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     debug = os.environ.get('FLASK_ENV') != 'production'
     app.run(debug=debug, host='0.0.0.0', port=port)
+
+
+
+
+
+
+
 
 
 
