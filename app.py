@@ -1296,7 +1296,7 @@ def customer_loan_sheet(id):
         
         staff = User.query.get(customer.staff_id) if customer.staff_id else None
         
-        return render_template('customer_loan_sheet_new.html', 
+        return render_template('customer_loan_sheet.html', 
                              customer=customer,
                              loans_with_collections=loans_with_collections,
                              total_loan_disbursed=total_loan_disbursed,
