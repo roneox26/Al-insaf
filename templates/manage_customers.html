@@ -153,7 +153,7 @@
     if (password) {
       const form = document.createElement('form');
       form.method = 'POST';
-      form.action = '/customer/delete/' + customerId;
+      form.action = '/customer/deactivate/' + customerId;
       
       const passwordInput = document.createElement('input');
       passwordInput.type = 'hidden';

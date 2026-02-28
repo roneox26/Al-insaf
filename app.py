@@ -463,6 +463,61 @@ def manage_loans():
     loans = Loan.query.order_by(Loan.loan_date.desc()).all()
     return render_template('manage_loans.html', loans=loans)
 
+@app.route('/loans_print')
+@login_required
+def loans_print():
+    filter_type = request.args.get('filter_type', 'all')
+    month = request.args.get('month', type=int)
+    year = request.args.get('year', type=int)
+    
+    query = Loan.query
+    
+    if filter_type == 'month' and month and year:
+        import calendar
+        last_day = calendar.monthrange(year, month)[1]
+        month_start = datetime(year, month, 1)
+        month_end = datetime(year, month, last_day, 23, 59, 59)
+        query = query.filter(Loan.loan_date >= month_start, Loan.loan_date <= month_end)
+    elif filter_type == 'year' and year:
+        year_start = datetime(year, 1, 1)
+        year_end = datetime(year, 12, 31, 23, 59, 59)
+        query = query.filter(Loan.loan_date >= year_start, Loan.loan_date <= year_end)
+    
+    loans = query.order_by(Loan.loan_date.desc()).all()
+    total_amount = sum(l.amount for l in loans)
+    total_interest = sum((l.amount * l.interest / 100) for l in loans)
+    total_with_interest = total_amount + total_interest
+    return render_template('loans_print.html', loans=loans, filter_type=filter_type, month=month, year=year, total_amount=total_amount, total_interest=total_interest, total_with_interest=total_with_interest)
+
+@app.route('/loan/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_loan(id):
+    if current_user.role != 'admin':
+        flash('Access denied!', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    loan = Loan.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        try:
+            loan.customer_name = request.form.get('customer_name', '').strip()
+            loan.amount = float(request.form.get('amount', 0))
+            loan.interest = float(request.form.get('interest', 0))
+            due_date_str = request.form.get('due_date', '')
+            
+            if due_date_str:
+                loan.due_date = datetime.strptime(due_date_str, '%Y-%m-%d')
+            
+            db.session.commit()
+            flash('Loan updated successfully!', 'success')
+            return redirect(url_for('manage_loans'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error: {str(e)}', 'danger')
+            return redirect(url_for('edit_loan', id=id))
+    
+    return render_template('edit_loan.html', loan=loan)
+
 @app.route('/loan_collections_history')
 @login_required
 def loan_collections_history():
@@ -4326,7 +4381,7 @@ def import_old_data():
                 created_date_str = request.form.get('created_date', '')
                 
                 if not name:
-                    flash('??? ????????!', 'danger')
+                    flash('Name is required!', 'danger')
                     return redirect(url_for('import_old_data'))
                 
                 created_date = datetime.strptime(created_date_str, '%Y-%m-%d') if created_date_str else datetime.now()
@@ -4352,7 +4407,7 @@ def import_old_data():
                     cash_balance_record.balance += savings_balance
                     db.session.commit()
                 
-                flash(f'???? Customer "{name}" ??? ??? ??????!', 'success')
+                flash(f'Success! Customer "{name}" added successfully!', 'success')
                 return redirect(url_for('import_old_data'))
             
             elif action == 'add_collection':
@@ -4365,7 +4420,7 @@ def import_old_data():
                 staff_id = int(staff_id_str) if staff_id_str else current_user.id
                 
                 if not customer_id:
-                    flash('Customer ????? ?????? ??????!', 'danger')
+                    flash('Please select a customer!', 'danger')
                     return redirect(url_for('import_old_data'))
                 
                 collection_date = datetime.strptime(collection_date_str, '%Y-%m-%d') if collection_date_str else datetime.now()
@@ -4389,7 +4444,7 @@ def import_old_data():
                     db.session.add(saving_col)
                 
                 db.session.commit()
-                flash(f'???? Collection ??? ??? ??????! ???: ?{loan_amount}, ??????: ?{saving_amount}', 'success')
+                flash(f'Success! Collection added! Loan: ৳{loan_amount}, Savings: ৳{saving_amount}', 'success')
                 return redirect(url_for('import_old_data'))
         
         except Exception as e:
