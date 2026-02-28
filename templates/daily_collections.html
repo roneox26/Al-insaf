@@ -36,9 +36,6 @@
 <body class="bg-light">
   <nav class="navbar navbar-dark bg-primary px-3 no-print">
     <span class="navbar-brand">
-      {% if logo_exists %}
-      <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Logo" style="height: 35px; width: auto; margin-right: 8px; border-radius: 5px;">
-      {% endif %}
       📊 দৈনিক কালেকশন
     </span>
     <div class="d-flex gap-2">
@@ -53,9 +50,6 @@
 
   <div class="container mt-4">
     <div class="d-none d-print-block text-center mb-3">
-      {% if logo_exists %}
-      <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Logo" style="height: 60px; width: auto; margin-bottom: 10px;">
-      {% endif %}
       <h3>আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h3>
       <h5>দৈনিক কালেকশন - {{ selected_date.strftime('%d-%m-%Y') }}</h5>
     </div>
