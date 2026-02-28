@@ -3327,7 +3327,7 @@ def all_fees_history():
 @app.route('/all_fees_print')
 @login_required
 def all_fees_print():
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'office', 'staff']:
         flash('Access denied!', 'danger')
         return redirect(url_for('dashboard'))
     
@@ -3786,8 +3786,29 @@ def admin_settings():
         flash('Access denied!', 'danger')
         return redirect(url_for('dashboard'))
     
+    # Check if user needs to verify password first
+    if request.method == 'GET':
+        verified = request.args.get('verified', '')
+        if not verified:
+            return render_template('admin_settings_verify.html')
+    
     if request.method == 'POST':
         action = request.form.get('action')
+        
+        # Handle password verification
+        if action == 'verify_password':
+            password = request.form.get('password', '').strip()
+            
+            if not password:
+                flash('পাসওয়ার্ড প্রয়োজন!', 'danger')
+                return redirect(url_for('admin_settings'))
+            
+            if not bcrypt.check_password_hash(current_user.password, password):
+                flash('ভুল পাসওয়ার্ড!', 'danger')
+                return redirect(url_for('admin_settings'))
+            
+            # Password verified, redirect to settings page
+            return redirect(url_for('admin_settings', verified='true'))
         
         if action == 'change_email':
             new_email = request.form.get('new_email', '').strip()
@@ -4164,12 +4185,35 @@ def loan_sheet(loan_id):
     # Get all loans for this customer
     loans = Loan.query.filter_by(customer_name=customer.name).order_by(Loan.loan_date).all()
     
-    # Calculate financial data
-    total_loan_disbursed = sum(l.amount for l in loans)
-    total_interest = sum(l.amount * l.interest / 100 for l in loans)
-    total_loan_collected = db.session.query(db.func.sum(LoanCollection.amount)).filter_by(customer_id=customer.id).scalar() or 0
-    total_savings = db.session.query(db.func.sum(SavingCollection.amount)).filter_by(customer_id=customer.id).scalar() or 0
-    total_withdrawn = db.session.query(db.func.sum(Withdrawal.amount)).filter_by(customer_id=customer.id).scalar() or 0
+    # Calculate financial data - ONLY for this specific loan
+    total_loan_disbursed = loan.amount
+    total_interest = loan.amount * loan.interest / 100
+    
+    # Get collections only for this loan period
+    loan_start_date = loan.loan_date
+    next_loan = Loan.query.filter(
+        Loan.customer_name == customer.name,
+        Loan.loan_date > loan.loan_date
+    ).order_by(Loan.loan_date.asc()).first()
+    collection_end_date = next_loan.loan_date if next_loan else datetime.now()
+    
+    total_loan_collected = db.session.query(db.func.sum(LoanCollection.amount)).filter(
+        LoanCollection.customer_id == customer.id,
+        LoanCollection.collection_date >= loan_start_date,
+        LoanCollection.collection_date < collection_end_date
+    ).scalar() or 0
+    
+    total_savings = db.session.query(db.func.sum(SavingCollection.amount)).filter(
+        SavingCollection.customer_id == customer.id,
+        SavingCollection.collection_date >= loan_start_date,
+        SavingCollection.collection_date < collection_end_date
+    ).scalar() or 0
+    
+    total_withdrawn = db.session.query(db.func.sum(Withdrawal.amount)).filter(
+        Withdrawal.customer_id == customer.id,
+        Withdrawal.date >= loan_start_date,
+        Withdrawal.date < collection_end_date
+    ).scalar() or 0
     
     actual_remaining = total_loan_disbursed + total_interest - total_loan_collected
     actual_savings_balance = total_savings - total_withdrawn
@@ -4187,18 +4231,6 @@ def loan_sheet(loan_id):
     admission_fee = customer.admission_fee or 0
     welfare_fee = customer.welfare_fee or 0
     application_fee = customer.application_fee or 0
-    
-    # Get collections for this specific loan (filter by date range)
-    # Collections between this loan date and next loan date (or now)
-    loan_start_date = loan.loan_date
-    
-    # Find next loan date for this customer
-    next_loan = Loan.query.filter(
-        Loan.customer_name == customer.name,
-        Loan.loan_date > loan.loan_date
-    ).order_by(Loan.loan_date.asc()).first()
-    
-    collection_end_date = next_loan.loan_date if next_loan else datetime.now()
     
     # Get collections only for this loan period
     loan_collections = LoanCollection.query.filter(
