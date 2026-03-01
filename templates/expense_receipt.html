@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Expense Receipt</title>
+    <style>
+        @media print {
+            .no-print { display: none; }
+        }
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; }
+        .receipt { border: 2px solid #333; padding: 30px; }
+        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; }
+        .header h2 { margin: 5px 0; }
+        .row { display: flex; justify-content: space-between; margin: 10px 0; }
+        .label { font-weight: bold; }
+        .amount { font-size: 24px; font-weight: bold; color: #d9534f; text-align: center; margin: 20px 0; padding: 15px; border: 2px dashed #d9534f; }
+        .footer { margin-top: 40px; display: flex; justify-content: space-between; }
+        .signature { text-align: center; }
+        .signature-line { border-top: 1px solid #333; margin-top: 50px; padding-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="text-align: center; margin-bottom: 20px;">
+        <button onclick="window.print()" class="btn">🖨️ Print</button>
+        <button onclick="window.close()" class="btn">❌ Close</button>
+    </div>
+
+    <div class="receipt">
+        <div class="header">
+            <h2>Al-Insaf ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h2>
+            <h3>ব্যয় রসিদ / Expense Receipt</h3>
+        </div>
+
+        <div class="row">
+            <span class="label">রসিদ নং / Receipt No:</span>
+            <span>#EXP-{{ expense.id }}</span>
+        </div>
+
+        <div class="row">
+            <span class="label">তারিখ / Date:</span>
+            <span>{{ expense.date.strftime('%d-%m-%Y %H:%M') }}</span>
+        </div>
+
+        <div class="row">
+            <span class="label">ক্যাটাগরি / Category:</span>
+            <span>
+                {% if expense.category == 'Salary' %}👨‍💼 Staff Salary / স্টাফ বেতন
+                {% elif expense.category == 'Office' %}🏢 Office Cost / অফিস খরচ
+                {% elif expense.category == 'Transport' %}🚗 Transport / যাতায়াত
+                {% else %}📦 Other / অন্যান্য{% endif %}
+            </span>
+        </div>
+
+        <div class="row">
+            <span class="label">বিবরণ / Description:</span>
+            <span>{{ expense.description or 'N/A' }}</span>
+        </div>
+
+        <div class="amount">
+            পরিমাণ / Amount: ৳{{ "{:,.2f}".format(expense.amount) }}
+        </div>
+
+        <div class="footer">
+            <div class="signature">
+                <div class="signature-line">প্রদানকারী / Paid By</div>
+            </div>
+            <div class="signature">
+                <div class="signature-line">গ্রহণকারী / Received By</div>
+            </div>
+            <div class="signature">
+                <div class="signature-line">অনুমোদনকারী / Approved By</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

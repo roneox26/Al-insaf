@@ -64,7 +64,7 @@
         <td>{{ customer.staff.name if customer.staff else 'N/A' }}</td>
         <td>
           <a href="{{ url_for('customer_details', id=customer.id) }}" class="btn btn-sm btn-info">📋 Details</a>
-          <a href="{{ url_for('download_customer_report', id=customer.id) }}" class="btn btn-sm btn-warning">📄 Download Report</a>
+          <a href="{{ url_for('download_customer_report', id=customer.id) }}" class="btn btn-sm btn-warning" target="_blank">📄 PDF Report</a>
           <button class="btn btn-sm btn-success" onclick="activateCustomer({{ customer.id }}, '{{ customer.name }}')">✅ Activate</button>
           <button class="btn btn-sm btn-danger" onclick="deleteCustomer({{ customer.id }}, '{{ customer.name }}')">🗑️ Delete</button>
         </td>

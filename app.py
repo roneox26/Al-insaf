@@ -424,12 +424,12 @@ def delete_staff(id):
     # Check if staff has customers
     customer_count = Customer.query.filter_by(staff_id=id).count()
     if customer_count > 0:
-        flash(f'স্টাফ ডিলিট করা যাবে না! {customer_count} জন গ্রাহক এই স্টাফের অধীনে আছে। প্রথমে গ্রাহকদের অন্য স্টাফের কাছে transfer করুন।', 'danger')
+        flash(f'Cannot delete staff! {customer_count} customers are assigned to this staff. Please transfer customers to another staff first.', 'danger')
         return redirect(url_for('manage_staff'))
     
     db.session.delete(staff)
     db.session.commit()
-    flash('স্টাফ সফলভাবে ডিলিট করা হয়েছে!', 'success')
+    flash('Staff deleted successfully!', 'success')
     return redirect(url_for('manage_staff'))
 
 @app.route('/staff/dashboard/<int:id>')
@@ -836,15 +836,31 @@ def add_loan():
         interest = float(request.form.get('interest', 0))
         installment_count = int(request.form.get('installment_count', 0))
         installment_type = request.form.get('installment_type', 'Monthly')
+        loan_date_str = request.form.get('loan_date', '')
+        due_date_str = request.form.get('due_date', '')
         
         customer = Customer.query.get_or_404(customer_id)
         total_with_interest = amount + (amount * interest / 100)
         installment_amount = total_with_interest / installment_count if installment_count > 0 else 0
         
+        loan_date = datetime.strptime(loan_date_str, '%Y-%m-%d') if loan_date_str else datetime.now()
+        
+        if due_date_str:
+            due_date = datetime.strptime(due_date_str, '%Y-%m-%d')
+        else:
+            if installment_type in ['Daily', 'দৈনিক']:
+                due_date = loan_date + timedelta(days=installment_count)
+            elif installment_type in ['Weekly', 'সাপ্তাহিক']:
+                due_date = loan_date + timedelta(weeks=installment_count)
+            else:
+                due_date = loan_date + timedelta(days=installment_count * 30)
+        
         loan = Loan(
             customer_name=customer.name,
             amount=amount,
             interest=interest,
+            loan_date=loan_date,
+            due_date=due_date,
             installment_count=installment_count,
             installment_type=installment_type,
             installment_amount=installment_amount
@@ -861,13 +877,17 @@ def add_loan():
         db.session.commit()
         
         flash(f'Loan of ৳{amount} added successfully!', 'success')
-        return redirect(url_for('customer_details', id=customer_id))
+        return redirect(url_for('manage_loans'))
     
-    if current_user.role == 'staff' and not current_user.is_office_staff:
+    if current_user.role == 'staff' and (not hasattr(current_user, 'is_office_staff') or not current_user.is_office_staff):
         customers = Customer.query.filter_by(is_active=True, staff_id=current_user.id).all()
     else:
         customers = Customer.query.filter_by(is_active=True).all()
-    return render_template('add_loan.html', customers=customers)
+    
+    cash_balance_record = CashBalance.query.first()
+    cash_balance = cash_balance_record.balance if cash_balance_record else 0
+    
+    return render_template('add_loan.html', customers=customers, cash_balance=cash_balance)
 
 @app.route('/customer/<int:id>')
 @login_required
@@ -916,7 +936,7 @@ def activate_customer(id):
     customer = Customer.query.get_or_404(id)
     customer.is_active = True
     db.session.commit()
-    flash('Customer ??????? Activate ??? ??????!', 'success')
+    flash('Customer activated successfully!', 'success')
     return redirect(url_for('inactive_customers'))
 
 @app.route('/customer/permanent_delete/<int:id>', methods=['POST'])
@@ -928,18 +948,18 @@ def permanent_delete_customer(id):
     
     password = request.form.get('password', '').strip()
     if not password:
-        flash('?????????? ????????!', 'danger')
+        flash('Password required!', 'danger')
         return redirect(url_for('inactive_customers'))
     
     if not bcrypt.check_password_hash(current_user.password, password):
-        flash('??? ??????????!', 'danger')
+        flash('Wrong password!', 'danger')
         return redirect(url_for('inactive_customers'))
     
     customer = Customer.query.get_or_404(id)
     
     # Check if customer is inactive
     if customer.is_active:
-        flash('????????? Deactivate ??? Customer ????? ??????!', 'danger')
+        flash('Can only delete deactivated customers!', 'danger')
         return redirect(url_for('inactive_customers'))
     
     # Delete related records first
@@ -954,7 +974,7 @@ def permanent_delete_customer(id):
     db.session.delete(customer)
     db.session.commit()
     
-    flash(f'Customer "{customer.name}" ???????????? ???? ???? ??????!', 'success')
+    flash(f'Customer "{customer.name}" permanently deleted!', 'success')
     return redirect(url_for('inactive_customers'))
 
 @app.route('/customer/download_report/<int:id>')
@@ -973,102 +993,14 @@ def download_customer_report(id):
     withdrawals = Withdrawal.query.filter_by(customer_id=id).order_by(Withdrawal.date).all()
     fees = FeeCollection.query.filter_by(customer_id=id).order_by(FeeCollection.collection_date).all()
     
-    # Create CSV
-    output = io.StringIO()
-    writer = csv.writer(output)
-    
-    # Customer Info
-    writer.writerow(['=== Customer Information ==='])
-    writer.writerow(['Name', customer.name])
-    writer.writerow(['Member No', customer.member_no or 'N/A'])
-    writer.writerow(['Phone', customer.phone or 'N/A'])
-    writer.writerow(['Address', f"{customer.village}, {customer.post}, {customer.thana}, {customer.district}"])
-    writer.writerow(['Father/Husband', customer.father_husband or 'N/A'])
-    writer.writerow(['NID', customer.nid_no or 'N/A'])
-    writer.writerow(['Staff', customer.staff.name if customer.staff else 'N/A'])
-    writer.writerow(['Created Date', customer.created_date.strftime('%d-%m-%Y') if customer.created_date else 'N/A'])
-    writer.writerow([])
-    
-    # Financial Summary
-    writer.writerow(['=== Financial Summary ==='])
-    writer.writerow(['Total Loan', f'?{customer.total_loan}'])
-    writer.writerow(['Remaining Loan', f'?{customer.remaining_loan}'])
-    writer.writerow(['Savings Balance', f'?{customer.savings_balance}'])
-    writer.writerow(['Admission Fee', f'?{customer.admission_fee}'])
-    writer.writerow([])
-    
-    # Loans
-    if loans:
-        writer.writerow(['=== Loans ==='])
-        writer.writerow(['Date', 'Amount', 'Interest %', 'Total with Interest', 'Installments', 'Type'])
-        for loan in loans:
-            total_with_interest = loan.amount + (loan.amount * loan.interest / 100)
-            writer.writerow([
-                loan.loan_date.strftime('%d-%m-%Y'),
-                f'?{loan.amount}',
-                f'{loan.interest}%',
-                f'?{total_with_interest}',
-                loan.installment_count,
-                loan.installment_type
-            ])
-        writer.writerow([])
-    
-    # Loan Collections
-    if loan_collections:
-        writer.writerow(['=== Loan Collections ==='])
-        writer.writerow(['Date', 'Amount', 'Collected By'])
-        for lc in loan_collections:
-            writer.writerow([
-                lc.collection_date.strftime('%d-%m-%Y %H:%M'),
-                f'?{lc.amount}',
-                lc.staff.name if lc.staff else 'N/A'
-            ])
-        writer.writerow(['Total', f'?{sum(lc.amount for lc in loan_collections)}'])
-        writer.writerow([])
-    
-    # Saving Collections
-    if saving_collections:
-        writer.writerow(['=== Saving Collections ==='])
-        writer.writerow(['Date', 'Amount', 'Collected By'])
-        for sc in saving_collections:
-            writer.writerow([
-                sc.collection_date.strftime('%d-%m-%Y %H:%M'),
-                f'?{sc.amount}',
-                sc.staff.name if sc.staff else 'N/A'
-            ])
-        writer.writerow(['Total', f'?{sum(sc.amount for sc in saving_collections)}'])
-        writer.writerow([])
-    
-    # Withdrawals
-    if withdrawals:
-        writer.writerow(['=== Withdrawals ==='])
-        writer.writerow(['Date', 'Amount', 'Note'])
-        for w in withdrawals:
-            writer.writerow([
-                w.date.strftime('%d-%m-%Y'),
-                f'?{w.amount}',
-                w.note or 'N/A'
-            ])
-        writer.writerow(['Total', f'?{sum(w.amount for w in withdrawals)}'])
-        writer.writerow([])
-    
-    # Fees
-    if fees:
-        writer.writerow(['=== Fees Collected ==='])
-        writer.writerow(['Date', 'Type', 'Amount'])
-        for fee in fees:
-            writer.writerow([
-                fee.collection_date.strftime('%d-%m-%Y'),
-                fee.fee_type,
-                f'?{fee.amount}'
-            ])
-        writer.writerow([])
-    
-    # Create response
-    response = make_response(output.getvalue())
-    response.headers['Content-Disposition'] = f'attachment; filename=customer_{customer.member_no or customer.id}_report.csv'
-    response.headers['Content-Type'] = 'text/csv; charset=utf-8-sig'
-    return response
+    return render_template('customer_report_print.html',
+                         customer=customer,
+                         loans=loans,
+                         loan_collections=loan_collections,
+                         saving_collections=saving_collections,
+                         withdrawals=withdrawals,
+                         fees=fees,
+                         now=datetime.now())
 
 @app.route('/inactive_customers')
 @login_required
@@ -1089,12 +1021,12 @@ def add_customer():
             member_no = request.form.get('member_no', '').strip()
             
             if not name or not phone:
-                flash('??? ??? ??? ??? ??????!', 'danger')
+                flash('Name and phone are required!', 'danger')
                 return redirect(url_for('add_customer'))
             
             # Check if member_no already exists
             if member_no and Customer.query.filter_by(member_no=member_no).first():
-                flash(f'????? ?? "{member_no}" ???????? ???????? ??????!', 'danger')
+                flash(f'Member No "{member_no}" already exists!', 'danger')
                 return redirect(url_for('add_customer'))
             
             admission_fee_str = request.form.get('admission_fee', '0').strip()
@@ -1146,7 +1078,7 @@ def add_customer():
                 db.session.add(fee_col)
             
             db.session.commit()
-            flash(f'????? ??? ??? ??????! ????? ??: ?{admission_fee}', 'success')
+            flash(f'Customer added successfully! Admission Fee: ৳{admission_fee}', 'success')
             return redirect(url_for('manage_customers'))
         except Exception as e:
             db.session.rollback()
@@ -1333,7 +1265,7 @@ def collection():
             msg.append(f'???: ?{loan_amount}')
         if saving_amount > 0:
             msg.append(f'??????: ?{saving_amount}')
-        flash(f'??????? ??????? ??????? ??? ??????! {" | ".join(msg)}', 'success')
+        flash(f'Collection successful! {" | ".join(msg)}', 'success')
         return redirect(url_for('collection'))
     
     if current_user.role == 'staff' and (not hasattr(current_user, 'is_office_staff') or not current_user.is_office_staff):
@@ -1442,7 +1374,7 @@ def collect_loan():
         
         db.session.commit()
         
-        flash(f'??????? ?{amount} ??????? ???? ??????! ????: ?{customer.remaining_loan}', 'success')
+        flash(f'Loan ৳{amount} collected successfully! Remaining: ৳{customer.remaining_loan}', 'success')
         return redirect(url_for('loan_collection'))
     except Exception as e:
         db.session.rollback()
@@ -1483,7 +1415,7 @@ def collect_saving():
         db.session.add(collection)
         db.session.commit()
         
-        flash(f'??????? ?{amount} ?????? ??? ??????!', 'success')
+        flash(f'Savings ৳{amount} collected successfully!', 'success')
         return redirect(url_for('saving_collection'))
     except Exception as e:
         db.session.rollback()
@@ -1584,7 +1516,7 @@ def manage_cash_balance():
                 note = request.form.get('note', '')
                 
                 if not investor_name:
-                    flash('Investor ????? ?????? ??????!', 'danger')
+                    flash('Investor name required!', 'danger')
                     return redirect(url_for('manage_cash_balance'))
                 
                 # Find or create investor
@@ -1614,29 +1546,29 @@ def manage_cash_balance():
                 investor.current_balance += amount
                 cash_balance_record.balance += amount
                 db.session.add(investment)
-                flash(f'Investor ID: {investor.investor_id} | ?{amount} ??? ??? ??????! Balance: ?{investor.current_balance}', 'success')
+                flash(f'Investor ID: {investor.investor_id} | ৳{amount} invested successfully! Balance: ৳{investor.current_balance}', 'success')
             elif action == 'subtract':
                 if cash_balance_record.balance >= amount:
                     cash_balance_record.balance -= amount
-                    flash(f'?{amount} ?????? ??? ??????!', 'success')
+                    flash(f'৳{amount} deducted successfully!', 'success')
                 else:
-                    flash('???? ???? ???!', 'danger')
+                    flash('Insufficient cash balance!', 'danger')
             elif action == 'withdraw':
                 investor_name = request.form.get('investor_name', '').strip()
                 note = request.form.get('note', '')
                 
                 if not investor_name:
-                    flash('Investor ????? ?????? ??????!', 'danger')
+                    flash('Investor name required!', 'danger')
                     return redirect(url_for('manage_cash_balance'))
                 
                 if cash_balance_record.balance >= amount:
                     investor = Investor.query.filter_by(name=investor_name).first()
                     if not investor:
-                        flash('Investor ?? ????????? ????? ?????? ??????!', 'danger')
+                        flash('Investor not found! Please add investment first!', 'danger')
                         return redirect(url_for('manage_cash_balance'))
                     
                     if investor.current_balance < amount:
-                        flash(f'Investor ?? balance (?{investor.current_balance}) ?? ??????!', 'danger')
+                        flash(f'Investor balance (৳{investor.current_balance}) is insufficient!', 'danger')
                         return redirect(url_for('manage_cash_balance'))
                     
                     withdrawal = Withdrawal(
@@ -1649,9 +1581,9 @@ def manage_cash_balance():
                     investor.current_balance -= amount
                     cash_balance_record.balance -= amount
                     db.session.add(withdrawal)
-                    flash(f'Investor ID: {investor.investor_id} | ?{amount} Withdrawal ??? ??????! Balance: ?{investor.current_balance}', 'success')
+                    flash(f'Investor ID: {investor.investor_id} | ৳{amount} withdrawn successfully! Balance: ৳{investor.current_balance}', 'success')
                 else:
-                    flash('???? ???? ???!', 'danger')
+                    flash('Insufficient cash balance!', 'danger')
             
             db.session.commit()
             return redirect(url_for('manage_cash_balance'))
@@ -1703,7 +1635,7 @@ def manage_expenses():
                 cash_balance_record.balance -= amount
                 db.session.add(expense)
                 db.session.commit()
-                flash(f'{category} - ?{amount} ??? ??? ??????!', 'success')
+                flash(f'{category} - ৳{amount} expense added successfully!', 'success')
             else:
                 flash('???? ???? ???!', 'danger')
             
@@ -1778,6 +1710,16 @@ def expenses_print():
     }
     
     return render_template('expenses_print.html', expenses=expenses, total_expenses=total_expenses, by_category=by_category, filter_type=filter_type, month=month, year=year)
+
+@app.route('/expense_receipt/<int:id>')
+@login_required
+def expense_receipt(id):
+    if current_user.role != 'admin':
+        flash('Access denied!', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    expense = Expense.query.get_or_404(id)
+    return render_template('expense_receipt.html', expense=expense)
 
 @app.route('/profit_loss')
 @login_required
@@ -2129,12 +2071,12 @@ def manage_withdrawals():
             customer = Customer.query.get_or_404(customer_id)
             
             if customer.savings_balance < amount:
-                flash(f'???????? ??? ???! ???????: ?{customer.savings_balance}', 'danger')
+                flash(f'Insufficient savings! Available: ৳{customer.savings_balance}', 'danger')
                 return redirect(url_for('manage_withdrawals'))
             
             cash_balance_record = CashBalance.query.first()
             if not cash_balance_record or cash_balance_record.balance < amount:
-                flash('???? ????? ???!', 'danger')
+                flash('Insufficient cash balance!', 'danger')
                 return redirect(url_for('manage_withdrawals'))
             
             withdrawal = Withdrawal(
@@ -2147,7 +2089,7 @@ def manage_withdrawals():
             cash_balance_record.balance -= amount
             db.session.add(withdrawal)
             db.session.commit()
-            flash(f'?{amount} ??? ??? ??????!', 'success')
+            flash(f'৳{amount} withdrawn successfully!', 'success')
             return redirect(url_for('manage_withdrawals'))
         except Exception as e:
             db.session.rollback()
@@ -2584,7 +2526,7 @@ def monthly_report():
             # Support both English and Bengali installment types
             loan_type = loan.installment_type.lower() if loan.installment_type else ''
             
-            if loan_type in ['daily', '?????']:
+            if loan_type in ['daily', 'দৈনিক']:
                 # Count days in month (or till today for current month)
                 if month == today.month and year == today.year:
                     days = today.day
@@ -2593,12 +2535,12 @@ def monthly_report():
                 loan_expected = loan.installment_amount * days
                 print(f"    Daily: {loan.installment_amount} x {days} days = {loan_expected}")
                 
-            elif loan_type in ['weekly', '?????????']:
+            elif loan_type in ['weekly', 'সাপ্তাহিক']:
                 # 4 weeks per month
                 loan_expected = loan.installment_amount * 4
                 print(f"    Weekly: {loan.installment_amount} x 4 weeks = {loan_expected}")
                 
-            elif loan_type in ['monthly', '?????']:
+            elif loan_type in ['monthly', 'মাসিক']:
                 loan_expected = loan.installment_amount
                 print(f"    Monthly: {loan.installment_amount}")
             else:
@@ -2805,15 +2747,15 @@ def monthly_income_expense_print():
         for loan in customer_loans:
             loan_type = loan.installment_type.lower() if loan.installment_type else ''
             
-            if loan_type in ['daily', '?????']:
+            if loan_type in ['daily', 'দৈনিক']:
                 if month == today.month and year == today.year:
                     days = today.day
                 else:
                     days = last_day
                 expected_amount += loan.installment_amount * days
-            elif loan_type in ['weekly', '?????????']:
+            elif loan_type in ['weekly', 'সাপ্তাহিক']:
                 expected_amount += loan.installment_amount * 4
-            elif loan_type in ['monthly', '?????']:
+            elif loan_type in ['monthly', 'মাসিক']:
                 expected_amount += loan.installment_amount
         
         actual_amount = db.session.query(db.func.sum(LoanCollection.amount)).filter(
@@ -3061,7 +3003,7 @@ def monthly_report():
             # Support both English and Bengali installment types
             loan_type = loan.installment_type.lower() if loan.installment_type else ''
             
-            if loan_type in ['daily', '?????']:
+            if loan_type in ['daily', 'দৈনিক']:
                 # Count days in month (or till today for current month)
                 if month == today.month and year == today.year:
                     days = today.day
@@ -3070,12 +3012,12 @@ def monthly_report():
                 loan_expected = loan.installment_amount * days
                 print(f"    Daily: {loan.installment_amount} x {days} days = {loan_expected}")
                 
-            elif loan_type in ['weekly', '?????????']:
+            elif loan_type in ['weekly', 'সাপ্তাহিক']:
                 # 4 weeks per month
                 loan_expected = loan.installment_amount * 4
                 print(f"    Weekly: {loan.installment_amount} x 4 weeks = {loan_expected}")
                 
-            elif loan_type in ['monthly', '?????']:
+            elif loan_type in ['monthly', 'মাসিক']:
                 loan_expected = loan.installment_amount
                 print(f"    Monthly: {loan.installment_amount}")
             else:
@@ -3151,7 +3093,7 @@ def withdrawal_report():
                 query = query.filter(Withdrawal.date <= end)
         except Exception as e:
             print(f"Date filter error: {e}")
-            flash('????? ??????? ? ?????? ??????!', 'danger')
+            flash('Date filter error! Please check dates!', 'danger')
     
     withdrawals = query.order_by(Withdrawal.date.desc()).all()
     total = sum(w.amount for w in withdrawals)
@@ -3202,7 +3144,7 @@ def search_customers():
             'staff_name': c.staff.name if c.staff else 'N/A',
             'created_date': c.created_date.strftime('%d-%m-%Y') if c.created_date else 'N/A',
             'total_collected': float(total_collected),
-            'last_collection_date': last_collection.collection_date.strftime('%d-%m-%Y') if last_collection else '???? ???',
+            'last_collection_date': last_collection.collection_date.strftime('%d-%m-%Y') if last_collection else 'No collection',
             'loan_status': '????????' if c.remaining_loan == 0 and c.total_loan > 0 else '?????' if c.remaining_loan > 0 else '????',
             'payment_percentage': round((total_collected / c.total_loan * 100) if c.total_loan > 0 else 0, 1)
         })
@@ -3249,7 +3191,7 @@ def fee_history(fee_type):
         flash('Access denied!', 'danger')
         return redirect(url_for('dashboard'))
     
-    fee_types = {'admission': '????? ??', 'welfare': '?????? ??', 'application': '????? ??'}
+    fee_types = {'admission': 'Admission Fee', 'welfare': 'Welfare Fee', 'application': 'Application Fee'}
     if fee_type not in fee_types:
         flash('Invalid fee type!', 'danger')
         return redirect(url_for('dashboard'))
@@ -3292,7 +3234,7 @@ def fee_print(fee_type):
         flash('Access denied!', 'danger')
         return redirect(url_for('dashboard'))
     
-    fee_types = {'admission': '????? ??', 'welfare': '?????? ??', 'application': '????? ??'}
+    fee_types = {'admission': 'Admission Fee', 'welfare': 'Welfare Fee', 'application': 'Application Fee'}
     if fee_type not in fee_types:
         flash('Invalid fee type!', 'danger')
         return redirect(url_for('dashboard'))
@@ -3599,8 +3541,8 @@ def due_report_export():
     writer = csv.writer(output)
     
     # Write header
-    writer.writerow(['??????', '????? ??', '???', '???', '??????', '?????? ????', '??? ??????', 
-                     '????????', '?????? ??????', '??? ???????', '??? ?????', '??? ????', '????? ????'])
+    writer.writerow(['Serial', 'Member No', 'Name', 'Phone', 'Address', 'Remaining Loan', 'Total Installments', 
+                     'Paid', 'Due Installments', 'Last Collection', 'Next Due', 'Days Overdue', 'Risk Level'])
     
     for idx, customer in enumerate(customers, 1):
         loans = Loan.query.filter_by(customer_name=customer.name).all()
@@ -3717,7 +3659,7 @@ def add_followup(customer_id):
     db.session.add(followup)
     db.session.commit()
     
-    flash('??-?? ?????? ??????!', 'success')
+    flash('Follow-up added successfully!', 'success')
     return redirect(url_for('customer_details', id=customer_id))
 
 @app.route('/followup/complete/<int:id>', methods=['POST'])
@@ -3732,7 +3674,7 @@ def complete_followup(id):
     followup.amount_collected = amount_collected
     
     db.session.commit()
-    flash('???-?? ??????? ???!', 'success')
+    flash('Follow-up completed!', 'success')
     return redirect(url_for('customer_details', id=followup.customer_id))
 
 @app.route('/followup/list')
@@ -3767,7 +3709,7 @@ def manage_notes():
         reminder_date_str = request.form.get('reminder_date', '').strip()
         
         if not title or not content:
-            flash('?????? ??? ????????!', 'danger')
+            flash('Title and content required!', 'danger')
             return redirect(url_for('manage_notes'))
         
         reminder_date = None
@@ -3777,7 +3719,7 @@ def manage_notes():
         note = Note(title=title, content=content, priority=priority, reminder_date=reminder_date, created_by=current_user.id)
         db.session.add(note)
         db.session.commit()
-        flash('??? ??? ??? ??????!', 'success')
+        flash('Note added successfully!', 'success')
         return redirect(url_for('manage_notes'))
     
     # Get today's reminders
@@ -3812,11 +3754,11 @@ def edit_note(id):
         note.priority = request.form.get('priority', 'normal')
         
         if not note.title or not note.content:
-            flash('?????? ??? ????????!', 'danger')
+            flash('Title and content required!', 'danger')
             return redirect(url_for('edit_note', id=id))
         
         db.session.commit()
-        flash('??? ???? ???!', 'success')
+        flash('Note updated successfully!', 'success')
         return redirect(url_for('manage_notes'))
     
     return render_template('edit_note.html', note=note)
@@ -3831,7 +3773,7 @@ def delete_note(id):
     note = Note.query.get_or_404(id)
     db.session.delete(note)
     db.session.commit()
-    flash('??? ???? ???!', 'success')
+    flash('Note deleted successfully!', 'success')
     return redirect(url_for('manage_notes'))
 
 @app.route('/admin/settings', methods=['GET', 'POST'])
@@ -3855,11 +3797,11 @@ def admin_settings():
             password = request.form.get('password', '').strip()
             
             if not password:
-                flash('পাসওয়ার্ড প্রয়োজন!', 'danger')
+                flash('Password required!', 'danger')
                 return redirect(url_for('admin_settings'))
             
             if not bcrypt.check_password_hash(current_user.password, password):
-                flash('ভুল পাসওয়ার্ড!', 'danger')
+                flash('Wrong password!', 'danger')
                 return redirect(url_for('admin_settings'))
             
             # Password verified, redirect to settings page
@@ -3870,20 +3812,20 @@ def admin_settings():
             password = request.form.get('password', '').strip()
             
             if not new_email or not password:
-                flash('?? ???? ???!', 'danger')
+                flash('All fields required!', 'danger')
                 return redirect(url_for('admin_settings'))
             
             if not bcrypt.check_password_hash(current_user.password, password):
-                flash('?????? ???!', 'danger')
+                flash('Wrong password!', 'danger')
                 return redirect(url_for('admin_settings'))
             
             if User.query.filter(User.email == new_email, User.id != current_user.id).first():
-                flash('?? ????? ???????? ???? ?????!', 'danger')
+                flash('Email already exists!', 'danger')
                 return redirect(url_for('admin_settings'))
             
             current_user.email = new_email
             db.session.commit()
-            flash('????? ??????? ???????? ???!', 'success')
+            flash('Email updated successfully!', 'success')
             return redirect(url_for('admin_settings'))
         
         elif action == 'change_password':
@@ -3892,25 +3834,25 @@ def admin_settings():
             confirm_password = request.form.get('confirm_password', '').strip()
             
             if not current_password or not new_password or not confirm_password:
-                flash('?? ???? ???!', 'danger')
+                flash('All fields required!', 'danger')
                 return redirect(url_for('admin_settings'))
             
             if not bcrypt.check_password_hash(current_user.password, current_password):
-                flash('??? ?????? ???!', 'danger')
+                flash('Wrong current password!', 'danger')
                 return redirect(url_for('admin_settings'))
             
             if new_password != confirm_password:
-                flash('???? ?????? ????? ??!', 'danger')
+                flash('New passwords do not match!', 'danger')
                 return redirect(url_for('admin_settings'))
             
             if len(new_password) < 6:
-                flash('?????????? ???? ? ??? ??? ???!', 'danger')
+                flash('Password must be at least 6 characters!', 'danger')
                 return redirect(url_for('admin_settings'))
             
             current_user.password = bcrypt.generate_password_hash(new_password).decode('utf-8')
             current_user.plain_password = new_password
             db.session.commit()
-            flash('?????????? ???? ???????? ???!', 'success')
+            flash('Password updated successfully!', 'success')
             return redirect(url_for('admin_settings'))
     
     return render_template('admin_settings.html')
@@ -3956,7 +3898,7 @@ def manage_scheduled_expenses():
             )
             db.session.add(scheduled_expense)
             db.session.commit()
-            flash(f'?????? ??? ??? ??????! {frequency} - ?{amount}', 'success')
+            flash(f'Scheduled expense added successfully! {frequency} - ৳{amount}', 'success')
             return redirect(url_for('manage_scheduled_expenses'))
         except Exception as e:
             db.session.rollback()
@@ -3977,7 +3919,7 @@ def toggle_scheduled_expense(id):
     scheduled_expense.is_active = not scheduled_expense.is_active
     db.session.commit()
     status = '???????' if scheduled_expense.is_active else '??????????'
-    flash(f'??????? ??? {status} ??? ??????!', 'success')
+    flash(f'Scheduled expense {status} successfully!', 'success')
     return redirect(url_for('manage_scheduled_expenses'))
 
 @app.route('/scheduled_expense/delete/<int:id>', methods=['POST'])
@@ -3990,7 +3932,7 @@ def delete_scheduled_expense(id):
     scheduled_expense = ScheduledExpense.query.get_or_404(id)
     db.session.delete(scheduled_expense)
     db.session.commit()
-    flash('??????? ??? ???? ???? ??????!', 'success')
+    flash('Scheduled expense deleted successfully!', 'success')
     return redirect(url_for('manage_scheduled_expenses'))
 
 @app.route('/investor_details/<int:id>')

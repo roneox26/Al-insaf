@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Customer Report - {{ customer.name }}</title>
+    <style>
+        @media print {
+            .no-print { display: none; }
+            @page { margin: 1cm; }
+        }
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+        .section { margin: 20px 0; }
+        .section h3 { background: #f0f0f0; padding: 8px; margin-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        table, th, td { border: 1px solid #333; }
+        th, td { padding: 8px; text-align: left; }
+        th { background: #e0e0e0; }
+        .info-row { display: flex; justify-content: space-between; margin: 5px 0; }
+        .label { font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="text-align: center; margin-bottom: 20px;">
+        <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px;">🖨️ Print / Save as PDF</button>
+        <button onclick="window.close()" style="padding: 10px 20px; font-size: 16px;">❌ Close</button>
+    </div>
+
+    <div class="header">
+        <h2>Al-Insaf ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h2>
+        <h3>Customer Report / গ্রাহক রিপোর্ট</h3>
+    </div>
+
+    <div class="section">
+        <h3>📋 Customer Information / গ্রাহক তথ্য</h3>
+        <div class="info-row"><span class="label">Name / নাম:</span> <span>{{ customer.name }}</span></div>
+        <div class="info-row"><span class="label">Member No / সদস্য নং:</span> <span>{{ customer.member_no or 'N/A' }}</span></div>
+        <div class="info-row"><span class="label">Phone / ফোন:</span> <span>{{ customer.phone or 'N/A' }}</span></div>
+        <div class="info-row"><span class="label">Address / ঠিকানা:</span> <span>{{ customer.village }}, {{ customer.post }}, {{ customer.thana }}, {{ customer.district }}</span></div>
+        <div class="info-row"><span class="label">Father/Husband / পিতা/স্বামী:</span> <span>{{ customer.father_husband or 'N/A' }}</span></div>
+        <div class="info-row"><span class="label">NID / জাতীয় পরিচয়পত্র:</span> <span>{{ customer.nid_no or 'N/A' }}</span></div>
+        <div class="info-row"><span class="label">Staff / স্টাফ:</span> <span>{{ customer.staff.name if customer.staff else 'N/A' }}</span></div>
+        <div class="info-row"><span class="label">Created Date / তৈরির তারিখ:</span> <span>{{ customer.created_date.strftime('%d-%m-%Y') if customer.created_date else 'N/A' }}</span></div>
+    </div>
+
+    <div class="section">
+        <h3>💰 Financial Summary / আর্থিক সারসংক্ষেপ</h3>
+        <div class="info-row"><span class="label">Total Loan / মোট ঋণ:</span> <span>৳{{ "{:,.2f}".format(customer.total_loan) }}</span></div>
+        <div class="info-row"><span class="label">Remaining Loan / বাকি ঋণ:</span> <span style="color: red;">৳{{ "{:,.2f}".format(customer.remaining_loan) }}</span></div>
+        <div class="info-row"><span class="label">Savings Balance / সঞ্চয় ব্যালেন্স:</span> <span style="color: green;">৳{{ "{:,.2f}".format(customer.savings_balance) }}</span></div>
+        <div class="info-row"><span class="label">Admission Fee / ভর্তি ফি:</span> <span>৳{{ "{:,.2f}".format(customer.admission_fee) }}</span></div>
+    </div>
+
+    {% if loans %}
+    <div class="section">
+        <h3>🏦 Loans / ঋণসমূহ</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date / তারিখ</th>
+                    <th>Amount / পরিমাণ</th>
+                    <th>Interest % / সুদ %</th>
+                    <th>Total / মোট</th>
+                    <th>Installments / কিস্তি</th>
+                    <th>Type / ধরন</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for loan in loans %}
+                <tr>
+                    <td>{{ loan.loan_date.strftime('%d-%m-%Y') }}</td>
+                    <td>৳{{ "{:,.2f}".format(loan.amount) }}</td>
+                    <td>{{ loan.interest }}%</td>
+                    <td>৳{{ "{:,.2f}".format(loan.amount + (loan.amount * loan.interest / 100)) }}</td>
+                    <td>{{ loan.installment_count }}</td>
+                    <td>{{ loan.installment_type }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if loan_collections %}
+    <div class="section">
+        <h3>💵 Loan Collections / ঋণ আদায়</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date / তারিখ</th>
+                    <th>Amount / পরিমাণ</th>
+                    <th>Collected By / আদায়কারী</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lc in loan_collections %}
+                <tr>
+                    <td>{{ lc.collection_date.strftime('%d-%m-%Y %H:%M') }}</td>
+                    <td>৳{{ "{:,.2f}".format(lc.amount) }}</td>
+                    <td>{{ lc.staff.name if lc.staff else 'N/A' }}</td>
+                </tr>
+                {% endfor %}
+                <tr style="font-weight: bold; background: #f0f0f0;">
+                    <td>Total / মোট</td>
+                    <td colspan="2">৳{{ "{:,.2f}".format(loan_collections|sum(attribute='amount')) }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if saving_collections %}
+    <div class="section">
+        <h3>💰 Saving Collections / সঞ্চয় আদায়</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date / তারিখ</th>
+                    <th>Amount / পরিমাণ</th>
+                    <th>Collected By / আদায়কারী</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sc in saving_collections %}
+                <tr>
+                    <td>{{ sc.collection_date.strftime('%d-%m-%Y %H:%M') }}</td>
+                    <td>৳{{ "{:,.2f}".format(sc.amount) }}</td>
+                    <td>{{ sc.staff.name if sc.staff else 'N/A' }}</td>
+                </tr>
+                {% endfor %}
+                <tr style="font-weight: bold; background: #f0f0f0;">
+                    <td>Total / মোট</td>
+                    <td colspan="2">৳{{ "{:,.2f}".format(saving_collections|sum(attribute='amount')) }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if withdrawals %}
+    <div class="section">
+        <h3>🏧 Withdrawals / উত্তোলন</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date / তারিখ</th>
+                    <th>Amount / পরিমাণ</th>
+                    <th>Note / নোট</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for w in withdrawals %}
+                <tr>
+                    <td>{{ w.date.strftime('%d-%m-%Y') }}</td>
+                    <td>৳{{ "{:,.2f}".format(w.amount) }}</td>
+                    <td>{{ w.note or 'N/A' }}</td>
+                </tr>
+                {% endfor %}
+                <tr style="font-weight: bold; background: #f0f0f0;">
+                    <td>Total / মোট</td>
+                    <td colspan="2">৳{{ "{:,.2f}".format(withdrawals|sum(attribute='amount')) }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if fees %}
+    <div class="section">
+        <h3>💳 Fees Collected / ফি আদায়</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date / তারিখ</th>
+                    <th>Type / ধরন</th>
+                    <th>Amount / পরিমাণ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fee in fees %}
+                <tr>
+                    <td>{{ fee.collection_date.strftime('%d-%m-%Y') }}</td>
+                    <td>{{ fee.fee_type }}</td>
+                    <td>৳{{ "{:,.2f}".format(fee.amount) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <div style="margin-top: 50px; text-align: center; font-size: 12px; color: #666;">
+        Generated on {{ now.strftime('%d-%m-%Y %H:%M:%S') }}
+    </div>
+</body>
+</html>

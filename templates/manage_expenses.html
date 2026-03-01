@@ -156,6 +156,7 @@
           <th>Amount</th>
           <th>Description</th>
           <th>Date</th>
+          <th>Action</th>
         </tr>
       </thead>
       <tbody>
@@ -171,11 +172,14 @@
           <td class="text-danger">৳{{ "{:,.2f}".format(exp.amount) }}</td>
           <td>{{ exp.description or '-' }}</td>
           <td>{{ exp.date.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td>
+            <a href="{{ url_for('expense_receipt', id=exp.id) }}" class="btn btn-sm btn-info" target="_blank">📄 রসিদ</a>
+          </td>
         </tr>
         {% endfor %}
         {% if not expenses %}
         <tr>
-          <td colspan="4" class="text-center">No expenses yet</td>
+          <td colspan="6" class="text-center">No expenses yet</td>
         </tr>
         {% endif %}
       </tbody>
