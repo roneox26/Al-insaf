@@ -1764,13 +1764,30 @@ def profit_loss():
     else:  # yearly
         start_date = today.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
     
-    # Income: Loan Collections + Savings Collections
+    # Income: Loan Collections + Savings Collections + Fee Collections
     loan_collections = LoanCollection.query.filter(LoanCollection.collection_date >= start_date).all()
     saving_collections = SavingCollection.query.filter(SavingCollection.collection_date >= start_date).all()
     
     total_loan_collected = sum(lc.amount for lc in loan_collections)
     total_savings_collected = sum(sc.amount for sc in saving_collections)
-    total_income = total_loan_collected + total_savings_collected
+    
+    # Get fee collections
+    admission_fee_total = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+        FeeCollection.fee_type == 'admission',
+        FeeCollection.collection_date >= start_date
+    ).scalar() or 0
+    
+    welfare_fee_total = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+        FeeCollection.fee_type == 'welfare',
+        FeeCollection.collection_date >= start_date
+    ).scalar() or 0
+    
+    application_fee_total = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+        FeeCollection.fee_type == 'application',
+        FeeCollection.collection_date >= start_date
+    ).scalar() or 0
+    
+    total_income = total_loan_collected + total_savings_collected + admission_fee_total + welfare_fee_total + application_fee_total
     
     # Expenses
     expenses = Expense.query.filter(Expense.date >= start_date).all()
@@ -1809,6 +1826,9 @@ def profit_loss():
                          total_income=total_income,
                          total_loan_collected=total_loan_collected,
                          total_savings_collected=total_savings_collected,
+                         admission_fee_total=admission_fee_total,
+                         welfare_fee_total=welfare_fee_total,
+                         application_fee_total=application_fee_total,
                          total_expenses=total_expenses,
                          total_withdrawals=total_withdrawals,
                          net_profit=net_profit,
@@ -1849,7 +1869,24 @@ def profit_loss_print():
     
     total_loan_collected = sum(lc.amount for lc in loan_collections)
     total_savings_collected = sum(sc.amount for sc in saving_collections)
-    total_income = total_loan_collected + total_savings_collected
+    
+    # Get fee collections
+    admission_fee_total = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+        FeeCollection.fee_type == 'admission',
+        FeeCollection.collection_date >= start_date
+    ).scalar() or 0
+    
+    welfare_fee_total = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+        FeeCollection.fee_type == 'welfare',
+        FeeCollection.collection_date >= start_date
+    ).scalar() or 0
+    
+    application_fee_total = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+        FeeCollection.fee_type == 'application',
+        FeeCollection.collection_date >= start_date
+    ).scalar() or 0
+    
+    total_income = total_loan_collected + total_savings_collected + admission_fee_total + welfare_fee_total + application_fee_total
     
     expenses = Expense.query.filter(Expense.date >= start_date).all()
     total_expenses = sum(exp.amount for exp in expenses)
@@ -1882,6 +1919,9 @@ def profit_loss_print():
                          total_income=total_income,
                          total_loan_collected=total_loan_collected,
                          total_savings_collected=total_savings_collected,
+                         admission_fee_total=admission_fee_total,
+                         welfare_fee_total=welfare_fee_total,
+                         application_fee_total=application_fee_total,
                          total_expenses=total_expenses,
                          total_withdrawals=total_withdrawals,
                          net_profit=net_profit,

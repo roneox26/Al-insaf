@@ -154,6 +154,22 @@
             <span class="summary-label">সেভিংস কালেকশন:</span>
             <span class="summary-value">৳{{ "{:,.2f}".format(total_savings_collected) }}</span>
         </div>
+        <div class="summary-row" style="background: #e9ecef;">
+            <span class="summary-label" style="font-weight: bold;">ফি কালেকশন:</span>
+            <span class="summary-value"></span>
+        </div>
+        <div class="summary-row" style="padding-left: 20px;">
+            <span class="summary-label">ভর্তি ফি:</span>
+            <span class="summary-value">৳{{ "{:,.2f}".format(admission_fee_total|default(0)) }}</span>
+        </div>
+        <div class="summary-row" style="padding-left: 20px;">
+            <span class="summary-label">আবেদন ফি:</span>
+            <span class="summary-value">৳{{ "{:,.2f}".format(application_fee_total|default(0)) }}</span>
+        </div>
+        <div class="summary-row" style="padding-left: 20px;">
+            <span class="summary-label">কল্যাণ ফি:</span>
+            <span class="summary-value">৳{{ "{:,.2f}".format(welfare_fee_total|default(0)) }}</span>
+        </div>
         <div class="summary-row">
             <span class="summary-label">মোট আয়:</span>
             <span class="summary-value positive">৳{{ "{:,.2f}".format(total_income) }}</span>
