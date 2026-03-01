@@ -326,6 +326,14 @@
     <div class="row g-4">
       <div class="col-md-3">
         <div class="action-card shadow p-4 text-center">
+          <div class="text-danger mb-3"><i class="fas fa-edit fa-3x"></i></div>
+          <h5>Edit Collections</h5>
+          <p class="small text-muted">ভুল collection এডিট করুন</p>
+          <a href="{{ url_for('admin_edit_collections') }}" class="btn btn-danger btn-action w-100 mt-2"><i class="fas fa-pen"></i> Edit/Delete</a>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="action-card shadow p-4 text-center">
           <div class="text-dark mb-3"><i class="fas fa-envelope fa-3x"></i></div>
           <h5>Send Messages to Staff</h5>
           <a href="{{ url_for('view_messages') }}" class="btn btn-dark btn-action w-100 mt-2"><i class="fas fa-paper-plane"></i> Messages</a>
@@ -345,6 +353,8 @@
           <a href="{{ url_for('import_old_data') }}" class="btn btn-success btn-action w-100 mt-2"><i class="fas fa-upload"></i> Import Data</a>
         </div>
       </div>
+    </div>
+    <div class="row g-4 mt-2">
       <div class="col-md-3">
         <div class="action-card shadow p-4 text-center">
           <div class="text-warning mb-3"><i class="fas fa-cog fa-3x"></i></div>

@@ -4350,6 +4350,162 @@ def loan_sheet(loan_id):
                          loans_with_collections=loans_with_collections,
                          now=datetime.now())
 
+@app.route('/admin/edit_collections')
+@login_required
+def admin_edit_collections():
+    if current_user.role != 'admin':
+        flash('Access denied!', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    selected_date = request.args.get('date', '')
+    collection_type = request.args.get('type', 'all')
+    customer_filter = request.args.get('customer', '')
+    
+    loan_query = LoanCollection.query
+    saving_query = SavingCollection.query
+    
+    if selected_date:
+        try:
+            filter_date = datetime.strptime(selected_date, '%Y-%m-%d')
+            start = filter_date.replace(hour=0, minute=0, second=0)
+            end = filter_date.replace(hour=23, minute=59, second=59)
+            loan_query = loan_query.filter(LoanCollection.collection_date >= start, LoanCollection.collection_date <= end)
+            saving_query = saving_query.filter(SavingCollection.collection_date >= start, SavingCollection.collection_date <= end)
+        except:
+            pass
+    
+    if customer_filter:
+        loan_query = loan_query.join(Customer).filter(Customer.name.like(f'%{customer_filter}%'))
+        saving_query = saving_query.join(Customer).filter(Customer.name.like(f'%{customer_filter}%'))
+    
+    loan_collections = loan_query.order_by(LoanCollection.collection_date.desc()).limit(50).all() if collection_type in ['all', 'loan'] else []
+    saving_collections = saving_query.order_by(SavingCollection.collection_date.desc()).limit(50).all() if collection_type in ['all', 'saving'] else []
+    
+    return render_template('edit_collections.html', 
+                         loan_collections=loan_collections,
+                         saving_collections=saving_collections,
+                         selected_date=selected_date,
+                         collection_type=collection_type,
+                         customer_filter=customer_filter)
+
+@app.route('/admin/edit_loan_collection/<int:id>', methods=['POST'])
+@login_required
+def edit_loan_collection(id):
+    if current_user.role != 'admin':
+        flash('Access denied!', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    collection = LoanCollection.query.get_or_404(id)
+    old_amount = collection.amount
+    new_amount = float(request.form.get('amount', 0))
+    collection_date_str = request.form.get('collection_date')
+    
+    if new_amount <= 0:
+        flash('Amount must be greater than 0!', 'danger')
+        return redirect(url_for('admin_edit_collections'))
+    
+    customer = collection.customer
+    cash_balance = CashBalance.query.first()
+    
+    # Reverse old amount
+    customer.remaining_loan += old_amount
+    if cash_balance:
+        cash_balance.balance -= old_amount
+    
+    # Apply new amount
+    customer.remaining_loan -= new_amount
+    if cash_balance:
+        cash_balance.balance += new_amount
+    
+    collection.amount = new_amount
+    if collection_date_str:
+        collection.collection_date = datetime.strptime(collection_date_str, '%Y-%m-%dT%H:%M')
+    
+    db.session.commit()
+    flash(f'Loan collection updated! Old: ৳{old_amount}, New: ৳{new_amount}', 'success')
+    return redirect(url_for('admin_edit_collections'))
+
+@app.route('/admin/delete_loan_collection/<int:id>', methods=['POST'])
+@login_required
+def delete_loan_collection(id):
+    if current_user.role != 'admin':
+        flash('Access denied!', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    collection = LoanCollection.query.get_or_404(id)
+    customer = collection.customer
+    cash_balance = CashBalance.query.first()
+    
+    # Reverse the collection
+    customer.remaining_loan += collection.amount
+    if cash_balance:
+        cash_balance.balance -= collection.amount
+    
+    db.session.delete(collection)
+    db.session.commit()
+    
+    flash(f'Loan collection deleted! ৳{collection.amount} reversed.', 'success')
+    return redirect(url_for('admin_edit_collections'))
+
+@app.route('/admin/edit_saving_collection/<int:id>', methods=['POST'])
+@login_required
+def edit_saving_collection(id):
+    if current_user.role != 'admin':
+        flash('Access denied!', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    collection = SavingCollection.query.get_or_404(id)
+    old_amount = collection.amount
+    new_amount = float(request.form.get('amount', 0))
+    collection_date_str = request.form.get('collection_date')
+    
+    if new_amount <= 0:
+        flash('Amount must be greater than 0!', 'danger')
+        return redirect(url_for('admin_edit_collections'))
+    
+    customer = collection.customer
+    cash_balance = CashBalance.query.first()
+    
+    # Reverse old amount
+    customer.savings_balance -= old_amount
+    if cash_balance:
+        cash_balance.balance -= old_amount
+    
+    # Apply new amount
+    customer.savings_balance += new_amount
+    if cash_balance:
+        cash_balance.balance += new_amount
+    
+    collection.amount = new_amount
+    if collection_date_str:
+        collection.collection_date = datetime.strptime(collection_date_str, '%Y-%m-%dT%H:%M')
+    
+    db.session.commit()
+    flash(f'Saving collection updated! Old: ৳{old_amount}, New: ৳{new_amount}', 'success')
+    return redirect(url_for('admin_edit_collections'))
+
+@app.route('/admin/delete_saving_collection/<int:id>', methods=['POST'])
+@login_required
+def delete_saving_collection(id):
+    if current_user.role != 'admin':
+        flash('Access denied!', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    collection = SavingCollection.query.get_or_404(id)
+    customer = collection.customer
+    cash_balance = CashBalance.query.first()
+    
+    # Reverse the collection
+    customer.savings_balance -= collection.amount
+    if cash_balance:
+        cash_balance.balance -= collection.amount
+    
+    db.session.delete(collection)
+    db.session.commit()
+    
+    flash(f'Saving collection deleted! ৳{collection.amount} reversed.', 'success')
+    return redirect(url_for('admin_edit_collections'))
+
 @app.route('/logout')
 @login_required
 def logout():
