@@ -897,9 +897,28 @@ def customer_details(id):
     loan_collections = LoanCollection.query.filter_by(customer_id=id).order_by(LoanCollection.collection_date.desc()).all()
     saving_collections = SavingCollection.query.filter_by(customer_id=id).order_by(SavingCollection.collection_date.desc()).all()
     withdrawals = Withdrawal.query.filter_by(customer_id=id).order_by(Withdrawal.date.desc()).all()
+    
+    collections_dict = {}
+    for lc in loan_collections:
+        key = lc.collection_date
+        if key not in collections_dict:
+            collections_dict[key] = {'loan': 0, 'saving': 0, 'date': lc.collection_date, 'staff': lc.staff.name if lc.staff else 'N/A'}
+        collections_dict[key]['loan'] += lc.amount
+    
+    for sc in saving_collections:
+        key = sc.collection_date
+        if key not in collections_dict:
+            collections_dict[key] = {'loan': 0, 'saving': 0, 'date': sc.collection_date, 'staff': sc.staff.name if sc.staff else 'N/A'}
+        collections_dict[key]['saving'] += sc.amount
+    
+    all_collections = sorted(collections_dict.values(), key=lambda x: x['date'], reverse=True)
+    total_collected = sum(lc.amount for lc in loan_collections)
+    total_withdrawn = sum(w.amount for w in withdrawals)
+    
     return render_template('customer_details.html', customer=customer, loans=loans, 
                          loan_collections=loan_collections, saving_collections=saving_collections,
-                         withdrawals=withdrawals)
+                         withdrawals=withdrawals, all_collections=all_collections,
+                         total_collected=total_collected, total_withdrawn=total_withdrawn)
 
 @app.route('/customer/print/<int:id>')
 @login_required
@@ -1136,7 +1155,7 @@ def manage_collections():
             end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
         query_loan = query_loan.filter(LoanCollection.collection_date >= start_date, LoanCollection.collection_date <= end_date)
         query_saving = query_saving.filter(SavingCollection.collection_date >= start_date, SavingCollection.collection_date <= end_date)
-        month_names = ['?????????', '???????????', '?????', '??????', '??', '???', '?????', '?????', '??????????', '???????', '???????', '????????']
+        month_names = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর']
         period_info['month'] = month_names[month - 1]
         period_info['year'] = year
     elif period == 'yearly':
@@ -1637,7 +1656,7 @@ def manage_expenses():
                 db.session.commit()
                 flash(f'{category} - ৳{amount} expense added successfully!', 'success')
             else:
-                flash('???? ???? ???!', 'danger')
+                flash('পর্যাপ্ত টাকা নেই!', 'danger')
             
             return redirect(url_for('manage_expenses'))
         except Exception as e:
@@ -3918,7 +3937,7 @@ def toggle_scheduled_expense(id):
     scheduled_expense = ScheduledExpense.query.get_or_404(id)
     scheduled_expense.is_active = not scheduled_expense.is_active
     db.session.commit()
-    status = '???????' if scheduled_expense.is_active else '??????????'
+    status = 'সক্রিয়' if scheduled_expense.is_active else 'নিষ্ক্রিয়'
     flash(f'Scheduled expense {status} successfully!', 'success')
     return redirect(url_for('manage_scheduled_expenses'))
 
