@@ -1281,9 +1281,9 @@ def collection():
         
         msg = []
         if loan_amount > 0:
-            msg.append(f'???: ?{loan_amount}')
+            msg.append(f'লোন: ৳{loan_amount}')
         if saving_amount > 0:
-            msg.append(f'??????: ?{saving_amount}')
+            msg.append(f'সঞ্চয়: ৳{saving_amount}')
         flash(f'Collection successful! {" | ".join(msg)}', 'success')
         return redirect(url_for('collection'))
     
@@ -1293,153 +1293,9 @@ def collection():
         customers = Customer.query.all()
     return render_template('collection.html', customers=customers)
 
-@app.route('/loan_collection', methods=['GET'])
-@login_required
-def loan_collection():
-    if current_user.role == 'staff' and hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff cannot collect money!', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    if current_user.role == 'staff' and (not hasattr(current_user, 'is_office_staff') or not current_user.is_office_staff):
-        customers = Customer.query.filter_by(staff_id=current_user.id).filter(Customer.remaining_loan > 0).all()
-    else:
-        customers = Customer.query.filter(Customer.remaining_loan > 0).all()
-    return render_template('loan_collection.html', customers=customers)
 
-@app.route('/saving_collection', methods=['GET'])
-@login_required
-def saving_collection():
-    if current_user.role == 'staff' and hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff cannot collect money!', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    if current_user.role == 'staff' and (not hasattr(current_user, 'is_office_staff') or not current_user.is_office_staff):
-        customers = Customer.query.filter_by(staff_id=current_user.id).all()
-    else:
-        customers = Customer.query.all()
-    return render_template('saving_collection.html', customers=customers)
 
-@app.route('/loan_collection/collect', methods=['POST'])
-@login_required
-def collect_loan():
-    if current_user.role == 'staff' and hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff cannot collect money!', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    try:
-        customer_id = (lambda x: int(x) if x and x != '' else 0)(request.form.get('customer_id', ''))
-        amount = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('amount', ''))
-        
-        if not customer_id or amount <= 0:
-            flash('Please fill all required fields!', 'danger')
-            return redirect(url_for('loan_collection'))
-        
-        customer = Customer.query.get_or_404(customer_id)
-        
-        if amount <= 0:
-            flash('Amount must be greater than 0!', 'danger')
-            return redirect(url_for('loan_collection'))
-        
-        if amount > customer.remaining_loan:
-            flash(f'Amount exceeds remaining loan (৳{customer.remaining_loan})!', 'danger')
-            return redirect(url_for('loan_collection'))
-        
-        # FIFO: Get oldest unpaid loans first
-        loans = Loan.query.filter_by(customer_name=customer.name).order_by(Loan.loan_date.asc()).all()
-        
-        remaining_amount = amount
-        
-        for loan in loans:
-            if remaining_amount <= 0:
-                break
-            
-            # Calculate how much is already paid for this loan
-            paid_for_loan = db.session.query(db.func.sum(LoanCollection.amount)).filter_by(customer_id=customer.id).scalar() or 0
-            loan_with_interest = loan.amount + (loan.amount * loan.interest / 100)
-            loan_remaining = loan_with_interest - paid_for_loan
-            
-            if loan_remaining <= 0:
-                continue  # This loan is fully paid, move to next
-            
-            # Pay as much as possible for this loan
-            payment_for_this_loan = min(remaining_amount, loan_remaining)
-            
-            # Create collection record with loan_id
-            collection = LoanCollection(customer_id=customer_id, amount=payment_for_this_loan, staff_id=current_user.id)
-            db.session.add(collection)
-            
-            remaining_amount -= payment_for_this_loan
-        
-        # Update customer remaining loan
-        customer.remaining_loan -= amount
-        
-        # Update cash balance
-        cash_balance_record = CashBalance.query.first()
-        if not cash_balance_record:
-            cash_balance_record = CashBalance(balance=0)
-            db.session.add(cash_balance_record)
-        cash_balance_record.balance += amount
-        
-        # Update collection schedule
-        schedule = CollectionSchedule.query.filter_by(
-            customer_id=customer_id,
-            status='pending'
-        ).order_by(CollectionSchedule.scheduled_date).first()
-        
-        if schedule:
-            schedule.status = 'collected'
-            schedule.collected_amount = amount
-            schedule.collected_date = datetime.now()
-        
-        db.session.commit()
-        
-        flash(f'Loan ৳{amount} collected successfully! Remaining: ৳{customer.remaining_loan}', 'success')
-        return redirect(url_for('loan_collection'))
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Error: {str(e)}', 'danger')
-        return redirect(url_for('loan_collection'))
 
-@app.route('/saving_collection/collect', methods=['POST'])
-@login_required
-def collect_saving():
-    if current_user.role == 'staff' and hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff cannot collect money!', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    try:
-        customer_id = (lambda x: int(x) if x and x != '' else 0)(request.form.get('customer_id', ''))
-        amount = (lambda x: float(x) if x and x != '' else 0.0)(request.form.get('amount', ''))
-        
-        if not customer_id or amount <= 0:
-            flash('Please fill all required fields!', 'danger')
-            return redirect(url_for('saving_collection'))
-        
-        customer = Customer.query.get_or_404(customer_id)
-        
-        collection = SavingCollection(
-            customer_id=customer_id,
-            amount=amount,
-            staff_id=current_user.id
-        )
-        
-        customer.savings_balance += amount
-        
-        cash_balance_record = CashBalance.query.first()
-        if not cash_balance_record:
-            cash_balance_record = CashBalance(balance=0)
-            db.session.add(cash_balance_record)
-        cash_balance_record.balance += amount
-        
-        db.session.add(collection)
-        db.session.commit()
-        
-        flash(f'Savings ৳{amount} collected successfully!', 'success')
-        return redirect(url_for('saving_collection'))
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Error: {str(e)}', 'danger')
-        return redirect(url_for('saving_collection'))
 
 @app.route('/daily_collections')
 @login_required
@@ -4381,9 +4237,45 @@ def admin_edit_collections():
     loan_collections = loan_query.order_by(LoanCollection.collection_date.desc()).limit(50).all() if collection_type in ['all', 'loan'] else []
     saving_collections = saving_query.order_by(SavingCollection.collection_date.desc()).limit(50).all() if collection_type in ['all', 'saving'] else []
     
+    # Combine collections by customer and date
+    collections_dict = {}
+    for lc in loan_collections:
+        key = (lc.customer_id, lc.collection_date.date())
+        if key not in collections_dict:
+            collections_dict[key] = {
+                'customer': lc.customer,
+                'loan_amount': 0,
+                'saving_amount': 0,
+                'date': lc.collection_date,
+                'staff': lc.staff,
+                'loan_id': None,
+                'saving_id': None
+            }
+        collections_dict[key]['loan_amount'] += lc.amount
+        collections_dict[key]['loan_id'] = lc.id
+    
+    for sc in saving_collections:
+        key = (sc.customer_id, sc.collection_date.date())
+        if key not in collections_dict:
+            collections_dict[key] = {
+                'customer': sc.customer,
+                'loan_amount': 0,
+                'saving_amount': 0,
+                'date': sc.collection_date,
+                'staff': sc.staff,
+                'loan_id': None,
+                'saving_id': None
+            }
+        collections_dict[key]['saving_amount'] += sc.amount
+        collections_dict[key]['saving_id'] = sc.id
+    
+    all_collections = list(collections_dict.values())
+    all_collections.sort(key=lambda x: x['date'], reverse=True)
+    
     return render_template('edit_collections.html', 
                          loan_collections=loan_collections,
                          saving_collections=saving_collections,
+                         all_collections=all_collections,
                          selected_date=selected_date,
                          collection_type=collection_type,
                          customer_filter=customer_filter)

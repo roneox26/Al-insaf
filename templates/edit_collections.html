@@ -59,30 +59,40 @@
             </div>
         </div>
 
-        <!-- Loan Collections -->
-        {% if collection_type in ['all', 'loan'] %}
-        <h4 class="mt-4">💰 Loan Collections</h4>
-        {% for lc in loan_collections %}
-        <div class="card collection-card loan-card">
+        <!-- All Collections Combined -->
+        <h4 class="mt-4">💰 All Collections (Loan & Saving)</h4>
+        {% for col in all_collections %}
+        <div class="card collection-card {% if col.loan_amount > 0 %}loan-card{% else %}saving-card{% endif %}">
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col-md-8">
-                        <h5>{{ lc.customer.name }} ({{ lc.customer.member_no }})</h5>
+                        <h5>{{ col.customer.name }} ({{ col.customer.member_no or '-' }})</h5>
                         <p class="mb-1">
-                            <strong>Amount:</strong> ৳{{ "{:,.2f}".format(lc.amount) }} | 
-                            <strong>Date:</strong> {{ lc.collection_date.strftime('%d-%m-%Y %I:%M %p') }} |
-                            <strong>Staff:</strong> {{ lc.staff.name }}
+                            {% if col.loan_amount > 0 %}<strong>Loan:</strong> ৳{{ "{:,.2f}".format(col.loan_amount) }}{% endif %}
+                            {% if col.loan_amount > 0 and col.saving_amount > 0 %} | {% endif %}
+                            {% if col.saving_amount > 0 %}<strong>Saving:</strong> ৳{{ "{:,.2f}".format(col.saving_amount) }}{% endif %}
+                            <br>
+                            <strong>Date:</strong> {{ col.date.strftime('%d-%m-%Y %I:%M %p') }} |
+                            <strong>Staff:</strong> {{ col.staff.name }}
                         </p>
                     </div>
                     <div class="col-md-4 text-end">
-                        <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editLoanModal{{ lc.id }}">✏️ Edit</button>
-                        <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteLoanModal{{ lc.id }}">🗑️ Delete</button>
+                        {% if col.loan_id %}
+                        <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editLoanModal{{ col.loan_id }}">✏️ Edit Loan</button>
+                        <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteLoanModal{{ col.loan_id }}">🗑️ Delete Loan</button>
+                        {% endif %}
+                        {% if col.saving_id %}
+                        <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editSavingModal{{ col.saving_id }}">✏️ Edit Saving</button>
+                        <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteSavingModal{{ col.saving_id }}">🗑️ Delete Saving</button>
+                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
+        {% endfor %}
 
-        <!-- Edit Modal -->
+        <!-- Modals for Loan Collections -->
+        {% for lc in loan_collections %}
         <div class="modal fade" id="editLoanModal{{ lc.id }}">
             <div class="modal-dialog">
                 <div class="modal-content">
@@ -114,8 +124,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Delete Modal -->
         <div class="modal fade" id="deleteLoanModal{{ lc.id }}">
             <div class="modal-dialog">
                 <div class="modal-content">
@@ -142,32 +150,9 @@
             </div>
         </div>
         {% endfor %}
-        {% endif %}
-
-        <!-- Saving Collections -->
-        {% if collection_type in ['all', 'saving'] %}
-        <h4 class="mt-4">💵 Saving Collections</h4>
+        
+        <!-- Modals for Saving Collections -->
         {% for sc in saving_collections %}
-        <div class="card collection-card saving-card">
-            <div class="card-body">
-                <div class="row align-items-center">
-                    <div class="col-md-8">
-                        <h5>{{ sc.customer.name }} ({{ sc.customer.member_no }})</h5>
-                        <p class="mb-1">
-                            <strong>Amount:</strong> ৳{{ "{:,.2f}".format(sc.amount) }} | 
-                            <strong>Date:</strong> {{ sc.collection_date.strftime('%d-%m-%Y %I:%M %p') }} |
-                            <strong>Staff:</strong> {{ sc.staff.name }}
-                        </p>
-                    </div>
-                    <div class="col-md-4 text-end">
-                        <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editSavingModal{{ sc.id }}">✏️ Edit</button>
-                        <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteSavingModal{{ sc.id }}">🗑️ Delete</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Edit Modal -->
         <div class="modal fade" id="editSavingModal{{ sc.id }}">
             <div class="modal-dialog">
                 <div class="modal-content">
@@ -199,8 +184,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Delete Modal -->
         <div class="modal fade" id="deleteSavingModal{{ sc.id }}">
             <div class="modal-dialog">
                 <div class="modal-content">
@@ -227,9 +210,8 @@
             </div>
         </div>
         {% endfor %}
-        {% endif %}
 
-        {% if not loan_collections and not saving_collections %}
+        {% if not all_collections %}
         <div class="alert alert-info">
             No collections found. Try changing the filter.
         </div>
