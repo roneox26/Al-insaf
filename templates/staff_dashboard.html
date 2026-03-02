@@ -44,7 +44,14 @@
   <div class="container mt-4 pb-5">
     <div class="welcome-card shadow-lg p-4 mb-4">
       <h2><i class="fas fa-user-tie"></i> Welcome, {{ name }}</h2>
+      {% if current_user.is_monitor %}
+      <p class="mb-0"><i class="fas fa-eye"></i> Monitor Staff | Read-Only Access (শুধুমাত্র দেখার অনুমতি)</p>
+      <small class="text-warning"><i class="fas fa-info-circle"></i> আপনি শুধুমাত্র তথ্য দেখতে পারবেন, কোনো পরিবর্তন করতে পারবেন না।</small>
+      {% elif current_user.is_office_staff %}
       <p class="mb-0"><i class="fas fa-briefcase"></i> Office Staff | Full Access</p>
+      {% else %}
+      <p class="mb-0"><i class="fas fa-user"></i> Field Staff | Limited Access</p>
+      {% endif %}
     </div>
 
     <div class="row g-4 mb-4">
@@ -90,6 +97,7 @@
           <a href="{{ url_for('manage_customers') }}" class="btn btn-primary btn-action w-100 mt-2"><i class="fas fa-list"></i> View All</a>
         </div>
       </div>
+      {% if not current_user.is_monitor %}
       <div class="col-md-3">
         <div class="action-card shadow p-4 text-center">
           <div class="text-success mb-3"><i class="fas fa-user-plus fa-3x"></i></div>
@@ -97,6 +105,7 @@
           <a href="{{ url_for('add_customer') }}" class="btn btn-success btn-action w-100 mt-2"><i class="fas fa-plus"></i> Add New</a>
         </div>
       </div>
+      {% endif %}
       <div class="col-md-3">
         <div class="action-card shadow p-4 text-center">
           <div class="text-warning mb-3"><i class="fas fa-hand-holding-usd fa-3x"></i></div>
@@ -118,6 +127,7 @@
           <a href="{{ url_for('inactive_customers') }}" class="btn btn-secondary btn-action w-100 mt-2"><i class="fas fa-eye"></i> View List</a>
         </div>
       </div>
+      {% if not current_user.is_monitor %}
       <div class="col-md-3">
         <div class="action-card shadow p-4 text-center">
           <div class="text-info mb-3"><i class="fas fa-file-contract fa-3x"></i></div>
@@ -125,10 +135,12 @@
           <a href="{{ url_for('application_forms') }}" class="btn btn-info btn-action w-100 mt-2"><i class="fas fa-file-alt"></i> View Forms</a>
         </div>
       </div>
+      {% endif %}
     </div>
 
     <h4 class="section-title mb-3"><i class="fas fa-money-check-alt"></i> Collections</h4>
     <div class="row g-4 mb-4">
+      {% if not current_user.is_monitor %}
       <div class="col-md-4">
         <div class="action-card shadow p-4 text-center">
           <div class="text-success mb-3"><i class="fas fa-hand-holding-usd fa-3x"></i></div>
@@ -136,6 +148,7 @@
           <a href="{{ url_for('collection') }}" class="btn btn-success btn-action w-100 mt-2 btn-lg"><i class="fas fa-coins"></i> কালেকশন করুন</a>
         </div>
       </div>
+      {% endif %}
       <div class="col-md-4">
         <div class="action-card shadow p-4 text-center">
           <div class="text-primary mb-3"><i class="fas fa-history fa-3x"></i></div>
@@ -172,13 +185,14 @@
 
     <h4 class="section-title mb-3"><i class="fas fa-chart-bar"></i> Reports</h4>
     <div class="row g-4 mb-4">
-      <div class="col-md-6">
+      <div class="{% if current_user.is_monitor %}col-md-12{% else %}col-md-6{% endif %}">
         <div class="action-card shadow p-4 text-center">
           <div class="text-info mb-3"><i class="fas fa-calendar-alt fa-3x"></i></div>
           <h5>Daily Report</h5>
           <a href="{{ url_for('daily_report') }}" class="btn btn-info btn-action w-100 mt-2"><i class="fas fa-file-alt"></i> View Report</a>
         </div>
       </div>
+      {% if not current_user.is_monitor %}
       <div class="col-md-6">
         <div class="action-card shadow p-4 text-center">
           <div class="text-success mb-3"><i class="fas fa-user-check fa-3x"></i></div>
@@ -188,6 +202,7 @@
           <a href="{{ url_for('staff_collection_report', id=current_user.id, period='yearly') }}" class="btn btn-info btn-sm btn-action w-100 mt-2"><i class="fas fa-chart-line"></i> Yearly</a>
         </div>
       </div>
+      {% endif %}
     </div>
 
     {% if is_office_staff and all_staff %}

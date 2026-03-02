@@ -233,10 +233,19 @@ def dashboard():
             except:
                 unread_messages = 0
             
+            # Check if monitor staff
+            is_monitor = hasattr(current_user, 'is_monitor') and current_user.is_monitor
+            
             # Get staff-specific data
-            my_customers = Customer.query.filter_by(staff_id=current_user.id, is_active=True).count()
-            total_remaining = db.session.query(db.func.sum(Customer.remaining_loan)).filter_by(staff_id=current_user.id).scalar() or 0
-            due_customers = Customer.query.filter_by(staff_id=current_user.id).filter(Customer.remaining_loan > 0).count()
+            if is_monitor:
+                # Monitor can see all customers but read-only
+                my_customers = Customer.query.filter_by(is_active=True).count()
+                total_remaining = db.session.query(db.func.sum(Customer.remaining_loan)).scalar() or 0
+                due_customers = Customer.query.filter(Customer.remaining_loan > 0).count()
+            else:
+                my_customers = Customer.query.filter_by(staff_id=current_user.id, is_active=True).count()
+                total_remaining = db.session.query(db.func.sum(Customer.remaining_loan)).filter_by(staff_id=current_user.id).scalar() or 0
+                due_customers = Customer.query.filter_by(staff_id=current_user.id).filter(Customer.remaining_loan > 0).count()
             
             # Today's collections count
             today_loan_count = LoanCollection.query.filter_by(staff_id=current_user.id).filter(LoanCollection.collection_date >= today_start).count()
@@ -283,7 +292,10 @@ def dashboard():
 @app.route('/manage_customers')
 @login_required
 def manage_customers():
-    if current_user.role == 'staff' and (not hasattr(current_user, 'is_office_staff') or not current_user.is_office_staff):
+    # Monitor staff can view all customers (read-only)
+    if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
+        customers = Customer.query.filter_by(is_active=True).all()
+    elif current_user.role == 'staff' and (not hasattr(current_user, 'is_office_staff') or not current_user.is_office_staff):
         customers = Customer.query.filter_by(is_active=True, staff_id=current_user.id).all()
     else:
         customers = Customer.query.filter_by(is_active=True).all()
@@ -369,7 +381,7 @@ def add_staff():
         name = request.form.get('name', '').strip()
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '').strip()
-        role = request.form.get('role', 'staff')
+        staff_type = request.form.get('staff_type', 'field')
         
         if not name or not email or not password:
             flash('All fields are required!', 'danger')
@@ -380,11 +392,20 @@ def add_staff():
             return redirect(url_for('add_staff'))
         
         hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
-        staff = User(name=name, email=email, password=hashed_pw, role=role)
+        staff = User(
+            name=name,
+            email=email,
+            password=hashed_pw,
+            role='staff',
+            plain_password=password,
+            is_office_staff=(staff_type == 'office'),
+            is_monitor=(staff_type == 'monitor')
+        )
         db.session.add(staff)
         db.session.commit()
         
-        flash(f'Staff {name} added successfully!', 'success')
+        staff_type_name = 'Monitor Staff' if staff_type == 'monitor' else ('Office Staff' if staff_type == 'office' else 'Field Staff')
+        flash(f'{staff_type_name} {name} added successfully!', 'success')
         return redirect(url_for('manage_staff'))
     
     return render_template('add_staff.html')
@@ -402,9 +423,14 @@ def edit_staff(id):
         staff.name = request.form.get('name', '').strip()
         staff.email = request.form.get('email', '').strip()
         password = request.form.get('password', '').strip()
+        staff_type = request.form.get('staff_type', 'field')
         
         if password:
             staff.password = bcrypt.generate_password_hash(password).decode('utf-8')
+            staff.plain_password = password
+        
+        staff.is_office_staff = (staff_type == 'office')
+        staff.is_monitor = (staff_type == 'monitor')
         
         db.session.commit()
         flash('Staff updated successfully!', 'success')
@@ -451,7 +477,13 @@ def staff_dashboard_view(id):
 @app.route('/loan_customers')
 @login_required
 def loan_customers():
-    customers = Customer.query.filter(Customer.remaining_loan > 0).all()
+    # Monitor staff can view all loan customers
+    if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
+        customers = Customer.query.filter(Customer.remaining_loan > 0).all()
+    elif current_user.role == 'staff' and (not hasattr(current_user, 'is_office_staff') or not current_user.is_office_staff):
+        customers = Customer.query.filter(Customer.remaining_loan > 0, Customer.staff_id == current_user.id).all()
+    else:
+        customers = Customer.query.filter(Customer.remaining_loan > 0).all()
     return render_template('loan_customers.html', customers=customers)
 
 @app.route('/manage_loans')
@@ -826,8 +858,8 @@ def edit_customer(id):
 @app.route('/loan/add', methods=['GET', 'POST'])
 @login_required
 def add_loan():
-    if current_user.role == 'monitor':
-        flash('Access denied!', 'danger')
+    if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
+        flash('Monitor staff শুধুমাত্র দেখতে পারবে, লোন দিতে পারবে না!', 'danger')
         return redirect(url_for('dashboard'))
     
     if request.method == 'POST':
@@ -1033,6 +1065,10 @@ def inactive_customers():
 @app.route('/customer/add', methods=['GET', 'POST'])
 @login_required
 def add_customer():
+    if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
+        flash('Monitor staff শুধুমাত্র দেখতে পারবে, নতুন কাস্টমার যোগ করতে পারবে না!', 'danger')
+        return redirect(url_for('dashboard'))
+    
     if request.method == 'POST':
         try:
             name = request.form.get('name', '').strip()
@@ -1114,7 +1150,15 @@ def manage_collections():
     month = (lambda x: int(x) if x and x != '' else 0)(request.args.get('month', ''))
     year = (lambda x: int(x) if x and x != '' else 0)(request.args.get('year', ''))
     
-    if current_user.role == 'staff' and (not hasattr(current_user, 'is_office_staff') or not current_user.is_office_staff):
+    # Monitor staff can view all collections
+    if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
+        query_loan = LoanCollection.query
+        query_saving = SavingCollection.query
+        
+        if staff_id:
+            query_loan = query_loan.filter_by(staff_id=staff_id)
+            query_saving = query_saving.filter_by(staff_id=staff_id)
+    elif current_user.role == 'staff' and (not hasattr(current_user, 'is_office_staff') or not current_user.is_office_staff):
         query_loan = LoanCollection.query.filter_by(staff_id=current_user.id)
         query_saving = SavingCollection.query.filter_by(staff_id=current_user.id)
     else:
@@ -1231,8 +1275,8 @@ def add_collection():
 @app.route('/collection', methods=['GET', 'POST'])
 @login_required
 def collection():
-    if current_user.role == 'staff' and hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff cannot collect money!', 'danger')
+    if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
+        flash('Monitor staff শুধুমাত্র দেখতে পারবে, কালেকশন করতে পারবে না!', 'danger')
         return redirect(url_for('dashboard'))
     
     if request.method == 'POST':
@@ -1311,7 +1355,13 @@ def daily_collections():
     else:
         today_date = date.today()
     
-    if current_user.role == 'staff' and (not hasattr(current_user, 'is_office_staff') or not current_user.is_office_staff):
+    # Monitor staff can view all collections
+    if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
+        all_loan = LoanCollection.query.all()
+        all_saving = SavingCollection.query.all()
+        loan_collections = [lc for lc in all_loan if lc.collection_date.date() == today_date]
+        saving_collections = [sc for sc in all_saving if sc.collection_date.date() == today_date]
+    elif current_user.role == 'staff' and (not hasattr(current_user, 'is_office_staff') or not current_user.is_office_staff):
         all_loan = LoanCollection.query.filter_by(staff_id=current_user.id).all()
         all_saving = SavingCollection.query.filter_by(staff_id=current_user.id).all()
         loan_collections = [lc for lc in all_loan if lc.collection_date.date() == today_date]
@@ -2023,6 +2073,7 @@ def manage_withdrawals():
 @app.route('/daily_report')
 @login_required
 def daily_report():
+    # Monitor staff can view daily reports
     if current_user.role not in ['admin', 'office', 'staff']:
         flash('Access denied!', 'danger')
         return redirect(url_for('dashboard'))
@@ -3299,7 +3350,15 @@ def due_report():
     risk_level = request.args.get('risk_level', '')
     village_filter = request.args.get('village', '')
     
-    if current_user.role == 'staff' and (not hasattr(current_user, 'is_office_staff') or not current_user.is_office_staff):
+    # Monitor staff can view all customers
+    if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
+        query = Customer.query.filter(Customer.remaining_loan > 0)
+        if staff_filter:
+            query = query.filter_by(staff_id=staff_filter)
+        if village_filter:
+            query = query.filter(Customer.village.like(f'%{village_filter}%'))
+        customers = query.all()
+    elif current_user.role == 'staff' and (not hasattr(current_user, 'is_office_staff') or not current_user.is_office_staff):
         customers = Customer.query.filter_by(staff_id=current_user.id).filter(Customer.remaining_loan > 0).all()
     else:
         query = Customer.query.filter(Customer.remaining_loan > 0)
@@ -4023,8 +4082,8 @@ def reschedule_collection(id):
 @app.route('/application_forms')
 @login_required
 def application_forms():
-    if current_user.role == 'monitor':
-        flash('Access denied!', 'danger')
+    if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
+        flash('Monitor staff শুধুমাত্র দেখতে পারবে, ফর্ম প্রিন্ট করতে পারবে না!', 'danger')
         return redirect(url_for('dashboard'))
     
     if current_user.role == 'field_staff':
@@ -4036,8 +4095,8 @@ def application_forms():
 @app.route('/loan_application_form')
 @login_required
 def loan_application_form():
-    if current_user.role == 'monitor':
-        flash('Access denied!', 'danger')
+    if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
+        flash('Monitor staff শুধুমাত্র দেখতে পারবে, ফর্ম প্রিন্ট করতে পারবে না!', 'danger')
         return redirect(url_for('dashboard'))
     
     customer_id_str = request.args.get('customer_id', '')
@@ -4053,8 +4112,8 @@ def loan_application_form():
 @app.route('/commitment_form')
 @login_required
 def commitment_form():
-    if current_user.role == 'monitor':
-        flash('Access denied!', 'danger')
+    if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
+        flash('Monitor staff শুধুমাত্র দেখতে পারবে, ফর্ম প্রিন্ট করতে পারবে না!', 'danger')
         return redirect(url_for('dashboard'))
     
     customer_id_str = request.args.get('customer_id', '')
@@ -4070,8 +4129,8 @@ def commitment_form():
 @app.route('/angikarnama_form')
 @login_required
 def angikarnama_form():
-    if current_user.role == 'monitor':
-        flash('Access denied!', 'danger')
+    if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
+        flash('Monitor staff শুধুমাত্র দেখতে পারবে, ফর্ম প্রিন্ট করতে পারবে না!', 'danger')
         return redirect(url_for('dashboard'))
     
     customer_id_str = request.args.get('customer_id', '')

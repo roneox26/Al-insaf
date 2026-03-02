@@ -86,8 +86,12 @@ http://localhost:5000
 - View all customers (read-only)
 - View loan customers
 - View daily reports
+- View collections history
+- View due reports
 - Cannot collect money
-- Only monitoring access
+- Cannot add customers
+- Cannot distribute loans
+- Only monitoring and viewing access
 
 ## 📝 Default Login Credentials
 
