@@ -12,7 +12,7 @@ MYSQL_DB = os.environ.get('MYSQL_DB', 'ngo_db')
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 # Force SQLite for local development if DATABASE_URL points to unavailable server
-if DATABASE_URL and 'dpg-d43kkqgdl3ps73a1a430-a' in DATABASE_URL:
+if DATABASE_URL and ('dpg-d43kkqgdl3ps73a1a430-a' in DATABASE_URL or 'dpg-d60bi3t6ubrc73d80k3g-a' in DATABASE_URL):
     print("Warning: PostgreSQL server unavailable, using SQLite instead")
     DATABASE_URL = None
 
@@ -36,5 +36,8 @@ SQLALCHEMY_TRACK_MODIFICATIONS = False
 SQLALCHEMY_ENGINE_OPTIONS = {
     'pool_pre_ping': True,
     'pool_recycle': 3600,
+    'connect_args': {
+        'connect_timeout': 10,
+    } if DATABASE_URL and 'postgresql' in DATABASE_URL else {},
 }
 JSON_AS_ASCII = False
