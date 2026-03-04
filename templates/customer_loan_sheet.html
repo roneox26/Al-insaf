@@ -386,26 +386,7 @@
             </div>
         </div>
 
-        <!-- Loan Sheets Navigation -->
-        <div class="no-print" style="padding: 15px; background: #e3f2fd; border: 2px solid #2196F3; border-radius: 8px; margin-bottom: 15px;">
-            <h5 style="margin: 0 0 10px 0; color: #1976D2;">📄 Individual Loan Sheets</h5>
-            {% if loans %}
-                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                {% for loan in loans %}
-                    <a href="{{ url_for('loan_sheet', loan_id=loan.id) }}" 
-                       style="background: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: all 0.3s;" 
-                       onmouseover="this.style.background='#45a049'" 
-                       onmouseout="this.style.background='#4CAF50'">
-                        📄 Loan #{{ loop.index }} Sheet (৳{{ "{:,.0f}".format(loan.amount) }})
-                    </a>
-                {% endfor %}
-                </div>
-            {% else %}
-                <div style="padding: 20px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; text-align: center;">
-                    <span style="color: #856404; font-size: 14px;">⚠️ কোনো loan নেই</span>
-                </div>
-            {% endif %}
-        </div>
+
 
         <!-- Collection History -->
         <div class="collection-section">
@@ -424,23 +405,58 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% if loans_with_collections and loans_with_collections|length > 0 and loans_with_collections[0].collections %}
+                    {% if loans or (loans_with_collections and loans_with_collections|length > 0 and loans_with_collections[0].collections) %}
                         {% set running_total = namespace(value=0) %}
                         {% set running_saving = namespace(value=0) %}
                         {% set total_loan_amount = (total_loan_disbursed + total_interest) if total_interest is defined else total_loan_disbursed %}
+                        {% set running_balance = namespace(value=0) %}
                         
-                        {% for item in loans_with_collections[0].collections %}
-                            {% set running_total.value = running_total.value + item.loan_amount %}
-                            {% set running_saving.value = running_saving.value + item.saving_amount %}
-                            
-                            <tr>
-                                <td>{{ item.collection.collection_date.strftime('%d-%m-%y') }}</td>
-                                <td>{{ "{:,.0f}".format(item.loan_amount) if item.loan_amount > 0 else '' }}</td>
-                                <td>{{ "{:,.0f}".format(item.saving_amount) if item.saving_amount > 0 else '' }}</td>
-                                <td>{{ "{:,.0f}".format(running_total.value) }}</td>
-                                <td>{{ "{:,.0f}".format(running_saving.value) }}</td>
-                                <td>{{ "{:,.0f}".format(total_loan_amount - running_total.value) }}</td>
-                            </tr>
+                        {# Create combined list of loans and collections with dates #}
+                        {% set all_transactions = [] %}
+                        
+                        {# Add all loans #}
+                        {% for loan in loans %}
+                            {% set _ = all_transactions.append({'type': 'loan', 'date': loan.loan_date, 'loan': loan}) %}
+                        {% endfor %}
+                        
+                        {# Add all collections #}
+                        {% if loans_with_collections and loans_with_collections|length > 0 and loans_with_collections[0].collections %}
+                            {% for item in loans_with_collections[0].collections %}
+                                {% set _ = all_transactions.append({'type': 'collection', 'date': item.collection.collection_date, 'item': item}) %}
+                            {% endfor %}
+                        {% endif %}
+                        
+                        {# Sort by date #}
+                        {% set sorted_transactions = all_transactions|sort(attribute='date') %}
+                        
+                        {# Display all transactions in date order #}
+                        {% for trans in sorted_transactions %}
+                            {% if trans.type == 'loan' %}
+                                {# Loan distribution in RED #}
+                                {% set loan_with_interest = trans.loan.amount + (trans.loan.amount * trans.loan.interest / 100) %}
+                                {% set running_balance.value = running_balance.value + loan_with_interest %}
+                                <tr style="background-color: #ffebee; border-left: 4px solid #f44336;">
+                                    <td style="font-weight: bold; color: #c62828;">{{ trans.date.strftime('%d-%m-%y') }}</td>
+                                    <td style="font-weight: bold; color: #c62828;">লোন বিতরণ: {{ "{:,.0f}".format(trans.loan.amount) }}</td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td style="font-weight: bold; color: #c62828;">{{ "{:,.0f}".format(running_balance.value) }}</td>
+                                </tr>
+                            {% else %}
+                                {# Collection in GREEN #}
+                                {% set running_total.value = running_total.value + trans.item.loan_amount %}
+                                {% set running_saving.value = running_saving.value + trans.item.saving_amount %}
+                                {% set running_balance.value = running_balance.value - trans.item.loan_amount %}
+                                <tr style="background-color: #e8f5e9; border-left: 4px solid #4caf50;">
+                                    <td style="color: #2e7d32;">{{ trans.date.strftime('%d-%m-%y') }}</td>
+                                    <td style="color: #2e7d32;">{{ "{:,.0f}".format(trans.item.loan_amount) if trans.item.loan_amount > 0 else '' }}</td>
+                                    <td style="color: #2e7d32;">{{ "{:,.0f}".format(trans.item.saving_amount) if trans.item.saving_amount > 0 else '' }}</td>
+                                    <td style="color: #2e7d32;">{{ "{:,.0f}".format(running_total.value) }}</td>
+                                    <td style="color: #2e7d32;">{{ "{:,.0f}".format(running_saving.value) }}</td>
+                                    <td style="color: #2e7d32;">{{ "{:,.0f}".format(running_balance.value) }}</td>
+                                </tr>
+                            {% endif %}
                         {% endfor %}
                         
                         <!-- Add empty rows to fill space -->
