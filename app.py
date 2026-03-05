@@ -41,6 +41,8 @@ from models.note_model import Note
 from models.note_model import Note
 from models.scheduled_expense_model import ScheduledExpense
 from models.collection_schedule_model import CollectionSchedule
+from models.otp_model import OTP
+from models.email_settings_model import EmailSettings
 from datetime import datetime, timedelta, date
 import csv
 import io
@@ -1013,19 +1015,30 @@ def permanent_delete_customer(id):
         flash('Can only delete deactivated customers!', 'danger')
         return redirect(url_for('inactive_customers'))
     
-    # Delete related records first
-    LoanCollection.query.filter_by(customer_id=id).delete()
-    SavingCollection.query.filter_by(customer_id=id).delete()
-    FeeCollection.query.filter_by(customer_id=id).delete()
-    Withdrawal.query.filter_by(customer_id=id).delete()
+    # Store customer name for history
+    customer_name = customer.name
+    
+    # DON'T delete collections - keep them for reports
+    # Just set customer_id to None to mark as deleted customer
+    # This way reports will still show the data
+    
+    # Update collections to mark customer as deleted (keep data for reports)
+    LoanCollection.query.filter_by(customer_id=id).update({'customer_id': None})
+    SavingCollection.query.filter_by(customer_id=id).update({'customer_id': None})
+    FeeCollection.query.filter_by(customer_id=id).update({'customer_id': None})
+    Withdrawal.query.filter_by(customer_id=id).update({'customer_id': None})
+    
+    # Delete only these (not needed for reports)
     CollectionSchedule.query.filter_by(customer_id=id).delete()
-    Loan.query.filter_by(customer_name=customer.name).delete()
+    
+    # Update loans to mark customer as deleted
+    Loan.query.filter_by(customer_name=customer.name).update({'customer_name': f'[DELETED] {customer.name}'})
     
     # Delete customer
     db.session.delete(customer)
     db.session.commit()
     
-    flash(f'Customer "{customer.name}" permanently deleted!', 'success')
+    flash(f'Customer "{customer_name}" permanently deleted! Collection history preserved for reports.', 'success')
     return redirect(url_for('inactive_customers'))
 
 @app.route('/customer/download_report/<int:id>')
@@ -3750,6 +3763,72 @@ def delete_note(id):
     flash('Note deleted successfully!', 'success')
     return redirect(url_for('manage_notes'))
 
+@app.route('/admin/settings/request_otp', methods=['GET'])
+@login_required
+def request_admin_otp():
+    if current_user.role != 'admin':
+        flash('Access denied!', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    otp = OTP.create_otp(current_user.id, purpose='admin_settings', validity_minutes=5)
+    
+    # Try to send OTP via email
+    email_sent = False
+    email_settings = EmailSettings.get_settings()
+    
+    if email_settings and email_settings.email and email_settings.password:
+        try:
+            import smtplib
+            from email.mime.text import MIMEText
+            
+            msg = MIMEText(f'Your OTP code is: {otp.code}\n\nThis code will expire in 5 minutes.')
+            msg['Subject'] = 'Admin Settings OTP'
+            msg['From'] = email_settings.email
+            msg['To'] = current_user.email
+            
+            with smtplib.SMTP(email_settings.smtp_server, email_settings.smtp_port) as server:
+                server.starttls()
+                server.login(email_settings.email, email_settings.password)
+                server.send_message(msg)
+            
+            email_sent = True
+            flash('OTP sent to your email!', 'success')
+        except Exception as e:
+            flash(f'Email failed: {str(e)}', 'warning')
+    
+    return render_template('admin_settings_otp.html', otp_code=otp.code, email_sent=email_sent)
+
+@app.route('/admin/settings/verify_otp', methods=['POST'])
+@login_required
+def verify_admin_otp():
+    if current_user.role != 'admin':
+        flash('Access denied!', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    otp_code = request.form.get('otp_code', '').strip()
+    
+    if not otp_code:
+        flash('OTP code required!', 'danger')
+        return redirect(url_for('request_admin_otp'))
+    
+    otp = OTP.query.filter_by(
+        user_id=current_user.id,
+        code=otp_code,
+        purpose='admin_settings',
+        is_used=False
+    ).first()
+    
+    if not otp:
+        flash('Invalid OTP code!', 'danger')
+        return redirect(url_for('request_admin_otp'))
+    
+    if not otp.is_valid():
+        flash('OTP expired! Please request a new one.', 'danger')
+        return redirect(url_for('request_admin_otp'))
+    
+    otp.mark_used()
+    return redirect(url_for('admin_settings', verified='true'))
+
 @app.route('/admin/settings', methods=['GET', 'POST'])
 @login_required
 def admin_settings():
@@ -3757,29 +3836,13 @@ def admin_settings():
         flash('Access denied!', 'danger')
         return redirect(url_for('dashboard'))
     
-    # Check if user needs to verify password first
     if request.method == 'GET':
         verified = request.args.get('verified', '')
         if not verified:
-            return render_template('admin_settings_verify.html')
+            return redirect(url_for('request_admin_otp'))
     
     if request.method == 'POST':
         action = request.form.get('action')
-        
-        # Handle password verification
-        if action == 'verify_password':
-            password = request.form.get('password', '').strip()
-            
-            if not password:
-                flash('Password required!', 'danger')
-                return redirect(url_for('admin_settings'))
-            
-            if not bcrypt.check_password_hash(current_user.password, password):
-                flash('Wrong password!', 'danger')
-                return redirect(url_for('admin_settings'))
-            
-            # Password verified, redirect to settings page
-            return redirect(url_for('admin_settings', verified='true'))
         
         if action == 'change_email':
             new_email = request.form.get('new_email', '').strip()
@@ -3827,6 +3890,32 @@ def admin_settings():
             current_user.plain_password = new_password
             db.session.commit()
             flash('Password updated successfully!', 'success')
+            return redirect(url_for('admin_settings'))
+        
+        elif action == 'save_email_settings':
+            email = request.form.get('email', '').strip()
+            password = request.form.get('password', '').strip()
+            smtp_server = request.form.get('smtp_server', 'smtp.gmail.com').strip()
+            smtp_port = int(request.form.get('smtp_port', 587))
+            
+            if not email or not password:
+                flash('Email and password required!', 'danger')
+                return redirect(url_for('admin_settings'))
+            
+            # Deactivate old settings
+            EmailSettings.query.update({'is_active': False})
+            
+            # Create new settings
+            settings = EmailSettings(
+                smtp_server=smtp_server,
+                smtp_port=smtp_port,
+                email=email,
+                password=password,
+                is_active=True
+            )
+            db.session.add(settings)
+            db.session.commit()
+            flash('Email settings saved successfully!', 'success')
             return redirect(url_for('admin_settings'))
     
     return render_template('admin_settings.html')

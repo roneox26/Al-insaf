@@ -1,0 +1,49 @@
+# OTP Routes for Admin Settings
+@app.route('/admin/settings/request_otp', methods=['GET'])
+@login_required
+def request_admin_otp():
+    if current_user.role != 'admin':
+        flash('Access denied!', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Generate OTP
+    otp = OTP.create_otp(current_user.id, purpose='admin_settings', validity_minutes=5)
+    
+    # In production, send OTP via email/SMS
+    # For now, display on screen
+    return render_template('admin_settings_otp.html', otp_code=otp.code)
+
+@app.route('/admin/settings/verify_otp', methods=['POST'])
+@login_required
+def verify_admin_otp():
+    if current_user.role != 'admin':
+        flash('Access denied!', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    otp_code = request.form.get('otp_code', '').strip()
+    
+    if not otp_code:
+        flash('OTP code required!', 'danger')
+        return redirect(url_for('request_admin_otp'))
+    
+    # Find valid OTP
+    otp = OTP.query.filter_by(
+        user_id=current_user.id,
+        code=otp_code,
+        purpose='admin_settings',
+        is_used=False
+    ).first()
+    
+    if not otp:
+        flash('Invalid OTP code!', 'danger')
+        return redirect(url_for('request_admin_otp'))
+    
+    if not otp.is_valid():
+        flash('OTP expired! Please request a new one.', 'danger')
+        return redirect(url_for('request_admin_otp'))
+    
+    # Mark OTP as used
+    otp.mark_used()
+    
+    # Redirect to settings page
+    return redirect(url_for('admin_settings', verified='true'))

@@ -332,13 +332,38 @@ Al-insaf/
 └── requirements.txt    # Dependencies
 ```
 
+## 🗄️ Database Options
+
+### SQLite (Default)
+- Local development এর জন্য
+- Setup সহজ
+- Single file database
+
+### MongoDB (Recommended for Production)
+- Scalable & Fast
+- Cloud ready (MongoDB Atlas)
+- Better performance
+- **Setup Guide:** [MONGODB_SETUP.md](MONGODB_SETUP.md)
+
+**MongoDB তে migrate করতে:**
+```bash
+# Dependencies install করুন
+pip install -r requirements_mongodb.txt
+
+# Data migrate করুন
+python migrate_to_mongodb.py
+
+# অথবা Windows এ
+SETUP_MONGODB.bat
+```
+
 ## 🛠️ Technology Stack
 
 - **Backend:** Flask (Python)
-- **Database:** SQLite
+- **Database:** SQLite / MongoDB
 - **Authentication:** Flask-Login
 - **Password Hashing:** Flask-Bcrypt
-- **ORM:** SQLAlchemy
+- **ORM:** SQLAlchemy / MongoEngine
 - **Frontend:** Bootstrap 5
 
 ## 📄 License
