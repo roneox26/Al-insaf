@@ -1019,29 +1019,11 @@ def permanent_delete_customer(id):
         # Store customer name for history
         customer_name = customer.name
         
-        # Keep collections for reports but mark customer as deleted
-        # Set customer_id to None so reports still show the amounts
-        LoanCollection.query.filter_by(customer_id=id).update(
-            {'customer_id': None}, 
-            synchronize_session=False
-        )
-        
-        SavingCollection.query.filter_by(customer_id=id).update(
-            {'customer_id': None}, 
-            synchronize_session=False
-        )
-        
-        FeeCollection.query.filter_by(customer_id=id).update(
-            {'customer_id': None}, 
-            synchronize_session=False
-        )
-        
-        Withdrawal.query.filter_by(customer_id=id).update(
-            {'customer_id': None}, 
-            synchronize_session=False
-        )
-        
-        # Delete only these (not needed for reports)
+        # Delete all related records (PostgreSQL doesn't allow NULL in customer_id)
+        LoanCollection.query.filter_by(customer_id=id).delete(synchronize_session=False)
+        SavingCollection.query.filter_by(customer_id=id).delete(synchronize_session=False)
+        FeeCollection.query.filter_by(customer_id=id).delete(synchronize_session=False)
+        Withdrawal.query.filter_by(customer_id=id).delete(synchronize_session=False)
         CollectionSchedule.query.filter_by(customer_id=id).delete(synchronize_session=False)
         
         # Mark loans as deleted but keep for history
@@ -1054,7 +1036,7 @@ def permanent_delete_customer(id):
         db.session.delete(customer)
         db.session.commit()
         
-        flash(f'Customer "{customer_name}" permanently deleted! Collection data preserved for reports.', 'success')
+        flash(f'Customer "{customer_name}" permanently deleted! All related data has been removed.', 'success')
         return redirect(url_for('inactive_customers'))
     
     except Exception as e:
