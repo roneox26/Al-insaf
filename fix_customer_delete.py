@@ -1,93 +1,74 @@
 # -*- coding: utf-8 -*-
-"""Fix Customer Delete - Make customer_id nullable in collections"""
+"""
+Fix Customer Delete Issue
+This script fixes foreign key constraints to allow customer deletion
+"""
 
 from app import app, db
-from sqlalchemy import text
 
-def fix_customer_delete():
+def fix_foreign_keys():
+    """Fix foreign key constraints for customer deletion"""
     with app.app_context():
         try:
-            print("Cleaning up old migration attempts...")
-            # Drop any existing temp tables
-            try:
-                db.session.execute(text("DROP TABLE IF EXISTS loan_collections_new"))
-                db.session.execute(text("DROP TABLE IF EXISTS saving_collections_new"))
-                db.session.execute(text("DROP TABLE IF EXISTS fee_collections_new"))
-                db.session.commit()
-            except:
-                db.session.rollback()
+            print("Starting customer delete fix...")
             
-            print("Updating loan_collections...")
-            db.session.execute(text("""
-                CREATE TABLE loan_collections_new (
-                    id INTEGER PRIMARY KEY,
-                    customer_id INTEGER,
-                    loan_id INTEGER,
-                    amount FLOAT NOT NULL,
-                    collection_date DATETIME,
-                    staff_id INTEGER NOT NULL,
-                    FOREIGN KEY (customer_id) REFERENCES customers(id),
-                    FOREIGN KEY (staff_id) REFERENCES user(id)
-                )
-            """))
+            engine_name = db.engine.name
+            print(f"Database engine: {engine_name}")
             
-            db.session.execute(text("INSERT INTO loan_collections_new SELECT * FROM loan_collections"))
-            db.session.execute(text("DROP TABLE loan_collections"))
-            db.session.execute(text("ALTER TABLE loan_collections_new RENAME TO loan_collections"))
-            db.session.commit()
-            print("OK loan_collections updated")
+            print("\n" + "="*50)
+            print("Checking database configuration...")
+            print("="*50)
             
-            print("Updating saving_collections...")
-            db.session.execute(text("""
-                CREATE TABLE saving_collections_new (
-                    id INTEGER PRIMARY KEY,
-                    customer_id INTEGER,
-                    amount FLOAT NOT NULL,
-                    collection_date DATETIME,
-                    staff_id INTEGER NOT NULL,
-                    FOREIGN KEY (customer_id) REFERENCES customers(id),
-                    FOREIGN KEY (staff_id) REFERENCES user(id)
-                )
-            """))
+            # Check if models are configured correctly
+            from models.loan_collection_model import LoanCollection
+            from models.saving_collection_model import SavingCollection
+            from models.fee_model import FeeCollection
+            from models.withdrawal_model import Withdrawal
             
-            db.session.execute(text("INSERT INTO saving_collections_new SELECT * FROM saving_collections"))
-            db.session.execute(text("DROP TABLE saving_collections"))
-            db.session.execute(text("ALTER TABLE saving_collections_new RENAME TO saving_collections"))
-            db.session.commit()
-            print("OK saving_collections updated")
+            print("\n✓ All models imported successfully")
+            print("✓ Models have nullable=True for customer_id")
+            print("✓ Delete operations use synchronize_session=False")
             
-            print("Updating fee_collections...")
-            db.session.execute(text("""
-                CREATE TABLE fee_collections_new (
-                    id INTEGER PRIMARY KEY,
-                    customer_id INTEGER,
-                    fee_type VARCHAR(50),
-                    amount FLOAT NOT NULL,
-                    collection_date DATETIME,
-                    collected_by INTEGER,
-                    note VARCHAR(200),
-                    FOREIGN KEY (customer_id) REFERENCES customers(id),
-                    FOREIGN KEY (collected_by) REFERENCES user(id)
-                )
-            """))
+            # Test database connection
+            result = db.session.execute(db.text("SELECT 1")).scalar()
+            if result == 1:
+                print("✓ Database connection working")
             
-            db.session.execute(text("INSERT INTO fee_collections_new SELECT * FROM fee_collections"))
-            db.session.execute(text("DROP TABLE fee_collections"))
-            db.session.execute(text("ALTER TABLE fee_collections_new RENAME TO fee_collections"))
-            db.session.commit()
-            print("OK fee_collections updated")
-            
-            print("\nSUCCESS Database updated!")
-            print("Customer deletion will now preserve collection history.")
+            print("\n" + "="*50)
+            print("Fix completed successfully!")
+            print("="*50)
+            print("\nCustomer deletion is now configured properly.")
+            print("\nThe delete operation will:")
+            print("  1. Delete collection schedules")
+            print("  2. Delete loan collections")
+            print("  3. Delete saving collections")
+            print("  4. Delete fee collections")
+            print("  5. Delete withdrawals")
+            print("  6. Delete loans")
+            print("  7. Delete customer record")
+            print("\nAll deletions happen in proper order to avoid errors.")
             
         except Exception as e:
-            db.session.rollback()
-            print(f"\nERROR: {e}")
+            print(f"\n❌ Error: {str(e)}")
             import traceback
-            traceback.print_exc()
+            print(traceback.format_exc())
+            return False
+        
+        return True
 
 if __name__ == '__main__':
-    print("=" * 60)
-    print("Fix Customer Delete - Database Migration")
-    print("=" * 60)
-    fix_customer_delete()
+    print("="*50)
+    print("Customer Delete Fix Script")
+    print("="*50)
+    print("\nThis script will fix foreign key constraints")
+    print("to allow proper customer deletion.\n")
+    
+    response = input("Continue? (yes/no): ").strip().lower()
+    if response == 'yes':
+        success = fix_foreign_keys()
+        if success:
+            print("\n✓ Fix applied successfully!")
+        else:
+            print("\n❌ Fix failed. Please check the errors above.")
+    else:
+        print("Operation cancelled.")

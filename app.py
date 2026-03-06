@@ -999,47 +999,71 @@ def permanent_delete_customer(id):
         flash('Access denied!', 'danger')
         return redirect(url_for('inactive_customers'))
     
-    password = request.form.get('password', '').strip()
-    if not password:
-        flash('Password required!', 'danger')
+    try:
+        password = request.form.get('password', '').strip()
+        if not password:
+            flash('Password required!', 'danger')
+            return redirect(url_for('inactive_customers'))
+        
+        if not bcrypt.check_password_hash(current_user.password, password):
+            flash('Wrong password!', 'danger')
+            return redirect(url_for('inactive_customers'))
+        
+        customer = Customer.query.get_or_404(id)
+        
+        # Check if customer is inactive
+        if customer.is_active:
+            flash('Can only delete deactivated customers!', 'danger')
+            return redirect(url_for('inactive_customers'))
+        
+        # Store customer name for history
+        customer_name = customer.name
+        
+        # Keep collections for reports but mark customer as deleted
+        # Set customer_id to None so reports still show the amounts
+        LoanCollection.query.filter_by(customer_id=id).update(
+            {'customer_id': None}, 
+            synchronize_session=False
+        )
+        
+        SavingCollection.query.filter_by(customer_id=id).update(
+            {'customer_id': None}, 
+            synchronize_session=False
+        )
+        
+        FeeCollection.query.filter_by(customer_id=id).update(
+            {'customer_id': None}, 
+            synchronize_session=False
+        )
+        
+        Withdrawal.query.filter_by(customer_id=id).update(
+            {'customer_id': None}, 
+            synchronize_session=False
+        )
+        
+        # Delete only these (not needed for reports)
+        CollectionSchedule.query.filter_by(customer_id=id).delete(synchronize_session=False)
+        
+        # Mark loans as deleted but keep for history
+        Loan.query.filter_by(customer_name=customer.name).update(
+            {'customer_name': f'[DELETED] {customer.name}'}, 
+            synchronize_session=False
+        )
+        
+        # Delete customer
+        db.session.delete(customer)
+        db.session.commit()
+        
+        flash(f'Customer "{customer_name}" permanently deleted! Collection data preserved for reports.', 'success')
         return redirect(url_for('inactive_customers'))
     
-    if not bcrypt.check_password_hash(current_user.password, password):
-        flash('Wrong password!', 'danger')
+    except Exception as e:
+        db.session.rollback()
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Delete error: {error_details}")
+        flash(f'Error deleting customer: {str(e)}', 'danger')
         return redirect(url_for('inactive_customers'))
-    
-    customer = Customer.query.get_or_404(id)
-    
-    # Check if customer is inactive
-    if customer.is_active:
-        flash('Can only delete deactivated customers!', 'danger')
-        return redirect(url_for('inactive_customers'))
-    
-    # Store customer name for history
-    customer_name = customer.name
-    
-    # DON'T delete collections - keep them for reports
-    # Just set customer_id to None to mark as deleted customer
-    # This way reports will still show the data
-    
-    # Update collections to mark customer as deleted (keep data for reports)
-    LoanCollection.query.filter_by(customer_id=id).update({'customer_id': None})
-    SavingCollection.query.filter_by(customer_id=id).update({'customer_id': None})
-    FeeCollection.query.filter_by(customer_id=id).update({'customer_id': None})
-    Withdrawal.query.filter_by(customer_id=id).update({'customer_id': None})
-    
-    # Delete only these (not needed for reports)
-    CollectionSchedule.query.filter_by(customer_id=id).delete()
-    
-    # Update loans to mark customer as deleted
-    Loan.query.filter_by(customer_name=customer.name).update({'customer_name': f'[DELETED] {customer.name}'})
-    
-    # Delete customer
-    db.session.delete(customer)
-    db.session.commit()
-    
-    flash(f'Customer "{customer_name}" permanently deleted! Collection history preserved for reports.', 'success')
-    return redirect(url_for('inactive_customers'))
 
 @app.route('/customer/download_report/<int:id>')
 @login_required

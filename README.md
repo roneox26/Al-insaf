@@ -127,6 +127,18 @@ python fix_database_universal.py
 python quick_fix.py
 ```
 
+### Customer Delete Error Fix (যদি customer delete করতে error আসে)
+```bash
+python fix_customer_delete.py
+```
+**বিস্তারিত নির্দেশনা:** [CUSTOMER_DELETE_FIX.md](CUSTOMER_DELETE_FIX.md) দেখুন
+
+**Render.com এ Fix করতে:**
+1. Dashboard > Shell tab এ যাও
+2. Run: `python fix_customer_delete.py`
+3. `yes` type করে Enter চাপুন
+4. Application restart করো
+
 ### Individual Loan Sheet Fix (FIFO Implementation)
 ```bash
 python migrate_add_loan_id.py
