@@ -15,9 +15,9 @@ with app.app_context():
             print("Adding loan_id column to loan_collections table...")
             db.session.execute(text("ALTER TABLE loan_collections ADD COLUMN loan_id INTEGER"))
             db.session.commit()
-            print("✓ loan_id column added successfully!")
+            print("[SUCCESS] loan_id column added successfully!")
         else:
-            print("✓ loan_id column already exists!")
+            print("[SUCCESS] loan_id column already exists!")
             
     except Exception as e:
         print(f"Error: {e}")

@@ -711,36 +711,49 @@ def customer_loan_sheet(id):
     welfare_fee = customer.welfare_fee or 0
     application_fee = customer.application_fee or 0
     
-    # Prepare collections with loan info
+    # Get collections for history
     loan_collections = LoanCollection.query.filter_by(customer_id=id).order_by(LoanCollection.collection_date).all()
     saving_collections = SavingCollection.query.filter_by(customer_id=id).order_by(SavingCollection.collection_date).all()
     
+    # Create combined collections data for template - Fixed to properly combine same-date collections
+    collections_data = []
+    
+    # Create a dictionary to group collections by date
+    collections_by_date = {}
+    
+    # Add loan collections
+    for lc in loan_collections:
+        date_key = lc.collection_date.date()
+        if date_key not in collections_by_date:
+            collections_by_date[date_key] = {
+                'collection': lc,  # Use loan collection as primary
+                'loan_amount': 0,
+                'saving_amount': 0
+            }
+        collections_by_date[date_key]['loan_amount'] += lc.amount
+    
+    # Add saving collections
+    for sc in saving_collections:
+        date_key = sc.collection_date.date()
+        if date_key not in collections_by_date:
+            collections_by_date[date_key] = {
+                'collection': sc,  # Use saving collection as primary if no loan collection
+                'loan_amount': 0,
+                'saving_amount': 0
+            }
+        collections_by_date[date_key]['saving_amount'] += sc.amount
+    
+    # Convert to list and sort by date
+    collections_data = list(collections_by_date.values())
+    collections_data.sort(key=lambda x: x['collection'].collection_date)
+    
+    # Create loans_with_collections structure for template compatibility
     loans_with_collections = []
     if loans:
-        collections_data = []
-        for lc in loan_collections:
-            collections_data.append({
-                'collection': lc,
-                'loan_amount': lc.amount,
-                'saving_amount': 0
-            })
-        for sc in saving_collections:
-            # Find if there's already an entry for this date
-            found = False
-            for cd in collections_data:
-                if cd['collection'].collection_date.date() == sc.collection_date.date():
-                    cd['saving_amount'] = sc.amount
-                    found = True
-                    break
-            if not found:
-                collections_data.append({
-                    'collection': sc,
-                    'loan_amount': 0,
-                    'saving_amount': sc.amount
-                })
-        
-        collections_data.sort(key=lambda x: x['collection'].collection_date)
-        loans_with_collections.append({'loan': latest_loan, 'collections': collections_data})
+        loans_with_collections.append({
+            'loan': latest_loan,
+            'collections': collections_data
+        })
     
     return render_template('customer_loan_sheet.html', 
                          customer=customer, 
@@ -1451,7 +1464,11 @@ def collection():
                 flash(f'Amount exceeds remaining loan (?{customer.remaining_loan})!', 'danger')
                 return redirect(url_for('collection'))
             
-            loan_collection = LoanCollection(customer_id=customer_id, amount=loan_amount, staff_id=current_user.id)
+            # Get the latest loan for this customer to link the collection
+            latest_loan = Loan.query.filter_by(customer_name=customer.name).order_by(Loan.loan_date.desc()).first()
+            loan_id = latest_loan.id if latest_loan else None
+            
+            loan_collection = LoanCollection(customer_id=customer_id, amount=loan_amount, staff_id=current_user.id, loan_id=loan_id)
             customer.remaining_loan -= loan_amount
             cash_balance_record.balance += loan_amount
             db.session.add(loan_collection)

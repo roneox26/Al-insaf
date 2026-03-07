@@ -401,15 +401,15 @@
                         <th>সঞ্চয়</th>
                         <th>মোট কিস্তি</th>
                         <th>মোট সঞ্চয়</th>
-                        <th>বাকি</th>
+                        <th>বাকি ঋণ</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% if loans or (loans_with_collections and loans_with_collections|length > 0 and loans_with_collections[0].collections) %}
+                    {% if loans_with_collections and loans_with_collections|length > 0 and loans_with_collections[0].collections %}
                         {% set running_total = namespace(value=0) %}
                         {% set running_saving = namespace(value=0) %}
-                        {% set total_loan_amount = (total_loan_disbursed + total_interest) if total_interest is defined else total_loan_disbursed %}
-                        {% set running_balance = namespace(value=0) %}
+                        {% set running_loan_balance = namespace(value=0) %}
+                        {% set running_savings_balance = namespace(value=0) %}
                         
                         {# Create combined list of loans and collections with dates #}
                         {% set all_transactions = [] %}
@@ -419,12 +419,10 @@
                             {% set _ = all_transactions.append({'type': 'loan', 'date': loan.loan_date, 'loan': loan}) %}
                         {% endfor %}
                         
-                        {# Add all collections #}
-                        {% if loans_with_collections and loans_with_collections|length > 0 and loans_with_collections[0].collections %}
-                            {% for item in loans_with_collections[0].collections %}
-                                {% set _ = all_transactions.append({'type': 'collection', 'date': item.collection.collection_date, 'item': item}) %}
-                            {% endfor %}
-                        {% endif %}
+                        {# Add all collections (already combined by date in backend) #}
+                        {% for item in loans_with_collections[0].collections %}
+                            {% set _ = all_transactions.append({'type': 'collection', 'date': item.collection.collection_date, 'item': item}) %}
+                        {% endfor %}
                         
                         {# Sort by date #}
                         {% set sorted_transactions = all_transactions|sort(attribute='date') %}
@@ -434,33 +432,34 @@
                             {% if trans.type == 'loan' %}
                                 {# Loan distribution in RED #}
                                 {% set loan_with_interest = trans.loan.amount + (trans.loan.amount * trans.loan.interest / 100) %}
-                                {% set running_balance.value = running_balance.value + loan_with_interest %}
+                                {% set running_loan_balance.value = running_loan_balance.value + loan_with_interest %}
                                 <tr style="background-color: #ffebee; border-left: 4px solid #f44336;">
                                     <td style="font-weight: bold; color: #c62828;">{{ trans.date.strftime('%d-%m-%y') }}</td>
                                     <td style="font-weight: bold; color: #c62828;">লোন বিতরণ: {{ "{:,.0f}".format(trans.loan.amount) }}</td>
                                     <td></td>
                                     <td></td>
-                                    <td></td>
-                                    <td style="font-weight: bold; color: #c62828;">{{ "{:,.0f}".format(running_balance.value) }}</td>
+                                    <td style="color: #c62828;">{{ "{:,.0f}".format(running_savings_balance.value) }}</td>
+                                    <td style="font-weight: bold; color: #c62828;">{{ "{:,.0f}".format(running_loan_balance.value) }}</td>
                                 </tr>
                             {% else %}
                                 {# Collection in GREEN #}
                                 {% set running_total.value = running_total.value + trans.item.loan_amount %}
                                 {% set running_saving.value = running_saving.value + trans.item.saving_amount %}
-                                {% set running_balance.value = running_balance.value - trans.item.loan_amount %}
+                                {% set running_loan_balance.value = running_loan_balance.value - trans.item.loan_amount %}
+                                {% set running_savings_balance.value = running_savings_balance.value + trans.item.saving_amount %}
                                 <tr style="background-color: #e8f5e9; border-left: 4px solid #4caf50;">
                                     <td style="color: #2e7d32;">{{ trans.date.strftime('%d-%m-%y') }}</td>
                                     <td style="color: #2e7d32;">{{ "{:,.0f}".format(trans.item.loan_amount) if trans.item.loan_amount > 0 else '' }}</td>
                                     <td style="color: #2e7d32;">{{ "{:,.0f}".format(trans.item.saving_amount) if trans.item.saving_amount > 0 else '' }}</td>
                                     <td style="color: #2e7d32;">{{ "{:,.0f}".format(running_total.value) }}</td>
-                                    <td style="color: #2e7d32;">{{ "{:,.0f}".format(running_saving.value) }}</td>
-                                    <td style="color: #2e7d32;">{{ "{:,.0f}".format(running_balance.value) }}</td>
+                                    <td style="color: #2e7d32;">{{ "{:,.0f}".format(running_savings_balance.value) }}</td>
+                                    <td style="color: #2e7d32;">{{ "{:,.0f}".format(running_loan_balance.value) }}</td>
                                 </tr>
                             {% endif %}
                         {% endfor %}
                         
-                        <!-- Add empty rows to fill space -->
-                        {% set total_rows = loans_with_collections[0].collections|length %}
+                        {# Add empty rows to fill space #}
+                        {% set total_rows = sorted_transactions|length %}
                         {% if total_rows < 10 %}
                             {% for i in range(10 - total_rows) %}
                             <tr>
