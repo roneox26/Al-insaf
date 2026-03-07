@@ -4603,12 +4603,9 @@ def admin_edit_collections():
                 'loan_amount': 0,
                 'saving_amount': 0,
                 'date': lc.collection_date,
-                'staff': lc.staff,
-                'loan_id': None,
-                'saving_id': None
+                'staff': lc.staff
             }
         collections_dict[key]['loan_amount'] += lc.amount
-        collections_dict[key]['loan_id'] = lc.id
     
     for sc in saving_collections:
         key = (sc.customer_id, sc.collection_date.date())
@@ -4618,12 +4615,9 @@ def admin_edit_collections():
                 'loan_amount': 0,
                 'saving_amount': 0,
                 'date': sc.collection_date,
-                'staff': sc.staff,
-                'loan_id': None,
-                'saving_id': None
+                'staff': sc.staff
             }
         collections_dict[key]['saving_amount'] += sc.amount
-        collections_dict[key]['saving_id'] = sc.id
     
     all_collections = list(collections_dict.values())
     all_collections.sort(key=lambda x: x['date'], reverse=True)
