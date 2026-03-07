@@ -1061,22 +1061,34 @@ def customer_details(id):
     customer = Customer.query.get_or_404(id)
     loans = Loan.query.filter_by(customer_name=customer.name).all()
     
-    # Handle loan_collections with error handling for missing loan_id column
+    # Handle loan_collections with proper error handling and transaction management
     try:
         loan_collections = LoanCollection.query.filter_by(customer_id=id).order_by(LoanCollection.collection_date.desc()).all()
     except Exception as e:
-        # If loan_id column doesn't exist, use raw SQL to get collections without loan_id
+        # Rollback the failed transaction
+        db.session.rollback()
+        # Use raw SQL to get collections without loan_id column
         from sqlalchemy import text
-        loan_collections = db.session.execute(
-            text("SELECT id, customer_id, amount, collection_date, staff_id FROM loan_collections WHERE customer_id = :customer_id ORDER BY collection_date DESC"),
-            {'customer_id': id}
-        ).fetchall()
-        # Convert to objects for template compatibility
-        loan_collections = [type('obj', (object,), {
-            'id': row[0], 'customer_id': row[1], 'amount': row[2], 
-            'collection_date': row[3], 'staff_id': row[4],
-            'staff': User.query.get(row[4]) if row[4] else None
-        }) for row in loan_collections]
+        try:
+            result = db.session.execute(
+                text("SELECT id, customer_id, amount, collection_date, staff_id FROM loan_collections WHERE customer_id = :customer_id ORDER BY collection_date DESC"),
+                {'customer_id': id}
+            )
+            loan_collections = []
+            for row in result:
+                # Create a simple object for template compatibility
+                collection = type('LoanCollection', (), {
+                    'id': row[0],
+                    'customer_id': row[1], 
+                    'amount': row[2],
+                    'collection_date': row[3],
+                    'staff_id': row[4],
+                    'staff': User.query.get(row[4]) if row[4] else None
+                })()
+                loan_collections.append(collection)
+        except Exception as e2:
+            # If even raw SQL fails, return empty list
+            loan_collections = []
     
     saving_collections = SavingCollection.query.filter_by(customer_id=id).order_by(SavingCollection.collection_date.desc()).all()
     withdrawals = Withdrawal.query.filter_by(customer_id=id).order_by(Withdrawal.date.desc()).all()
