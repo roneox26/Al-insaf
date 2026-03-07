@@ -1066,8 +1066,9 @@ def customer_details(id):
         loan_collections = LoanCollection.query.filter_by(customer_id=id).order_by(LoanCollection.collection_date.desc()).all()
     except Exception as e:
         # If loan_id column doesn't exist, use raw SQL to get collections without loan_id
+        from sqlalchemy import text
         loan_collections = db.session.execute(
-            "SELECT id, customer_id, amount, collection_date, staff_id FROM loan_collections WHERE customer_id = :customer_id ORDER BY collection_date DESC",
+            text("SELECT id, customer_id, amount, collection_date, staff_id FROM loan_collections WHERE customer_id = :customer_id ORDER BY collection_date DESC"),
             {'customer_id': id}
         ).fetchall()
         # Convert to objects for template compatibility
