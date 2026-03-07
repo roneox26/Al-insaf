@@ -4793,6 +4793,30 @@ def import_old_data():
     staffs = User.query.filter_by(role='staff').all()
     return render_template('import_old_data.html', customers=customers, staffs=staffs)
 
+@app.route('/fix_database_migration')
+def fix_database_migration():
+    try:
+        # Check if loan_id column exists
+        result = db.engine.execute("SELECT column_name FROM information_schema.columns WHERE table_name='loan_collections' AND column_name='loan_id'")
+        if result.fetchone():
+            return "Database is already up to date! loan_id column exists."
+        
+        # Add loan_id column
+        db.engine.execute("ALTER TABLE loan_collections ADD COLUMN loan_id INTEGER")
+        
+        # Update existing records with loan_id
+        from models.loan_collection_model import LoanCollection
+        collections = LoanCollection.query.all()
+        for collection in collections:
+            if not hasattr(collection, 'loan_id') or collection.loan_id is None:
+                collection.loan_id = 1  # Default loan_id
+        
+        db.session.commit()
+        return "SUCCESS! Database migration completed. loan_id column added and updated. You can now use the application normally."
+        
+    except Exception as e:
+        return f"Migration failed: {str(e)}. Please contact support."
+
 # Initialize database
 def init_db():
     with app.app_context():
