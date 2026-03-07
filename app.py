@@ -1499,11 +1499,7 @@ def collection():
                 flash(f'Amount exceeds remaining loan (?{customer.remaining_loan})!', 'danger')
                 return redirect(url_for('collection'))
             
-            # Get the latest loan for this customer to link the collection
-            latest_loan = Loan.query.filter_by(customer_name=customer.name).order_by(Loan.loan_date.desc()).first()
-            loan_id = latest_loan.id if latest_loan else None
-            
-            loan_collection = LoanCollection(customer_id=customer_id, amount=loan_amount, staff_id=current_user.id, loan_id=loan_id)
+            loan_collection = LoanCollection(customer_id=customer_id, amount=loan_amount, staff_id=current_user.id)
             customer.remaining_loan -= loan_amount
             cash_balance_record.balance += loan_amount
             db.session.add(loan_collection)
