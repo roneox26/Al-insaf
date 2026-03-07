@@ -683,8 +683,14 @@ def individual_loan_sheet(customer_id):
 @app.route('/customer_loan_sheet/<int:id>')
 @login_required
 def customer_loan_sheet(id):
-    customer = Customer.query.get_or_404(id)
-    loans = Loan.query.filter_by(customer_name=customer.name).order_by(Loan.loan_date).all()
+    try:
+        customer = Customer.query.get_or_404(id)
+        loans = Loan.query.filter_by(customer_name=customer.name).order_by(Loan.loan_date).all()
+    except Exception as e:
+        if 'loan_id does not exist' in str(e):
+            flash('Database migration needed. Please contact admin to run: python migrate_add_loan_id_universal.py', 'danger')
+            return redirect(url_for('customer_details', id=id))
+        raise
     
     # Calculate financial data
     total_loan_disbursed = sum(loan.amount for loan in loans)
