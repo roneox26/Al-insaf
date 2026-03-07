@@ -4,12 +4,10 @@ from datetime import datetime
 class LoanCollection(db.Model):
     __tablename__ = 'loan_collections'
     id = db.Column(db.Integer, primary_key=True)
-    customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=True)  # Allow null for deleted customers
-    loan_id = db.Column(db.Integer, db.ForeignKey('loans.id'), nullable=True)  # Link to specific loan
+    customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=True)
     amount = db.Column(db.Float, nullable=False)
     collection_date = db.Column(db.DateTime, default=datetime.utcnow)
     staff_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     
     customer = db.relationship('Customer', backref='loan_collections')
     staff = db.relationship('User', backref='loan_collections')
-    loan = db.relationship('Loan', backref='loan_collections_rel')
