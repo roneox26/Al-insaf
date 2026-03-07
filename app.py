@@ -1517,9 +1517,9 @@ def collection():
         
         msg = []
         if loan_amount > 0:
-            msg.append(f'???: ?{loan_amount}')
+            msg.append(f'ঋণ: ৳{loan_amount}')
         if saving_amount > 0:
-            msg.append(f'??????: ?{saving_amount}')
+            msg.append(f'সঞ্চয়: ৳{saving_amount}')
         flash(f'Collection successful! {" | ".join(msg)}', 'success')
         return redirect(url_for('collection'))
     
@@ -4825,26 +4825,27 @@ def import_old_data():
 @app.route('/fix_database_migration')
 def fix_database_migration():
     try:
-        # Check if loan_id column exists
-        result = db.engine.execute("SELECT column_name FROM information_schema.columns WHERE table_name='loan_collections' AND column_name='loan_id'")
-        if result.fetchone():
-            return "Database is already up to date! loan_id column exists."
+        from sqlalchemy import text, inspect
+        
+        # Check if loan_id column exists using inspector
+        inspector = inspect(db.engine)
+        columns = [col['name'] for col in inspector.get_columns('loan_collections')]
+        
+        if 'loan_id' in columns:
+            return "✅ Database is already up to date! loan_id column exists."
         
         # Add loan_id column
-        db.engine.execute("ALTER TABLE loan_collections ADD COLUMN loan_id INTEGER")
+        db.session.execute(text("ALTER TABLE loan_collections ADD COLUMN loan_id INTEGER"))
         
-        # Update existing records with loan_id
-        from models.loan_collection_model import LoanCollection
-        collections = LoanCollection.query.all()
-        for collection in collections:
-            if not hasattr(collection, 'loan_id') or collection.loan_id is None:
-                collection.loan_id = 1  # Default loan_id
+        # Update existing records with default loan_id
+        db.session.execute(text("UPDATE loan_collections SET loan_id = 1 WHERE loan_id IS NULL"))
         
         db.session.commit()
-        return "SUCCESS! Database migration completed. loan_id column added and updated. You can now use the application normally."
+        return "✅ SUCCESS! Database migration completed. loan_id column added and updated. Individual Loan Sheets will now work properly. Please refresh the page."
         
     except Exception as e:
-        return f"Migration failed: {str(e)}. Please contact support."
+        db.session.rollback()
+        return f"❌ Migration failed: {str(e)}. Please try running the migration script manually or contact support."
 
 # Initialize database
 def init_db():
