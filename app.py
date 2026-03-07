@@ -4110,10 +4110,7 @@ def admin_settings():
                 flash('Email and password required!', 'danger')
                 return redirect(url_for('admin_settings'))
             
-            # Deactivate old settings
             EmailSettings.query.update({'is_active': False})
-            
-            # Create new settings
             settings = EmailSettings(
                 smtp_server=smtp_server,
                 smtp_port=smtp_port,

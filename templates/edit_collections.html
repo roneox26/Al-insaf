@@ -77,14 +77,7 @@
                         </p>
                     </div>
                     <div class="col-md-4 text-end">
-                        {% if col.loan_id %}
-                        <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editLoanModal{{ col.loan_id }}">✏️ Edit Loan</button>
-                        <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteLoanModal{{ col.loan_id }}">🗑️ Delete Loan</button>
-                        {% endif %}
-                        {% if col.saving_id %}
-                        <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editSavingModal{{ col.saving_id }}">✏️ Edit Saving</button>
-                        <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteSavingModal{{ col.saving_id }}">🗑️ Delete Saving</button>
-                        {% endif %}
+                        <small class="text-muted">Use filters to edit individual collections</small>
                     </div>
                 </div>
             </div>
