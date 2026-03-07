@@ -86,6 +86,70 @@
     </div>
   </div>
 
+  <h4 class="mt-4">💵 ফি সংগ্রহ</h4>
+  <div class="card shadow mb-4">
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('collect_fee', customer_id=customer.id) }}">
+        <div class="row">
+          <div class="col-md-4">
+            <label class="form-label">ফি টাইপ</label>
+            <select name="fee_type" class="form-control" required>
+              <option value="">নির্বাচন করুন</option>
+              <option value="admission">ভর্তি ফি</option>
+              <option value="welfare">কল্যাণ ফি</option>
+              <option value="application">আবেদন ফি</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">পরিমাণ (৳)</label>
+            <input type="number" name="amount" class="form-control" step="0.01" min="0" required>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">নোট (অপশনাল)</label>
+            <input type="text" name="note" class="form-control">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">&nbsp;</label>
+            <button type="submit" class="btn btn-success w-100">ফি সংগ্রহ</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if fees %}
+  <h4 class="mt-4">📋 ফি হিস্ট্রি (মোট: ভর্তি ৳{{ "{:,.2f}".format(admission_fee) }}, কল্যাণ ৳{{ "{:,.2f}".format(welfare_fee) }}, আবেদন ৳{{ "{:,.2f}".format(application_fee) }})</h4>
+  <table class="table table-bordered table-striped">
+    <thead class="table-dark">
+      <tr>
+        <th>ক্রমিক</th>
+        <th>তারিখ</th>
+        <th>ফি টাইপ</th>
+        <th>পরিমাণ</th>
+        <th>সংগ্রহকারী</th>
+        <th>নোট</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for fee in fees %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ fee.collection_date.strftime('%d-%m-%Y %H:%M') }}</td>
+        <td>
+          {% if fee.fee_type == 'admission' %}ভর্তি ফি
+          {% elif fee.fee_type == 'welfare' %}কল্যাণ ফি
+          {% elif fee.fee_type == 'application' %}আবেদন ফি
+          {% endif %}
+        </td>
+        <td class="text-success"><strong>৳{{ "%.2f"|format(fee.amount) }}</strong></td>
+        <td>{{ fee.collector.name if fee.collector else 'N/A' }}</td>
+        <td>{{ fee.note or '-' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
   <h4 class="mt-4">💰 Collection History</h4>
   <table class="table table-bordered table-striped">
     <thead class="table-dark">

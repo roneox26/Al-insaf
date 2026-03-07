@@ -188,6 +188,8 @@ def login():
 @app.route('/dashboard')
 @login_required
 def dashboard():
+    # Disable caching for dashboard
+    from flask import make_response
     try:
         total_customers = Customer.query.filter_by(is_active=True).count()
         total_loan = db.session.query(db.func.coalesce(db.func.sum(Customer.remaining_loan), 0)).scalar() or 0
@@ -212,7 +214,7 @@ def dashboard():
             welfare_fee_total = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter_by(fee_type='welfare').scalar() or 0
             application_fee_total = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter_by(fee_type='application').scalar() or 0
             
-            return render_template('admin_dashboard.html',
+            resp = make_response(render_template('admin_dashboard.html',
                                  name=current_user.name or 'Admin',
                                  total_customers=total_customers or 0,
                                  pending_loans=total_loan or 0,
@@ -222,7 +224,11 @@ def dashboard():
                                  notes_count=notes_count or 0,
                                  admission_fee_total=admission_fee_total or 0,
                                  welfare_fee_total=welfare_fee_total or 0,
-                                 application_fee_total=application_fee_total or 0)
+                                 application_fee_total=application_fee_total or 0))
+            resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            resp.headers['Pragma'] = 'no-cache'
+            resp.headers['Expires'] = '0'
+            return resp
         else:
             # Get unread messages count for staff
             try:
@@ -265,7 +271,7 @@ def dashboard():
             logo_path = os.path.join('static', 'images', 'logo.jpg')
             logo_exists = os.path.exists(logo_path)
             
-            return render_template('staff_dashboard.html',
+            resp = make_response(render_template('staff_dashboard.html',
                                  name=current_user.name or 'Staff',
                                  role=current_user.role or 'staff',
                                  total_customers=total_customers or 0,
@@ -283,7 +289,11 @@ def dashboard():
                                  all_staff=all_staff,
                                  logo_exists=logo_exists,
                                  today=today,
-                                 current_user=current_user)
+                                 current_user=current_user))
+            resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            resp.headers['Pragma'] = 'no-cache'
+            resp.headers['Expires'] = '0'
+            return resp
     except Exception as e:
         import traceback
         error_msg = traceback.format_exc()
@@ -879,6 +889,10 @@ def add_loan():
         
         loan_date = datetime.strptime(loan_date_str, '%Y-%m-%d') if loan_date_str else datetime.now()
         
+        # New: Process welfare and application fees
+        welfare_fee = float(request.form.get('welfare_fee', 0))
+        application_fee = float(request.form.get('application_fee', 0))
+        
         if due_date_str:
             due_date = datetime.strptime(due_date_str, '%Y-%m-%d')
         else:
@@ -903,9 +917,22 @@ def add_loan():
         customer.total_loan += total_with_interest
         customer.remaining_loan += total_with_interest
         
+        # Update customer fee fields
+        if welfare_fee > 0:
+            customer.welfare_fee = (customer.welfare_fee or 0) + welfare_fee
+            fee_col = FeeCollection(customer_id=customer.id, fee_type='welfare', amount=welfare_fee, collected_by=current_user.id, note="Collected during loan disbursement")
+            db.session.add(fee_col)
+            
+        if application_fee > 0:
+            customer.application_fee = (customer.application_fee or 0) + application_fee
+            fee_col = FeeCollection(customer_id=customer.id, fee_type='application', amount=application_fee, collected_by=current_user.id, note="Collected during loan disbursement")
+            db.session.add(fee_col)
+        
         cash_balance_record = CashBalance.query.first()
         if cash_balance_record:
+            # Fees are income (+), Loan amount is expense (-)
             cash_balance_record.balance -= amount
+            cash_balance_record.balance += (welfare_fee + application_fee)
         
         db.session.add(loan)
         db.session.commit()
@@ -931,6 +958,7 @@ def customer_details(id):
     loan_collections = LoanCollection.query.filter_by(customer_id=id).order_by(LoanCollection.collection_date.desc()).all()
     saving_collections = SavingCollection.query.filter_by(customer_id=id).order_by(SavingCollection.collection_date.desc()).all()
     withdrawals = Withdrawal.query.filter_by(customer_id=id).order_by(Withdrawal.date.desc()).all()
+    fees = FeeCollection.query.filter_by(customer_id=id).order_by(FeeCollection.collection_date.desc()).all()
     
     collections_dict = {}
     for lc in loan_collections:
@@ -949,10 +977,17 @@ def customer_details(id):
     total_collected = sum(lc.amount for lc in loan_collections)
     total_withdrawn = sum(w.amount for w in withdrawals)
     
+    # Calculate total fees
+    admission_fee = sum(f.amount for f in fees if f.fee_type == 'admission')
+    welfare_fee = sum(f.amount for f in fees if f.fee_type == 'welfare')
+    application_fee = sum(f.amount for f in fees if f.fee_type == 'application')
+    
     return render_template('customer_details.html', customer=customer, loans=loans, 
                          loan_collections=loan_collections, saving_collections=saving_collections,
                          withdrawals=withdrawals, all_collections=all_collections,
-                         total_collected=total_collected, total_withdrawn=total_withdrawn)
+                         total_collected=total_collected, total_withdrawn=total_withdrawn,
+                         fees=fees, admission_fee=admission_fee, welfare_fee=welfare_fee,
+                         application_fee=application_fee)
 
 @app.route('/customer/print/<int:id>')
 @login_required
@@ -3144,6 +3179,57 @@ def customer_search():
 @login_required
 def customer_search_advanced():
     return render_template('customer_search_advanced.html')
+
+@app.route('/collect_fee/<int:customer_id>', methods=['POST'])
+@login_required
+def collect_fee(customer_id):
+    if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
+        flash('Monitor staff শুধুমাত্র দেখতে পারবে, ফি কালেক্ট করতে পারবে না!', 'danger')
+        return redirect(url_for('customer_details', id=customer_id))
+    
+    customer = Customer.query.get_or_404(customer_id)
+    fee_type = request.form.get('fee_type', '').strip()
+    amount = float(request.form.get('amount', 0))
+    note = request.form.get('note', '').strip()
+    
+    if not fee_type or amount <= 0:
+        flash('ফি টাইপ এবং পরিমাণ প্রয়োজন!', 'danger')
+        return redirect(url_for('customer_details', id=customer_id))
+    
+    if fee_type not in ['admission', 'welfare', 'application']:
+        flash('Invalid fee type!', 'danger')
+        return redirect(url_for('customer_details', id=customer_id))
+    
+    # Update cash balance
+    cash_balance_record = CashBalance.query.first()
+    if not cash_balance_record:
+        cash_balance_record = CashBalance(balance=0)
+        db.session.add(cash_balance_record)
+    
+    cash_balance_record.balance += amount
+    
+    # Update customer record so fees show up on their profile
+    if fee_type == 'admission':
+        customer.admission_fee = (customer.admission_fee or 0) + amount
+    elif fee_type == 'welfare':
+        customer.welfare_fee = (customer.welfare_fee or 0) + amount
+    elif fee_type == 'application':
+        customer.application_fee = (customer.application_fee or 0) + amount
+    
+    # Create fee collection record
+    fee_collection = FeeCollection(
+        customer_id=customer_id,
+        fee_type=fee_type,
+        amount=amount,
+        collected_by=current_user.id,
+        note=note
+    )
+    db.session.add(fee_collection)
+    db.session.commit()
+    
+    fee_names = {'admission': 'ভর্তি ফি', 'welfare': 'কল্যাণ ফি', 'application': 'আবেদন ফি'}
+    flash(f'{fee_names[fee_type]} ৳{amount} সফলভাবে সংগ্রহ করা হয়েছে!', 'success')
+    return redirect(url_for('customer_details', id=customer_id))
 
 @app.route('/fee_history/<fee_type>')
 @login_required

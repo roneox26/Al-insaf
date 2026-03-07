@@ -1,5 +1,11 @@
 from models.user_model import db
 from datetime import datetime
+import pytz
+
+BD_TZ = pytz.timezone('Asia/Dhaka')
+
+def get_bd_time():
+    return datetime.now(BD_TZ)
 
 class FeeCollection(db.Model):
     __tablename__ = 'fee_collections'
@@ -7,7 +13,7 @@ class FeeCollection(db.Model):
     customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=True)
     fee_type = db.Column(db.String(50), nullable=False)  # 'admission', 'welfare', 'application'
     amount = db.Column(db.Float, nullable=False)
-    collection_date = db.Column(db.DateTime, default=datetime.utcnow)
+    collection_date = db.Column(db.DateTime, default=get_bd_time)
     collected_by = db.Column(db.Integer, db.ForeignKey('user.id'))
     note = db.Column(db.String(200))
     
