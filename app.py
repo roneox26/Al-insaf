@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import os
 from flask import Flask, render_template, redirect, url_for, flash, request, make_response
 from flask_sqlalchemy import SQLAlchemy
@@ -565,14 +565,106 @@ def edit_loan(id):
 @app.route('/loan_collections_history')
 @login_required
 def loan_collections_history():
-    collections = LoanCollection.query.order_by(LoanCollection.collection_date.desc()).all()
-    return render_template('loan_collections_history.html', collections=collections)
+    # Get filter parameters
+    customer_filter = request.args.get('customer', '').strip()
+    staff_id = request.args.get('staff_id', type=int)
+    from_date = request.args.get('from_date', '').strip()
+    to_date = request.args.get('to_date', '').strip()
+    
+    # Build query
+    query = LoanCollection.query
+    
+    # Apply customer filter
+    if customer_filter:
+        query = query.join(Customer).filter(Customer.name.like(f'%{customer_filter}%'))
+    
+    # Apply staff filter
+    if staff_id:
+        query = query.filter(LoanCollection.staff_id == staff_id)
+    
+    # Apply date filters
+    if from_date:
+        try:
+            start_date = datetime.strptime(from_date, '%Y-%m-%d')
+            query = query.filter(LoanCollection.collection_date >= start_date)
+        except ValueError:
+            pass
+    
+    if to_date:
+        try:
+            end_date = datetime.strptime(to_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+            query = query.filter(LoanCollection.collection_date <= end_date)
+        except ValueError:
+            pass
+    
+    # Get collections
+    loan_collections = query.order_by(LoanCollection.collection_date.desc()).all()
+    
+    # Calculate total
+    total = sum(lc.amount for lc in loan_collections)
+    
+    # Get all staff for filter dropdown
+    staffs = User.query.filter(User.role != 'admin').all()
+    
+    return render_template('loan_collections_history.html', 
+                         loan_collections=loan_collections,
+                         collections=loan_collections,  # For backward compatibility
+                         total=total,
+                         staffs=staffs,
+                         from_date=from_date,
+                         to_date=to_date)
 
 @app.route('/manage_savings')
 @login_required
 def manage_savings():
-    collections = SavingCollection.query.order_by(SavingCollection.collection_date.desc()).all()
-    return render_template('manage_savings.html', collections=collections)
+    # Get filter parameters
+    customer_filter = request.args.get('customer', '').strip()
+    staff_id = request.args.get('staff_id', type=int)
+    from_date = request.args.get('from_date', '').strip()
+    to_date = request.args.get('to_date', '').strip()
+    
+    # Build query
+    query = SavingCollection.query
+    
+    # Apply customer filter
+    if customer_filter:
+        query = query.join(Customer).filter(Customer.name.like(f'%{customer_filter}%'))
+    
+    # Apply staff filter
+    if staff_id:
+        query = query.filter(SavingCollection.staff_id == staff_id)
+    
+    # Apply date filters
+    if from_date:
+        try:
+            start_date = datetime.strptime(from_date, '%Y-%m-%d')
+            query = query.filter(SavingCollection.collection_date >= start_date)
+        except ValueError:
+            pass
+    
+    if to_date:
+        try:
+            end_date = datetime.strptime(to_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+            query = query.filter(SavingCollection.collection_date <= end_date)
+        except ValueError:
+            pass
+    
+    # Get collections
+    savings = query.order_by(SavingCollection.collection_date.desc()).all()
+    
+    # Calculate total
+    total = sum(sc.amount for sc in savings)
+    
+    # Get all staff for filter dropdown
+    staffs = User.query.filter(User.role != 'admin').all()
+    
+    return render_template('manage_savings.html', 
+                         savings=savings,
+                         collections=savings,  # For backward compatibility
+                         total=total,
+                         staffs=staffs,
+                         from_date=from_date,
+                         to_date=to_date)
 
 @app.route('/all_customers_print')
 @login_required
@@ -710,12 +802,12 @@ def staff_collection_report():
         query_saving = query_saving.filter(SavingCollection.collection_date <= end_date)
     
     # Apply period filters
-    period_display = 'সকল'
+    period_display = '???'
     if period == 'daily':
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         query_loan = query_loan.filter(LoanCollection.collection_date >= today)
         query_saving = query_saving.filter(SavingCollection.collection_date >= today)
-        period_display = f'দৈনিক - {today.strftime("%d-%m-%Y")}'
+        period_display = f'????? - {today.strftime("%d-%m-%Y")}'
     elif period == 'monthly':
         if month and year:
             import calendar
@@ -730,16 +822,16 @@ def staff_collection_report():
             end = today.replace(hour=23, minute=59, second=59, microsecond=999999)
         query_loan = query_loan.filter(LoanCollection.collection_date >= start, LoanCollection.collection_date <= end)
         query_saving = query_saving.filter(SavingCollection.collection_date >= start, SavingCollection.collection_date <= end)
-        month_names = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর']
-        period_display = f'মাসিক - {month_names[month-1]} {year}'
+        month_names = ['?????????', '???????????', '?????', '??????', '??', '???', '?????', '?????', '??????????', '???????', '???????', '????????']
+        period_display = f'????? - {month_names[month-1]} {year}'
     elif period == 'yearly':
         year_start = datetime.now().replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
         query_loan = query_loan.filter(LoanCollection.collection_date >= year_start)
         query_saving = query_saving.filter(SavingCollection.collection_date >= year_start)
-        period_display = f'বার্ষিক - {datetime.now().year}'
+        period_display = f'??????? - {datetime.now().year}'
     
     if from_date and to_date:
-        period_display = f'{from_date} থেকে {to_date}'
+        period_display = f'{from_date} ???? {to_date}'
     
     loan_collections = query_loan.all()
     saving_collections = query_saving.all()
@@ -871,7 +963,7 @@ def edit_customer(id):
 @login_required
 def add_loan():
     if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff শুধুমাত্র দেখতে পারবে, লোন দিতে পারবে না!', 'danger')
+        flash('Monitor staff ????????? ????? ?????, ??? ???? ????? ??!', 'danger')
         return redirect(url_for('dashboard'))
     
     if request.method == 'POST':
@@ -896,9 +988,9 @@ def add_loan():
         if due_date_str:
             due_date = datetime.strptime(due_date_str, '%Y-%m-%d')
         else:
-            if installment_type in ['Daily', 'দৈনিক']:
+            if installment_type in ['Daily', '?????']:
                 due_date = loan_date + timedelta(days=installment_count)
-            elif installment_type in ['Weekly', 'সাপ্তাহিক']:
+            elif installment_type in ['Weekly', '?????????']:
                 due_date = loan_date + timedelta(weeks=installment_count)
             else:
                 due_date = loan_date + timedelta(days=installment_count * 30)
@@ -937,7 +1029,7 @@ def add_loan():
         db.session.add(loan)
         db.session.commit()
         
-        flash(f'Loan of ৳{amount} added successfully!', 'success')
+        flash(f'Loan of ?{amount} added successfully!', 'success')
         return redirect(url_for('manage_loans'))
     
     if current_user.role == 'staff' and (not hasattr(current_user, 'is_office_staff') or not current_user.is_office_staff):
@@ -1120,7 +1212,7 @@ def inactive_customers():
 @login_required
 def add_customer():
     if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff শুধুমাত্র দেখতে পারবে, নতুন কাস্টমার যোগ করতে পারবে না!', 'danger')
+        flash('Monitor staff ????????? ????? ?????, ???? ???????? ??? ???? ????? ??!', 'danger')
         return redirect(url_for('dashboard'))
     
     if request.method == 'POST':
@@ -1187,7 +1279,7 @@ def add_customer():
                 db.session.add(fee_col)
             
             db.session.commit()
-            flash(f'Customer added successfully! Admission Fee: ৳{admission_fee}', 'success')
+            flash(f'Customer added successfully! Admission Fee: ?{admission_fee}', 'success')
             return redirect(url_for('manage_customers'))
         except Exception as e:
             db.session.rollback()
@@ -1253,7 +1345,7 @@ def manage_collections():
             end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
         query_loan = query_loan.filter(LoanCollection.collection_date >= start_date, LoanCollection.collection_date <= end_date)
         query_saving = query_saving.filter(SavingCollection.collection_date >= start_date, SavingCollection.collection_date <= end_date)
-        month_names = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর']
+        month_names = ['?????????', '???????????', '?????', '??????', '??', '???', '?????', '?????', '??????????', '???????', '???????', '????????']
         period_info['month'] = month_names[month - 1]
         period_info['year'] = year
     elif period == 'yearly':
@@ -1330,7 +1422,7 @@ def add_collection():
 @login_required
 def collection():
     if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff শুধুমাত্র দেখতে পারবে, কালেকশন করতে পারবে না!', 'danger')
+        flash('Monitor staff ????????? ????? ?????, ??????? ???? ????? ??!', 'danger')
         return redirect(url_for('dashboard'))
     
     if request.method == 'POST':
@@ -1356,7 +1448,7 @@ def collection():
         # Process loan collection
         if loan_amount > 0:
             if loan_amount > customer.remaining_loan:
-                flash(f'Amount exceeds remaining loan (৳{customer.remaining_loan})!', 'danger')
+                flash(f'Amount exceeds remaining loan (?{customer.remaining_loan})!', 'danger')
                 return redirect(url_for('collection'))
             
             loan_collection = LoanCollection(customer_id=customer_id, amount=loan_amount, staff_id=current_user.id)
@@ -1379,9 +1471,9 @@ def collection():
         
         msg = []
         if loan_amount > 0:
-            msg.append(f'লোন: ৳{loan_amount}')
+            msg.append(f'???: ?{loan_amount}')
         if saving_amount > 0:
-            msg.append(f'সঞ্চয়: ৳{saving_amount}')
+            msg.append(f'??????: ?{saving_amount}')
         flash(f'Collection successful! {" | ".join(msg)}', 'success')
         return redirect(url_for('collection'))
     
@@ -1525,11 +1617,11 @@ def manage_cash_balance():
                 investor.current_balance += amount
                 cash_balance_record.balance += amount
                 db.session.add(investment)
-                flash(f'Investor ID: {investor.investor_id} | ৳{amount} invested successfully! Balance: ৳{investor.current_balance}', 'success')
+                flash(f'Investor ID: {investor.investor_id} | ?{amount} invested successfully! Balance: ?{investor.current_balance}', 'success')
             elif action == 'subtract':
                 if cash_balance_record.balance >= amount:
                     cash_balance_record.balance -= amount
-                    flash(f'৳{amount} deducted successfully!', 'success')
+                    flash(f'?{amount} deducted successfully!', 'success')
                 else:
                     flash('Insufficient cash balance!', 'danger')
             elif action == 'withdraw':
@@ -1547,7 +1639,7 @@ def manage_cash_balance():
                         return redirect(url_for('manage_cash_balance'))
                     
                     if investor.current_balance < amount:
-                        flash(f'Investor balance (৳{investor.current_balance}) is insufficient!', 'danger')
+                        flash(f'Investor balance (?{investor.current_balance}) is insufficient!', 'danger')
                         return redirect(url_for('manage_cash_balance'))
                     
                     withdrawal = Withdrawal(
@@ -1560,7 +1652,7 @@ def manage_cash_balance():
                     investor.current_balance -= amount
                     cash_balance_record.balance -= amount
                     db.session.add(withdrawal)
-                    flash(f'Investor ID: {investor.investor_id} | ৳{amount} withdrawn successfully! Balance: ৳{investor.current_balance}', 'success')
+                    flash(f'Investor ID: {investor.investor_id} | ?{amount} withdrawn successfully! Balance: ?{investor.current_balance}', 'success')
                 else:
                     flash('Insufficient cash balance!', 'danger')
             
@@ -1614,9 +1706,9 @@ def manage_expenses():
                 cash_balance_record.balance -= amount
                 db.session.add(expense)
                 db.session.commit()
-                flash(f'{category} - ৳{amount} expense added successfully!', 'success')
+                flash(f'{category} - ?{amount} expense added successfully!', 'success')
             else:
-                flash('পর্যাপ্ত টাকা নেই!', 'danger')
+                flash('???????? ???? ???!', 'danger')
             
             return redirect(url_for('manage_expenses'))
         except Exception as e:
@@ -2090,7 +2182,7 @@ def manage_withdrawals():
             customer = Customer.query.get_or_404(customer_id)
             
             if customer.savings_balance < amount:
-                flash(f'Insufficient savings! Available: ৳{customer.savings_balance}', 'danger')
+                flash(f'Insufficient savings! Available: ?{customer.savings_balance}', 'danger')
                 return redirect(url_for('manage_withdrawals'))
             
             cash_balance_record = CashBalance.query.first()
@@ -2108,7 +2200,7 @@ def manage_withdrawals():
             cash_balance_record.balance -= amount
             db.session.add(withdrawal)
             db.session.commit()
-            flash(f'৳{amount} withdrawn successfully!', 'success')
+            flash(f'?{amount} withdrawn successfully!', 'success')
             return redirect(url_for('manage_withdrawals'))
         except Exception as e:
             db.session.rollback()
@@ -2743,15 +2835,15 @@ def monthly_income_expense_print():
         for loan in customer_loans:
             loan_type = loan.installment_type.lower() if loan.installment_type else ''
             
-            if loan_type in ['daily', 'দৈনিক']:
+            if loan_type in ['daily', '?????']:
                 if month == today.month and year == today.year:
                     days = today.day
                 else:
                     days = last_day
                 expected_amount += loan.installment_amount * days
-            elif loan_type in ['weekly', 'সাপ্তাহিক']:
+            elif loan_type in ['weekly', '?????????']:
                 expected_amount += loan.installment_amount * 4
-            elif loan_type in ['monthly', 'মাসিক']:
+            elif loan_type in ['monthly', '?????']:
                 expected_amount += loan.installment_amount
         
         actual_amount = db.session.query(db.func.coalesce(db.func.sum(LoanCollection.amount), 0)).filter(
@@ -2999,7 +3091,7 @@ def monthly_report():
             # Support both English and Bengali installment types
             loan_type = loan.installment_type.lower() if loan.installment_type else ''
             
-            if loan_type in ['daily', 'দৈনিক']:
+            if loan_type in ['daily', '?????']:
                 # Count days in month (or till today for current month)
                 if month == today.month and year == today.year:
                     days = today.day
@@ -3008,12 +3100,12 @@ def monthly_report():
                 loan_expected = loan.installment_amount * days
                 print(f"    Daily: {loan.installment_amount} x {days} days = {loan_expected}")
                 
-            elif loan_type in ['weekly', 'সাপ্তাহিক']:
+            elif loan_type in ['weekly', '?????????']:
                 # 4 weeks per month
                 loan_expected = loan.installment_amount * 4
                 print(f"    Weekly: {loan.installment_amount} x 4 weeks = {loan_expected}")
                 
-            elif loan_type in ['monthly', 'মাসিক']:
+            elif loan_type in ['monthly', '?????']:
                 loan_expected = loan.installment_amount
                 print(f"    Monthly: {loan.installment_amount}")
             else:
@@ -3184,7 +3276,7 @@ def customer_search_advanced():
 @login_required
 def collect_fee(customer_id):
     if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff শুধুমাত্র দেখতে পারবে, ফি কালেক্ট করতে পারবে না!', 'danger')
+        flash('Monitor staff ????????? ????? ?????, ?? ??????? ???? ????? ??!', 'danger')
         return redirect(url_for('customer_details', id=customer_id))
     
     customer = Customer.query.get_or_404(customer_id)
@@ -3193,7 +3285,7 @@ def collect_fee(customer_id):
     note = request.form.get('note', '').strip()
     
     if not fee_type or amount <= 0:
-        flash('ফি টাইপ এবং পরিমাণ প্রয়োজন!', 'danger')
+        flash('?? ???? ??? ?????? ????????!', 'danger')
         return redirect(url_for('customer_details', id=customer_id))
     
     if fee_type not in ['admission', 'welfare', 'application']:
@@ -3227,8 +3319,8 @@ def collect_fee(customer_id):
     db.session.add(fee_collection)
     db.session.commit()
     
-    fee_names = {'admission': 'ভর্তি ফি', 'welfare': 'কল্যাণ ফি', 'application': 'আবেদন ফি'}
-    flash(f'{fee_names[fee_type]} ৳{amount} সফলভাবে সংগ্রহ করা হয়েছে!', 'success')
+    fee_names = {'admission': '????? ??', 'welfare': '?????? ??', 'application': '????? ??'}
+    flash(f'{fee_names[fee_type]} ?{amount} ??????? ?????? ??? ??????!', 'success')
     return redirect(url_for('customer_details', id=customer_id))
 
 @app.route('/fee_history/<fee_type>')
@@ -4029,7 +4121,7 @@ def manage_scheduled_expenses():
             )
             db.session.add(scheduled_expense)
             db.session.commit()
-            flash(f'Scheduled expense added successfully! {frequency} - ৳{amount}', 'success')
+            flash(f'Scheduled expense added successfully! {frequency} - ?{amount}', 'success')
             return redirect(url_for('manage_scheduled_expenses'))
         except Exception as e:
             db.session.rollback()
@@ -4049,7 +4141,7 @@ def toggle_scheduled_expense(id):
     scheduled_expense = ScheduledExpense.query.get_or_404(id)
     scheduled_expense.is_active = not scheduled_expense.is_active
     db.session.commit()
-    status = 'সক্রিয়' if scheduled_expense.is_active else 'নিষ্ক্রিয়'
+    status = '???????' if scheduled_expense.is_active else '??????????'
     flash(f'Scheduled expense {status} successfully!', 'success')
     return redirect(url_for('manage_scheduled_expenses'))
 
@@ -4240,7 +4332,7 @@ def reschedule_collection(id):
 @login_required
 def application_forms():
     if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff শুধুমাত্র দেখতে পারবে, ফর্ম প্রিন্ট করতে পারবে না!', 'danger')
+        flash('Monitor staff ????????? ????? ?????, ???? ??????? ???? ????? ??!', 'danger')
         return redirect(url_for('dashboard'))
     
     if current_user.role == 'field_staff':
@@ -4253,7 +4345,7 @@ def application_forms():
 @login_required
 def loan_application_form():
     if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff শুধুমাত্র দেখতে পারবে, ফর্ম প্রিন্ট করতে পারবে না!', 'danger')
+        flash('Monitor staff ????????? ????? ?????, ???? ??????? ???? ????? ??!', 'danger')
         return redirect(url_for('dashboard'))
     
     customer_id_str = request.args.get('customer_id', '')
@@ -4270,7 +4362,7 @@ def loan_application_form():
 @login_required
 def commitment_form():
     if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff শুধুমাত্র দেখতে পারবে, ফর্ম প্রিন্ট করতে পারবে না!', 'danger')
+        flash('Monitor staff ????????? ????? ?????, ???? ??????? ???? ????? ??!', 'danger')
         return redirect(url_for('dashboard'))
     
     customer_id_str = request.args.get('customer_id', '')
@@ -4287,7 +4379,7 @@ def commitment_form():
 @login_required
 def angikarnama_form():
     if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff শুধুমাত্র দেখতে পারবে, ফর্ম প্রিন্ট করতে পারবে না!', 'danger')
+        flash('Monitor staff ????????? ????? ?????, ???? ??????? ???? ????? ??!', 'danger')
         return redirect(url_for('dashboard'))
     
     customer_id_str = request.args.get('customer_id', '')
@@ -4496,43 +4588,6 @@ def admin_edit_collections():
                          collection_type=collection_type,
                          customer_filter=customer_filter)
 
-@app.route('/admin/edit_loan_collection/<int:id>', methods=['POST'])
-@login_required
-def edit_loan_collection(id):
-    if current_user.role != 'admin':
-        flash('Access denied!', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    collection = LoanCollection.query.get_or_404(id)
-    old_amount = collection.amount
-    new_amount = float(request.form.get('amount', 0))
-    collection_date_str = request.form.get('collection_date')
-    
-    if new_amount <= 0:
-        flash('Amount must be greater than 0!', 'danger')
-        return redirect(url_for('admin_edit_collections'))
-    
-    customer = collection.customer
-    cash_balance = CashBalance.query.first()
-    
-    # Reverse old amount
-    customer.remaining_loan += old_amount
-    if cash_balance:
-        cash_balance.balance -= old_amount
-    
-    # Apply new amount
-    customer.remaining_loan -= new_amount
-    if cash_balance:
-        cash_balance.balance += new_amount
-    
-    collection.amount = new_amount
-    if collection_date_str:
-        collection.collection_date = datetime.strptime(collection_date_str, '%Y-%m-%dT%H:%M')
-    
-    db.session.commit()
-    flash(f'Loan collection updated! Old: ৳{old_amount}, New: ৳{new_amount}', 'success')
-    return redirect(url_for('admin_edit_collections'))
-
 @app.route('/admin/delete_loan_collection/<int:id>', methods=['POST'])
 @login_required
 def delete_loan_collection(id):
@@ -4552,7 +4607,7 @@ def delete_loan_collection(id):
     db.session.delete(collection)
     db.session.commit()
     
-    flash(f'Loan collection deleted! ৳{collection.amount} reversed.', 'success')
+    flash(f'Loan collection deleted! ?{collection.amount} reversed.', 'success')
     return redirect(url_for('admin_edit_collections'))
 
 @app.route('/admin/edit_saving_collection/<int:id>', methods=['POST'])
@@ -4589,7 +4644,7 @@ def edit_saving_collection(id):
         collection.collection_date = datetime.strptime(collection_date_str, '%Y-%m-%dT%H:%M')
     
     db.session.commit()
-    flash(f'Saving collection updated! Old: ৳{old_amount}, New: ৳{new_amount}', 'success')
+    flash(f'Saving collection updated! Old: ?{old_amount}, New: ?{new_amount}', 'success')
     return redirect(url_for('admin_edit_collections'))
 
 @app.route('/admin/delete_saving_collection/<int:id>', methods=['POST'])
@@ -4611,7 +4666,7 @@ def delete_saving_collection(id):
     db.session.delete(collection)
     db.session.commit()
     
-    flash(f'Saving collection deleted! ৳{collection.amount} reversed.', 'success')
+    flash(f'Saving collection deleted! ?{collection.amount} reversed.', 'success')
     return redirect(url_for('admin_edit_collections'))
 
 @app.route('/logout')
@@ -4709,7 +4764,7 @@ def import_old_data():
                     db.session.add(saving_col)
                 
                 db.session.commit()
-                flash(f'Success! Collection added! Loan: ৳{loan_amount}, Savings: ৳{saving_amount}', 'success')
+                flash(f'Success! Collection added! Loan: ?{loan_amount}, Savings: ?{saving_amount}', 'success')
                 return redirect(url_for('import_old_data'))
         
         except Exception as e:

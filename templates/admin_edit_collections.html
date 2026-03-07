@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta charset="utf-8">
+  <title>Edit Collections - Al-Insaf NGO</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+    .page-title { color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+    .main-card { background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+    .table-container { background: white; border-radius: 10px; overflow: hidden; }
+    .nav-tabs .nav-link.active { background-color: #667eea; color: white; border-color: #667eea; }
+  </style>
+</head>
+
+<body>
+  <div class="container mt-4 pb-5">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="page-title"><i class="fas fa-edit"></i> Edit Collections</h2>
+      <a href="{{ url_for('dashboard') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="main-card p-4 mb-4">
+      <h5 class="mb-3"><i class="fas fa-filter"></i> Filter Collections</h5>
+      <form method="GET" class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label"><i class="fas fa-user"></i> Customer</label>
+          <input type="text" name="customer" class="form-control" placeholder="Search customer" value="{{ customer_filter }}">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label"><i class="fas fa-calendar-alt"></i> From</label>
+          <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label"><i class="fas fa-calendar-alt"></i> To</label>
+          <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label"><i class="fas fa-list"></i> Type</label>
+          <select name="collection_type" class="form-control">
+            <option value="loan" {% if collection_type == 'loan' %}selected{% endif %}>Loan Collections</option>
+            <option value="saving" {% if collection_type == 'saving' %}selected{% endif %}>Saving Collections</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">&nbsp;</label>
+          <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search"></i> Filter</button>
+          <a href="{{ url_for('admin_edit_collections') }}" class="btn btn-outline-secondary w-100 mt-2"><i class="fas fa-redo"></i> Reset</a>
+        </div>
+      </form>
+    </div>
+
+    <!-- Collections Tabs -->
+    <div class="main-card p-0">
+      <ul class="nav nav-tabs" id="collectionTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link {% if collection_type == 'loan' %}active{% endif %}" id="loan-tab" data-bs-toggle="tab" data-bs-target="#loan-collections" type="button" role="tab">
+            <i class="fas fa-coins"></i> Loan Collections ({{ loan_collections|length }})
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link {% if collection_type == 'saving' %}active{% endif %}" id="saving-tab" data-bs-toggle="tab" data-bs-target="#saving-collections" type="button" role="tab">
+            <i class="fas fa-piggy-bank"></i> Saving Collections ({{ saving_collections|length }})
+          </button>
+        </li>
+      </ul>
+
+      <div class="tab-content" id="collectionTabsContent">
+        <!-- Loan Collections Tab -->
+        <div class="tab-pane fade {% if collection_type == 'loan' %}show active{% endif %}" id="loan-collections" role="tabpanel">
+          <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0">
+              <thead class="table-dark">
+                <tr>
+                  <th>#</th>
+                  <th>Customer</th>
+                  <th>Amount</th>
+                  <th>Date</th>
+                  <th>Staff</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for lc in loan_collections %}
+                <tr>
+                  <td><strong>{{ loop.index }}</strong></td>
+                  <td><strong>{{ lc.customer.name }}</strong><br><small class="text-muted">{{ lc.customer.member_no or 'N/A' }}</small></td>
+                  <td><span class="text-success fw-bold">৳{{ "{:,.0f}".format(lc.amount) }}</span></td>
+                  <td><small>{{ lc.collection_date.strftime('%d-%m-%Y %H:%M') }}</small></td>
+                  <td><span class="badge bg-info">{{ lc.staff.name if lc.staff else 'N/A' }}</span></td>
+                  <td>
+                    <button class="btn btn-sm btn-warning me-1" onclick="editLoanCollection({{ lc.id }}, {{ lc.amount }}, '{{ lc.collection_date.strftime('%Y-%m-%dT%H:%M') }}')">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <form method="POST" action="{{ url_for('delete_loan_collection', id=lc.id) }}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this collection?')">
+                      <button type="submit" class="btn btn-sm btn-danger">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+                {% if not loan_collections %}
+                <tr>
+                  <td colspan="6" class="text-center py-4 text-muted">
+                    <i class="fas fa-inbox fa-3x mb-2"></i>
+                    <p>No loan collections found</p>
+                  </td>
+                </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Saving Collections Tab -->
+        <div class="tab-pane fade {% if collection_type == 'saving' %}show active{% endif %}" id="saving-collections" role="tabpanel">
+          <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0">
+              <thead class="table-dark">
+                <tr>
+                  <th>#</th>
+                  <th>Customer</th>
+                  <th>Amount</th>
+                  <th>Date</th>
+                  <th>Staff</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for sc in saving_collections %}
+                <tr>
+                  <td><strong>{{ loop.index }}</strong></td>
+                  <td><strong>{{ sc.customer.name }}</strong><br><small class="text-muted">{{ sc.customer.member_no or 'N/A' }}</small></td>
+                  <td><span class="text-success fw-bold">৳{{ "{:,.0f}".format(sc.amount) }}</span></td>
+                  <td><small>{{ sc.collection_date.strftime('%d-%m-%Y %H:%M') }}</small></td>
+                  <td><span class="badge bg-info">{{ sc.staff.name if sc.staff else 'N/A' }}</span></td>
+                  <td>
+                    <button class="btn btn-sm btn-warning me-1" onclick="editSavingCollection({{ sc.id }}, {{ sc.amount }}, '{{ sc.collection_date.strftime('%Y-%m-%dT%H:%M') }}')">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <form method="POST" action="{{ url_for('delete_saving_collection', id=sc.id) }}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this collection?')">
+                      <button type="submit" class="btn btn-sm btn-danger">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+                {% if not saving_collections %}
+                <tr>
+                  <td colspan="6" class="text-center py-4 text-muted">
+                    <i class="fas fa-inbox fa-3x mb-2"></i>
+                    <p>No saving collections found</p>
+                  </td>
+                </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Loan Collection Modal -->
+  <div class="modal fade" id="editLoanModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit Loan Collection</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="editLoanForm" method="POST">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Amount</label>
+              <input type="number" name="amount" id="loanAmount" class="form-control" step="0.01" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Collection Date</label>
+              <input type="datetime-local" name="collection_date" id="loanDate" class="form-control" required>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Update Collection</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Saving Collection Modal -->
+  <div class="modal fade" id="editSavingModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit Saving Collection</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="editSavingForm" method="POST">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Amount</label>
+              <input type="number" name="amount" id="savingAmount" class="form-control" step="0.01" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Collection Date</label>
+              <input type="datetime-local" name="collection_date" id="savingDate" class="form-control" required>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Update Collection</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    function editLoanCollection(id, amount, date) {
+      document.getElementById('editLoanForm').action = `/admin/edit_loan_collection/${id}`;
+      document.getElementById('loanAmount').value = amount;
+      document.getElementById('loanDate').value = date;
+      new bootstrap.Modal(document.getElementById('editLoanModal')).show();
+    }
+
+    function editSavingCollection(id, amount, date) {
+      document.getElementById('editSavingForm').action = `/admin/edit_saving_collection/${id}`;
+      document.getElementById('savingAmount').value = amount;
+      document.getElementById('savingDate').value = date;
+      new bootstrap.Modal(document.getElementById('editSavingModal')).show();
+    }
+
+    // Handle tab switching with URL parameters
+    document.addEventListener('DOMContentLoaded', function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const collectionType = urlParams.get('collection_type') || 'loan';
+      
+      if (collectionType === 'saving') {
+        document.getElementById('saving-tab').click();
+      }
+    });
+
+    // Update URL when tab is clicked
+    document.getElementById('loan-tab').addEventListener('click', function() {
+      updateURL('loan');
+    });
+
+    document.getElementById('saving-tab').addEventListener('click', function() {
+      updateURL('saving');
+    });
+
+    function updateURL(type) {
+      const url = new URL(window.location);
+      url.searchParams.set('collection_type', type);
+      window.history.replaceState({}, '', url);
+    }
+  </script>
+</body>
+</html>
