@@ -190,16 +190,16 @@ def login():
 def dashboard():
     try:
         total_customers = Customer.query.filter_by(is_active=True).count()
-        total_loan = db.session.query(db.func.sum(Customer.remaining_loan)).scalar() or 0
-        total_savings = db.session.query(db.func.sum(Customer.savings_balance)).scalar() or 0
+        total_loan = db.session.query(db.func.coalesce(db.func.sum(Customer.remaining_loan), 0)).scalar() or 0
+        total_savings = db.session.query(db.func.coalesce(db.func.sum(Customer.savings_balance), 0)).scalar() or 0
         cash_balance_record = CashBalance.query.first()
         cash_balance = cash_balance_record.balance if cash_balance_record else 0
         
         from datetime import date
         today = date.today()
         today_start = datetime.combine(today, datetime.min.time())
-        today_loan = db.session.query(db.func.sum(LoanCollection.amount)).filter(LoanCollection.collection_date >= today_start).scalar() or 0
-        today_saving = db.session.query(db.func.sum(SavingCollection.amount)).filter(SavingCollection.collection_date >= today_start).scalar() or 0
+        today_loan = db.session.query(db.func.coalesce(db.func.sum(LoanCollection.amount), 0)).filter(LoanCollection.collection_date >= today_start).scalar() or 0
+        today_saving = db.session.query(db.func.coalesce(db.func.sum(SavingCollection.amount), 0)).filter(SavingCollection.collection_date >= today_start).scalar() or 0
         
         if current_user.role == 'admin':
             staff_count = User.query.filter(User.role != 'admin').count() or 0
@@ -208,9 +208,9 @@ def dashboard():
             except:
                 notes_count = 0
             
-            admission_fee_total = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(fee_type='admission').scalar() or 0
-            welfare_fee_total = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(fee_type='welfare').scalar() or 0
-            application_fee_total = db.session.query(db.func.sum(FeeCollection.amount)).filter_by(fee_type='application').scalar() or 0
+            admission_fee_total = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter_by(fee_type='admission').scalar() or 0
+            welfare_fee_total = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter_by(fee_type='welfare').scalar() or 0
+            application_fee_total = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter_by(fee_type='application').scalar() or 0
             
             return render_template('admin_dashboard.html',
                                  name=current_user.name or 'Admin',
@@ -242,11 +242,11 @@ def dashboard():
             if is_monitor:
                 # Monitor can see all customers but read-only
                 my_customers = Customer.query.filter_by(is_active=True).count()
-                total_remaining = db.session.query(db.func.sum(Customer.remaining_loan)).scalar() or 0
+                total_remaining = db.session.query(db.func.coalesce(db.func.sum(Customer.remaining_loan), 0)).scalar() or 0
                 due_customers = Customer.query.filter(Customer.remaining_loan > 0).count()
             else:
                 my_customers = Customer.query.filter_by(staff_id=current_user.id, is_active=True).count()
-                total_remaining = db.session.query(db.func.sum(Customer.remaining_loan)).filter_by(staff_id=current_user.id).scalar() or 0
+                total_remaining = db.session.query(db.func.coalesce(db.func.sum(Customer.remaining_loan), 0)).filter_by(staff_id=current_user.id).scalar() or 0
                 due_customers = Customer.query.filter_by(staff_id=current_user.id).filter(Customer.remaining_loan > 0).count()
             
             # Today's collections count
@@ -470,8 +470,8 @@ def staff_dashboard_view(id):
     staff = User.query.get_or_404(id)
     customers = Customer.query.filter_by(staff_id=id).all()
     
-    total_loan = db.session.query(db.func.sum(LoanCollection.amount)).filter_by(staff_id=id).scalar() or 0
-    total_saving = db.session.query(db.func.sum(SavingCollection.amount)).filter_by(staff_id=id).scalar() or 0
+    total_loan = db.session.query(db.func.coalesce(db.func.sum(LoanCollection.amount), 0)).filter_by(staff_id=id).scalar() or 0
+    total_saving = db.session.query(db.func.coalesce(db.func.sum(SavingCollection.amount), 0)).filter_by(staff_id=id).scalar() or 0
     
     return render_template('staff_dashboard_view.html', staff=staff, customers=customers, 
                          total_loan=total_loan, total_saving=total_saving)
@@ -587,9 +587,9 @@ def customer_loan_sheet(id):
     # Calculate financial data
     total_loan_disbursed = sum(loan.amount for loan in loans)
     total_interest = sum(loan.amount * loan.interest / 100 for loan in loans)
-    total_loan_collected = db.session.query(db.func.sum(LoanCollection.amount)).filter_by(customer_id=id).scalar() or 0
-    total_savings = db.session.query(db.func.sum(SavingCollection.amount)).filter_by(customer_id=id).scalar() or 0
-    total_withdrawn = db.session.query(db.func.sum(Withdrawal.amount)).filter_by(customer_id=id).scalar() or 0
+    total_loan_collected = db.session.query(db.func.coalesce(db.func.sum(LoanCollection.amount), 0)).filter_by(customer_id=id).scalar() or 0
+    total_savings = db.session.query(db.func.coalesce(db.func.sum(SavingCollection.amount), 0)).filter_by(customer_id=id).scalar() or 0
+    total_withdrawn = db.session.query(db.func.coalesce(db.func.sum(Withdrawal.amount), 0)).filter_by(customer_id=id).scalar() or 0
     
     actual_remaining = total_loan_disbursed + total_interest - total_loan_collected
     actual_savings_balance = total_savings - total_withdrawn
@@ -822,7 +822,7 @@ def all_staff_report_print():
         total_saving = sum(sc.amount for sc in saving_collections)
         
         customers = Customer.query.filter_by(staff_id=staff.id).count()
-        remaining_loan = db.session.query(db.func.sum(Customer.remaining_loan)).filter_by(staff_id=staff.id).scalar() or 0
+        remaining_loan = db.session.query(db.func.coalesce(db.func.sum(Customer.remaining_loan), 0)).filter_by(staff_id=staff.id).scalar() or 0
         
         staff_data.append({
             'staff': staff,
@@ -1541,8 +1541,8 @@ def manage_cash_balance():
     investments = Investment.query.order_by(Investment.date.desc()).all()
     withdrawals = Withdrawal.query.order_by(Withdrawal.date.desc()).all()
     investors = Investor.query.all()
-    total_investment = db.session.query(db.func.sum(Investment.amount)).scalar() or 0
-    total_withdrawal = db.session.query(db.func.sum(Withdrawal.amount)).scalar() or 0
+    total_investment = db.session.query(db.func.coalesce(db.func.sum(Investment.amount), 0)).scalar() or 0
+    total_withdrawal = db.session.query(db.func.coalesce(db.func.sum(Withdrawal.amount), 0)).scalar() or 0
     return render_template('manage_cash_balance.html', cash_balance=cash_balance, investments=investments, withdrawals=withdrawals, investors=investors, total_investment=total_investment, total_withdrawal=total_withdrawal)
 
 @app.route('/expenses', methods=['GET', 'POST'])
@@ -1697,17 +1697,17 @@ def profit_loss():
     total_savings_collected = sum(sc.amount for sc in saving_collections)
     
     # Get fee collections
-    admission_fee_total = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+    admission_fee_total = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
         FeeCollection.fee_type == 'admission',
         FeeCollection.collection_date >= start_date
     ).scalar() or 0
     
-    welfare_fee_total = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+    welfare_fee_total = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
         FeeCollection.fee_type == 'welfare',
         FeeCollection.collection_date >= start_date
     ).scalar() or 0
     
-    application_fee_total = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+    application_fee_total = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
         FeeCollection.fee_type == 'application',
         FeeCollection.collection_date >= start_date
     ).scalar() or 0
@@ -1796,17 +1796,17 @@ def profit_loss_print():
     total_savings_collected = sum(sc.amount for sc in saving_collections)
     
     # Get fee collections
-    admission_fee_total = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+    admission_fee_total = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
         FeeCollection.fee_type == 'admission',
         FeeCollection.collection_date >= start_date
     ).scalar() or 0
     
-    welfare_fee_total = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+    welfare_fee_total = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
         FeeCollection.fee_type == 'welfare',
         FeeCollection.collection_date >= start_date
     ).scalar() or 0
     
-    application_fee_total = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+    application_fee_total = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
         FeeCollection.fee_type == 'application',
         FeeCollection.collection_date >= start_date
     ).scalar() or 0
@@ -2032,7 +2032,7 @@ def manage_investors():
         flash('Access denied!', 'danger')
         return redirect(url_for('dashboard'))
     investors = Investor.query.order_by(Investor.investor_id).all()
-    total_withdrawn = db.session.query(db.func.sum(Withdrawal.amount)).filter(Withdrawal.investor_id.isnot(None)).scalar() or 0
+    total_withdrawn = db.session.query(db.func.coalesce(db.func.sum(Withdrawal.amount), 0)).filter(Withdrawal.investor_id.isnot(None)).scalar() or 0
     return render_template('manage_investors.html', investors=investors, total_withdrawn=total_withdrawn)
 
 @app.route('/manage_withdrawals', methods=['GET', 'POST'])
@@ -2123,19 +2123,19 @@ def daily_report():
     total_expense = sum(e.amount for e in expenses)
     
     # Get fees from FeeCollection table
-    total_welfare_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+    total_welfare_fee = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
         FeeCollection.fee_type == 'welfare',
         FeeCollection.collection_date >= today_start,
         FeeCollection.collection_date <= today_end
     ).scalar() or 0
     
-    total_admission_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+    total_admission_fee = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
         FeeCollection.fee_type == 'admission',
         FeeCollection.collection_date >= today_start,
         FeeCollection.collection_date <= today_end
     ).scalar() or 0
     
-    total_application_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+    total_application_fee = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
         FeeCollection.fee_type == 'application',
         FeeCollection.collection_date >= today_start,
         FeeCollection.collection_date <= today_end
@@ -2173,29 +2173,29 @@ def daily_income_expense_print():
     today_end = datetime.combine(today, datetime.max.time())
     
     # Calculate income
-    total_installment = db.session.query(db.func.sum(LoanCollection.amount)).filter(
+    total_installment = db.session.query(db.func.coalesce(db.func.sum(LoanCollection.amount), 0)).filter(
         LoanCollection.collection_date >= today_start,
         LoanCollection.collection_date <= today_end
     ).scalar() or 0
     
-    total_saving = db.session.query(db.func.sum(SavingCollection.amount)).filter(
+    total_saving = db.session.query(db.func.coalesce(db.func.sum(SavingCollection.amount), 0)).filter(
         SavingCollection.collection_date >= today_start,
         SavingCollection.collection_date <= today_end
     ).scalar() or 0
     
-    total_welfare_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+    total_welfare_fee = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
         FeeCollection.fee_type == 'welfare',
         FeeCollection.collection_date >= today_start,
         FeeCollection.collection_date <= today_end
     ).scalar() or 0
     
-    total_admission_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+    total_admission_fee = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
         FeeCollection.fee_type == 'admission',
         FeeCollection.collection_date >= today_start,
         FeeCollection.collection_date <= today_end
     ).scalar() or 0
     
-    total_application_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+    total_application_fee = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
         FeeCollection.fee_type == 'application',
         FeeCollection.collection_date >= today_start,
         FeeCollection.collection_date <= today_end
@@ -2204,17 +2204,17 @@ def daily_income_expense_print():
     total_income = total_installment + total_saving + total_welfare_fee + total_admission_fee + total_application_fee
     
     # Calculate expenses
-    total_loan_distributed = db.session.query(db.func.sum(Loan.amount)).filter(
+    total_loan_distributed = db.session.query(db.func.coalesce(db.func.sum(Loan.amount), 0)).filter(
         Loan.loan_date >= today_start,
         Loan.loan_date <= today_end
     ).scalar() or 0
     
-    total_withdrawal = db.session.query(db.func.sum(Withdrawal.amount)).filter(
+    total_withdrawal = db.session.query(db.func.coalesce(db.func.sum(Withdrawal.amount), 0)).filter(
         Withdrawal.date >= today_start,
         Withdrawal.date <= today_end
     ).scalar() or 0
     
-    total_expense = db.session.query(db.func.sum(Expense.amount)).filter(
+    total_expense = db.session.query(db.func.coalesce(db.func.sum(Expense.amount), 0)).filter(
         Expense.date >= today_start,
         Expense.date <= today_end
     ).scalar() or 0
@@ -2266,19 +2266,19 @@ def daily_report():
     total_expense = sum(e.amount for e in expenses)
     
     # Get fees from FeeCollection table
-    total_welfare_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+    total_welfare_fee = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
         FeeCollection.fee_type == 'welfare',
         FeeCollection.collection_date >= today_start,
         FeeCollection.collection_date <= today_end
     ).scalar() or 0
     
-    total_admission_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+    total_admission_fee = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
         FeeCollection.fee_type == 'admission',
         FeeCollection.collection_date >= today_start,
         FeeCollection.collection_date <= today_end
     ).scalar() or 0
     
-    total_application_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+    total_application_fee = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
         FeeCollection.fee_type == 'application',
         FeeCollection.collection_date >= today_start,
         FeeCollection.collection_date <= today_end
@@ -2326,28 +2326,28 @@ def monthly_report():
     if is_current_month:
         # Current month - get transactions from start of month till now
         month_income = (
-            (db.session.query(db.func.sum(LoanCollection.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(LoanCollection.amount), 0)).filter(
                 LoanCollection.collection_date >= month_start
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(SavingCollection.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(SavingCollection.amount), 0)).filter(
                 SavingCollection.collection_date >= month_start
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(FeeCollection.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
                 FeeCollection.collection_date >= month_start
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(Investment.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(Investment.amount), 0)).filter(
                 Investment.date >= month_start
             ).scalar() or 0)
         )
         
         month_expense = (
-            (db.session.query(db.func.sum(Loan.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(Loan.amount), 0)).filter(
                 Loan.loan_date >= month_start
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(Withdrawal.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(Withdrawal.amount), 0)).filter(
                 Withdrawal.date >= month_start
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(Expense.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(Expense.amount), 0)).filter(
                 Expense.date >= month_start
             ).scalar() or 0)
         )
@@ -2357,28 +2357,28 @@ def monthly_report():
     else:
         # Past month - calculate from future transactions
         future_income = (
-            (db.session.query(db.func.sum(LoanCollection.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(LoanCollection.amount), 0)).filter(
                 LoanCollection.collection_date > month_end
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(SavingCollection.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(SavingCollection.amount), 0)).filter(
                 SavingCollection.collection_date > month_end
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(FeeCollection.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
                 FeeCollection.collection_date > month_end
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(Investment.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(Investment.amount), 0)).filter(
                 Investment.date > month_end
             ).scalar() or 0)
         )
         
         future_expense = (
-            (db.session.query(db.func.sum(Loan.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(Loan.amount), 0)).filter(
                 Loan.loan_date > month_end
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(Withdrawal.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(Withdrawal.amount), 0)).filter(
                 Withdrawal.date > month_end
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(Expense.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(Expense.amount), 0)).filter(
                 Expense.date > month_end
             ).scalar() or 0)
         )
@@ -2394,55 +2394,55 @@ def monthly_report():
         day_end = datetime(year, month, day, 23, 59, 59)
         
         # Get daily transactions
-        installments = db.session.query(db.func.sum(LoanCollection.amount)).filter(
+        installments = db.session.query(db.func.coalesce(db.func.sum(LoanCollection.amount), 0)).filter(
             LoanCollection.collection_date >= day_start,
             LoanCollection.collection_date <= day_end
         ).scalar() or 0
         
-        savings = db.session.query(db.func.sum(SavingCollection.amount)).filter(
+        savings = db.session.query(db.func.coalesce(db.func.sum(SavingCollection.amount), 0)).filter(
             SavingCollection.collection_date >= day_start,
             SavingCollection.collection_date <= day_end
         ).scalar() or 0
         
-        welfare_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+        welfare_fee = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
             FeeCollection.fee_type == 'welfare',
             FeeCollection.collection_date >= day_start,
             FeeCollection.collection_date <= day_end
         ).scalar() or 0
         
-        admission_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+        admission_fee = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
             FeeCollection.fee_type == 'admission',
             FeeCollection.collection_date >= day_start,
             FeeCollection.collection_date <= day_end
         ).scalar() or 0
         
-        application_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+        application_fee = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
             FeeCollection.fee_type == 'application',
             FeeCollection.collection_date >= day_start,
             FeeCollection.collection_date <= day_end
         ).scalar() or 0
         
-        capital_savings = db.session.query(db.func.sum(Investment.amount)).filter(
+        capital_savings = db.session.query(db.func.coalesce(db.func.sum(Investment.amount), 0)).filter(
             Investment.date >= day_start,
             Investment.date <= day_end
         ).scalar() or 0
         
-        loan_given = db.session.query(db.func.sum(Loan.amount)).filter(
+        loan_given = db.session.query(db.func.coalesce(db.func.sum(Loan.amount), 0)).filter(
             Loan.loan_date >= day_start,
             Loan.loan_date <= day_end
         ).scalar() or 0
         
-        interest = db.session.query(db.func.sum(Loan.amount * Loan.interest / 100)).filter(
+        interest = db.session.query(db.func.coalesce(db.func.sum(Loan.amount * Loan.interest / 100), 0)).filter(
             Loan.loan_date >= day_start,
             Loan.loan_date <= day_end
         ).scalar() or 0
         
-        savings_return = db.session.query(db.func.sum(Withdrawal.amount)).filter(
+        savings_return = db.session.query(db.func.coalesce(db.func.sum(Withdrawal.amount), 0)).filter(
             Withdrawal.date >= day_start,
             Withdrawal.date <= day_end
         ).scalar() or 0
         
-        expenses_total = db.session.query(db.func.sum(Expense.amount)).filter(
+        expenses_total = db.session.query(db.func.coalesce(db.func.sum(Expense.amount), 0)).filter(
             Expense.date >= day_start,
             Expense.date <= day_end
         ).scalar() or 0
@@ -2475,7 +2475,7 @@ def monthly_report():
     total_loan_distributed = sum(d['loan_given'] for d in daily_data.values())
     total_interest = sum(d['interest'] for d in daily_data.values())
     total_monthly_expenses = sum(d['expenses'] for d in daily_data.values())
-    current_remaining = db.session.query(db.func.sum(Customer.remaining_loan)).scalar() or 0
+    current_remaining = db.session.query(db.func.coalesce(db.func.sum(Customer.remaining_loan), 0)).scalar() or 0
     closing_balance = running_balance
     
     # Calculate monthly due - expected vs actual collections
@@ -2485,73 +2485,6 @@ def monthly_report():
     customers_with_loans = Customer.query.filter(Customer.remaining_loan > 0).all()
     
     print(f"\n=== Monthly Due Calculation for {month}/{year} ===")
-    print(f"Total customers with remaining loans: {len(customers_with_loans)}")
-    
-    for customer in customers_with_loans:
-        # Get loans given BEFORE this month starts
-        customer_loans = Loan.query.filter(
-            Loan.customer_name == customer.name,
-            Loan.loan_date < month_start
-        ).all()
-        
-        if not customer_loans:
-            print(f"Customer {customer.name}: No loans before {month_start.date()}")
-            continue
-        
-        print(f"\nCustomer: {customer.name} (ID: {customer.id})")
-        print(f"  Loans before month: {len(customer_loans)}")
-        
-        # Calculate total expected for this month
-        expected_amount = 0
-        
-        for loan in customer_loans:
-            print(f"  Loan ID {loan.id}: Type='{loan.installment_type}', Amount={loan.installment_amount}, Date={loan.loan_date.date()}")
-            
-            loan_expected = 0
-            # Support both English and Bengali installment types
-            loan_type = loan.installment_type.lower() if loan.installment_type else ''
-            
-            if loan_type in ['daily', 'দৈনিক']:
-                # Count days in month (or till today for current month)
-                if month == today.month and year == today.year:
-                    days = today.day
-                else:
-                    days = last_day
-                loan_expected = loan.installment_amount * days
-                print(f"    Daily: {loan.installment_amount} x {days} days = {loan_expected}")
-                
-            elif loan_type in ['weekly', 'সাপ্তাহিক']:
-                # 4 weeks per month
-                loan_expected = loan.installment_amount * 4
-                print(f"    Weekly: {loan.installment_amount} x 4 weeks = {loan_expected}")
-                
-            elif loan_type in ['monthly', 'মাসিক']:
-                loan_expected = loan.installment_amount
-                print(f"    Monthly: {loan.installment_amount}")
-            else:
-                print(f"    Unknown type: '{loan.installment_type}'")
-            
-            expected_amount += loan_expected
-        
-        # Get actual collections for this customer in this month
-        actual_amount = db.session.query(db.func.sum(LoanCollection.amount)).filter(
-            LoanCollection.customer_id == customer.id,
-            LoanCollection.collection_date >= month_start,
-            LoanCollection.collection_date <= month_end
-        ).scalar() or 0
-        
-        print(f"  Expected: {expected_amount}, Actual: {actual_amount}")
-        
-        # Calculate due for this customer
-        customer_due = expected_amount - actual_amount
-        
-        if customer_due > 0:
-            print(f"  Due: {customer_due}")
-            monthly_due += customer_due
-        else:
-            print(f"  No due (paid {actual_amount - expected_amount} extra)")
-    
-    print(f"\nTotal Monthly Due: {monthly_due}")
     print("=" * 50)
     
     return render_template('monthly_report.html', 
@@ -2589,35 +2522,35 @@ def monthly_income_expense_print():
     month_end = datetime(year, month, last_day, 23, 59, 59)
     
     # Calculate income
-    loan_installments = db.session.query(db.func.sum(LoanCollection.amount)).filter(
+    loan_installments = db.session.query(db.func.coalesce(db.func.sum(LoanCollection.amount), 0)).filter(
         LoanCollection.collection_date >= month_start,
         LoanCollection.collection_date <= month_end
     ).scalar() or 0
     
-    savings_deposits = db.session.query(db.func.sum(SavingCollection.amount)).filter(
+    savings_deposits = db.session.query(db.func.coalesce(db.func.sum(SavingCollection.amount), 0)).filter(
         SavingCollection.collection_date >= month_start,
         SavingCollection.collection_date <= month_end
     ).scalar() or 0
     
-    admission_fees = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+    admission_fees = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
         FeeCollection.fee_type == 'admission',
         FeeCollection.collection_date >= month_start,
         FeeCollection.collection_date <= month_end
     ).scalar() or 0
     
-    application_fees = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+    application_fees = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
         FeeCollection.fee_type == 'application',
         FeeCollection.collection_date >= month_start,
         FeeCollection.collection_date <= month_end
     ).scalar() or 0
     
-    welfare_fees = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+    welfare_fees = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
         FeeCollection.fee_type == 'welfare',
         FeeCollection.collection_date >= month_start,
         FeeCollection.collection_date <= month_end
     ).scalar() or 0
     
-    capital_savings = db.session.query(db.func.sum(Investment.amount)).filter(
+    capital_savings = db.session.query(db.func.coalesce(db.func.sum(Investment.amount), 0)).filter(
         Investment.date >= month_start,
         Investment.date <= month_end
     ).scalar() or 0
@@ -2625,22 +2558,22 @@ def monthly_income_expense_print():
     total_income = loan_installments + savings_deposits + admission_fees + application_fees + welfare_fees + capital_savings
     
     # Calculate expenses
-    loan_distributed = db.session.query(db.func.sum(Loan.amount)).filter(
+    loan_distributed = db.session.query(db.func.coalesce(db.func.sum(Loan.amount), 0)).filter(
         Loan.loan_date >= month_start,
         Loan.loan_date <= month_end
     ).scalar() or 0
     
-    total_interest = db.session.query(db.func.sum(Loan.amount * Loan.interest / 100)).filter(
+    total_interest = db.session.query(db.func.coalesce(db.func.sum(Loan.amount * Loan.interest / 100), 0)).filter(
         Loan.loan_date >= month_start,
         Loan.loan_date <= month_end
     ).scalar() or 0
     
-    savings_return = db.session.query(db.func.sum(Withdrawal.amount)).filter(
+    savings_return = db.session.query(db.func.coalesce(db.func.sum(Withdrawal.amount), 0)).filter(
         Withdrawal.date >= month_start,
         Withdrawal.date <= month_end
     ).scalar() or 0
     
-    monthly_expenses = db.session.query(db.func.sum(Expense.amount)).filter(
+    monthly_expenses = db.session.query(db.func.coalesce(db.func.sum(Expense.amount), 0)).filter(
         Expense.date >= month_start,
         Expense.date <= month_end
     ).scalar() or 0
@@ -2655,28 +2588,28 @@ def monthly_income_expense_print():
     
     if is_current_month:
         month_income_calc = (
-            (db.session.query(db.func.sum(LoanCollection.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(LoanCollection.amount), 0)).filter(
                 LoanCollection.collection_date >= month_start
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(SavingCollection.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(SavingCollection.amount), 0)).filter(
                 SavingCollection.collection_date >= month_start
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(FeeCollection.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
                 FeeCollection.collection_date >= month_start
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(Investment.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(Investment.amount), 0)).filter(
                 Investment.date >= month_start
             ).scalar() or 0)
         )
         
         month_expense_calc = (
-            (db.session.query(db.func.sum(Loan.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(Loan.amount), 0)).filter(
                 Loan.loan_date >= month_start
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(Withdrawal.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(Withdrawal.amount), 0)).filter(
                 Withdrawal.date >= month_start
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(Expense.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(Expense.amount), 0)).filter(
                 Expense.date >= month_start
             ).scalar() or 0)
         )
@@ -2684,28 +2617,28 @@ def monthly_income_expense_print():
         opening_balance = current_cash - (month_income_calc - month_expense_calc)
     else:
         future_income = (
-            (db.session.query(db.func.sum(LoanCollection.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(LoanCollection.amount), 0)).filter(
                 LoanCollection.collection_date > month_end
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(SavingCollection.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(SavingCollection.amount), 0)).filter(
                 SavingCollection.collection_date > month_end
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(FeeCollection.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
                 FeeCollection.collection_date > month_end
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(Investment.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(Investment.amount), 0)).filter(
                 Investment.date > month_end
             ).scalar() or 0)
         )
         
         future_expense = (
-            (db.session.query(db.func.sum(Loan.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(Loan.amount), 0)).filter(
                 Loan.loan_date > month_end
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(Withdrawal.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(Withdrawal.amount), 0)).filter(
                 Withdrawal.date > month_end
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(Expense.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(Expense.amount), 0)).filter(
                 Expense.date > month_end
             ).scalar() or 0)
         )
@@ -2713,7 +2646,7 @@ def monthly_income_expense_print():
         opening_balance = current_cash - future_income + future_expense
     
     closing_balance = opening_balance + total_income - total_expense
-    current_remaining = db.session.query(db.func.sum(Customer.remaining_loan)).scalar() or 0
+    current_remaining = db.session.query(db.func.coalesce(db.func.sum(Customer.remaining_loan), 0)).scalar() or 0
     
     # Calculate monthly due
     monthly_due = 0
@@ -2743,7 +2676,7 @@ def monthly_income_expense_print():
             elif loan_type in ['monthly', 'মাসিক']:
                 expected_amount += loan.installment_amount
         
-        actual_amount = db.session.query(db.func.sum(LoanCollection.amount)).filter(
+        actual_amount = db.session.query(db.func.coalesce(db.func.sum(LoanCollection.amount), 0)).filter(
             LoanCollection.customer_id == customer.id,
             LoanCollection.collection_date >= month_start,
             LoanCollection.collection_date <= month_end
@@ -2803,28 +2736,28 @@ def monthly_report():
     if is_current_month:
         # Current month - get transactions from start of month till now
         month_income = (
-            (db.session.query(db.func.sum(LoanCollection.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(LoanCollection.amount), 0)).filter(
                 LoanCollection.collection_date >= month_start
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(SavingCollection.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(SavingCollection.amount), 0)).filter(
                 SavingCollection.collection_date >= month_start
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(FeeCollection.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
                 FeeCollection.collection_date >= month_start
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(Investment.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(Investment.amount), 0)).filter(
                 Investment.date >= month_start
             ).scalar() or 0)
         )
         
         month_expense = (
-            (db.session.query(db.func.sum(Loan.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(Loan.amount), 0)).filter(
                 Loan.loan_date >= month_start
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(Withdrawal.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(Withdrawal.amount), 0)).filter(
                 Withdrawal.date >= month_start
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(Expense.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(Expense.amount), 0)).filter(
                 Expense.date >= month_start
             ).scalar() or 0)
         )
@@ -2834,28 +2767,28 @@ def monthly_report():
     else:
         # Past month - calculate from future transactions
         future_income = (
-            (db.session.query(db.func.sum(LoanCollection.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(LoanCollection.amount), 0)).filter(
                 LoanCollection.collection_date > month_end
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(SavingCollection.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(SavingCollection.amount), 0)).filter(
                 SavingCollection.collection_date > month_end
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(FeeCollection.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
                 FeeCollection.collection_date > month_end
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(Investment.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(Investment.amount), 0)).filter(
                 Investment.date > month_end
             ).scalar() or 0)
         )
         
         future_expense = (
-            (db.session.query(db.func.sum(Loan.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(Loan.amount), 0)).filter(
                 Loan.loan_date > month_end
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(Withdrawal.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(Withdrawal.amount), 0)).filter(
                 Withdrawal.date > month_end
             ).scalar() or 0) +
-            (db.session.query(db.func.sum(Expense.amount)).filter(
+            (db.session.query(db.func.coalesce(db.func.sum(Expense.amount), 0)).filter(
                 Expense.date > month_end
             ).scalar() or 0)
         )
@@ -2871,55 +2804,55 @@ def monthly_report():
         day_end = datetime(year, month, day, 23, 59, 59)
         
         # Get daily transactions
-        installments = db.session.query(db.func.sum(LoanCollection.amount)).filter(
+        installments = db.session.query(db.func.coalesce(db.func.sum(LoanCollection.amount), 0)).filter(
             LoanCollection.collection_date >= day_start,
             LoanCollection.collection_date <= day_end
         ).scalar() or 0
         
-        savings = db.session.query(db.func.sum(SavingCollection.amount)).filter(
+        savings = db.session.query(db.func.coalesce(db.func.sum(SavingCollection.amount), 0)).filter(
             SavingCollection.collection_date >= day_start,
             SavingCollection.collection_date <= day_end
         ).scalar() or 0
         
-        welfare_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+        welfare_fee = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
             FeeCollection.fee_type == 'welfare',
             FeeCollection.collection_date >= day_start,
             FeeCollection.collection_date <= day_end
         ).scalar() or 0
         
-        admission_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+        admission_fee = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
             FeeCollection.fee_type == 'admission',
             FeeCollection.collection_date >= day_start,
             FeeCollection.collection_date <= day_end
         ).scalar() or 0
         
-        application_fee = db.session.query(db.func.sum(FeeCollection.amount)).filter(
+        application_fee = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
             FeeCollection.fee_type == 'application',
             FeeCollection.collection_date >= day_start,
             FeeCollection.collection_date <= day_end
         ).scalar() or 0
         
-        capital_savings = db.session.query(db.func.sum(Investment.amount)).filter(
+        capital_savings = db.session.query(db.func.coalesce(db.func.sum(Investment.amount), 0)).filter(
             Investment.date >= day_start,
             Investment.date <= day_end
         ).scalar() or 0
         
-        loan_given = db.session.query(db.func.sum(Loan.amount)).filter(
+        loan_given = db.session.query(db.func.coalesce(db.func.sum(Loan.amount), 0)).filter(
             Loan.loan_date >= day_start,
             Loan.loan_date <= day_end
         ).scalar() or 0
         
-        interest = db.session.query(db.func.sum(Loan.amount * Loan.interest / 100)).filter(
+        interest = db.session.query(db.func.coalesce(db.func.sum(Loan.amount * Loan.interest / 100), 0)).filter(
             Loan.loan_date >= day_start,
             Loan.loan_date <= day_end
         ).scalar() or 0
         
-        savings_return = db.session.query(db.func.sum(Withdrawal.amount)).filter(
+        savings_return = db.session.query(db.func.coalesce(db.func.sum(Withdrawal.amount), 0)).filter(
             Withdrawal.date >= day_start,
             Withdrawal.date <= day_end
         ).scalar() or 0
         
-        expenses_total = db.session.query(db.func.sum(Expense.amount)).filter(
+        expenses_total = db.session.query(db.func.coalesce(db.func.sum(Expense.amount), 0)).filter(
             Expense.date >= day_start,
             Expense.date <= day_end
         ).scalar() or 0
@@ -2952,7 +2885,7 @@ def monthly_report():
     total_loan_distributed = sum(d['loan_given'] for d in daily_data.values())
     total_interest = sum(d['interest'] for d in daily_data.values())
     total_monthly_expenses = sum(d['expenses'] for d in daily_data.values())
-    current_remaining = db.session.query(db.func.sum(Customer.remaining_loan)).scalar() or 0
+    current_remaining = db.session.query(db.func.coalesce(db.func.sum(Customer.remaining_loan), 0)).scalar() or 0
     closing_balance = running_balance
     
     # Calculate monthly due - expected vs actual collections
@@ -3011,7 +2944,7 @@ def monthly_report():
             expected_amount += loan_expected
         
         # Get actual collections for this customer in this month
-        actual_amount = db.session.query(db.func.sum(LoanCollection.amount)).filter(
+        actual_amount = db.session.query(db.func.coalesce(db.func.sum(LoanCollection.amount), 0)).filter(
             LoanCollection.customer_id == customer.id,
             LoanCollection.collection_date >= month_start,
             LoanCollection.collection_date <= month_end
@@ -3103,7 +3036,7 @@ def search_customers():
     result = []
     for c in customers:
         # Calculate collection stats
-        total_collected = db.session.query(db.func.sum(LoanCollection.amount)).filter_by(customer_id=c.id).scalar() or 0
+        total_collected = db.session.query(db.func.coalesce(db.func.sum(LoanCollection.amount), 0)).filter_by(customer_id=c.id).scalar() or 0
         last_collection = LoanCollection.query.filter_by(customer_id=c.id).order_by(LoanCollection.collection_date.desc()).first()
         
         result.append({
@@ -4065,13 +3998,13 @@ def monthly_sheet():
             day_start = datetime(year, month, day)
             day_end = datetime(year, month, day, 23, 59, 59)
             
-            loan_amount = db.session.query(db.func.sum(LoanCollection.amount)).filter(
+            loan_amount = db.session.query(db.func.coalesce(db.func.sum(LoanCollection.amount), 0)).filter(
                 LoanCollection.customer_id == customer.id,
                 LoanCollection.collection_date >= day_start,
                 LoanCollection.collection_date <= day_end
             ).scalar() or 0
             
-            saving_amount = db.session.query(db.func.sum(SavingCollection.amount)).filter(
+            saving_amount = db.session.query(db.func.coalesce(db.func.sum(SavingCollection.amount), 0)).filter(
                 SavingCollection.customer_id == customer.id,
                 SavingCollection.collection_date >= day_start,
                 SavingCollection.collection_date <= day_end
@@ -4263,19 +4196,19 @@ def loan_sheet(loan_id):
     ).order_by(Loan.loan_date.asc()).first()
     collection_end_date = next_loan.loan_date if next_loan else datetime.now()
     
-    total_loan_collected = db.session.query(db.func.sum(LoanCollection.amount)).filter(
+    total_loan_collected = db.session.query(db.func.coalesce(db.func.sum(LoanCollection.amount), 0)).filter(
         LoanCollection.customer_id == customer.id,
         LoanCollection.collection_date >= loan_start_date,
         LoanCollection.collection_date < collection_end_date
     ).scalar() or 0
     
-    total_savings = db.session.query(db.func.sum(SavingCollection.amount)).filter(
+    total_savings = db.session.query(db.func.coalesce(db.func.sum(SavingCollection.amount), 0)).filter(
         SavingCollection.customer_id == customer.id,
         SavingCollection.collection_date >= loan_start_date,
         SavingCollection.collection_date < collection_end_date
     ).scalar() or 0
     
-    total_withdrawn = db.session.query(db.func.sum(Withdrawal.amount)).filter(
+    total_withdrawn = db.session.query(db.func.coalesce(db.func.sum(Withdrawal.amount), 0)).filter(
         Withdrawal.customer_id == customer.id,
         Withdrawal.date >= loan_start_date,
         Withdrawal.date < collection_end_date
