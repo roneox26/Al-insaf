@@ -4624,6 +4624,43 @@ def delete_loan_collection(id):
     flash(f'Loan collection deleted! ?{collection.amount} reversed.', 'success')
     return redirect(url_for('admin_edit_collections'))
 
+@app.route('/admin/edit_loan_collection/<int:id>', methods=['POST'])
+@login_required
+def edit_loan_collection(id):
+    if current_user.role != 'admin':
+        flash('Access denied!', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    collection = LoanCollection.query.get_or_404(id)
+    customer = collection.customer
+    old_amount = collection.amount
+    new_amount = float(request.form.get('amount', 0))
+    collection_date_str = request.form.get('collection_date')
+    
+    if new_amount <= 0:
+        flash('Amount must be greater than 0!', 'danger')
+        return redirect(url_for('admin_edit_collections'))
+    
+    cash_balance = CashBalance.query.first()
+    
+    # Reverse old amount
+    customer.remaining_loan += old_amount
+    if cash_balance:
+        cash_balance.balance -= old_amount
+    
+    # Apply new amount
+    customer.remaining_loan -= new_amount
+    if cash_balance:
+        cash_balance.balance += new_amount
+    
+    collection.amount = new_amount
+    if collection_date_str:
+        collection.collection_date = datetime.strptime(collection_date_str, '%Y-%m-%dT%H:%M')
+    
+    db.session.commit()
+    flash(f'Loan collection updated! Old: ৳{old_amount}, New: ৳{new_amount}', 'success')
+    return redirect(url_for('admin_edit_collections'))
+
 @app.route('/admin/edit_saving_collection/<int:id>', methods=['POST'])
 @login_required
 def edit_saving_collection(id):
