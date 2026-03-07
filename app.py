@@ -2485,19 +2485,19 @@ def monthly_report():
     
     # Populate daily data
     for day, total in loan_collections_by_day:
-        daily_data[int(day)]['installments'] = float(total or 0)
+        if day: daily_data[int(day)]['installments'] = float(total or 0)
     
     for day, total in saving_collections_by_day:
-        daily_data[int(day)]['savings'] = float(total or 0)
+        if day: daily_data[int(day)]['savings'] = float(total or 0)
     
     for day, total in welfare_fees_by_day:
-        daily_data[int(day)]['welfare_fee'] = float(total or 0)
+        if day: daily_data[int(day)]['welfare_fee'] = float(total or 0)
     
     for day, total in admission_fees_by_day:
-        daily_data[int(day)]['admission_fee'] = float(total or 0)
+        if day: daily_data[int(day)]['admission_fee'] = float(total or 0)
     
     for day, total in application_fees_by_day:
-        daily_data[int(day)]['service_charge'] = float(total or 0)
+        if day: daily_data[int(day)]['service_charge'] = float(total or 0)
     
     for day, total in investments_by_day:
         daily_data[int(day)]['capital_savings'] = float(total or 0)
