@@ -3978,33 +3978,8 @@ def request_admin_otp():
         flash('Access denied!', 'danger')
         return redirect(url_for('dashboard'))
     
-    otp = OTP.create_otp(current_user.id, purpose='admin_settings', validity_minutes=5)
-    
-    # Try to send OTP via email
-    email_sent = False
-    email_settings = EmailSettings.get_settings()
-    
-    if email_settings and email_settings.email and email_settings.password:
-        try:
-            import smtplib
-            from email.mime.text import MIMEText
-            
-            msg = MIMEText(f'Your OTP code is: {otp.code}\n\nThis code will expire in 5 minutes.')
-            msg['Subject'] = 'Admin Settings OTP'
-            msg['From'] = email_settings.email
-            msg['To'] = current_user.email
-            
-            with smtplib.SMTP(email_settings.smtp_server, email_settings.smtp_port) as server:
-                server.starttls()
-                server.login(email_settings.email, email_settings.password)
-                server.send_message(msg)
-            
-            email_sent = True
-            flash('OTP sent to your email!', 'success')
-        except Exception as e:
-            flash(f'Email failed: {str(e)}', 'warning')
-    
-    return render_template('admin_settings_otp.html', otp_code=otp.code, email_sent=email_sent)
+    # Skip OTP for now - direct access
+    return redirect(url_for('admin_settings', verified='true'))
 
 @app.route('/admin/settings/verify_otp', methods=['POST'])
 @login_required
