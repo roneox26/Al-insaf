@@ -328,18 +328,33 @@ def manage_staff():
             query_loan = query_loan.filter(LoanCollection.collection_date >= start, LoanCollection.collection_date <= end)
             query_saving = query_saving.filter(SavingCollection.collection_date >= start, SavingCollection.collection_date <= end)
         elif period == 'yearly':
-            year_start = datetime.now().replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-            query_loan = query_loan.filter(LoanCollection.collection_date >= year_start)
-            query_saving = query_saving.filter(SavingCollection.collection_date >= year_start)
+            selected_year = year if year else datetime.now().year
+            year_start = datetime(selected_year, 1, 1, 0, 0, 0)
+            year_end = datetime(selected_year, 12, 31, 23, 59, 59)
+            query_loan = query_loan.filter(LoanCollection.collection_date >= year_start, LoanCollection.collection_date <= year_end)
+            query_saving = query_saving.filter(SavingCollection.collection_date >= year_start, SavingCollection.collection_date <= year_end)
         
         loan_collections = query_loan.all()
         saving_collections = query_saving.all()
         total_loan = sum(lc.amount for lc in loan_collections)
         total_saving = sum(sc.amount for sc in saving_collections)
         
+        # Monthly breakdown for yearly view
+        monthly_breakdown = {}
+        if period == 'yearly':
+            import calendar
+            selected_year = year if year else datetime.now().year
+            for m in range(1, 13):
+                month_loan = sum(lc.amount for lc in loan_collections if lc.collection_date.month == m)
+                month_saving = sum(sc.amount for sc in saving_collections if sc.collection_date.month == m)
+                monthly_breakdown[m] = {'loan': month_loan, 'saving': month_saving, 'total': month_loan + month_saving}
+        
         staff_data.append({
             'staff': staff,
-            'total_collection': total_loan + total_saving
+            'total_collection': total_loan + total_saving,
+            'total_loan': total_loan,
+            'total_saving': total_saving,
+            'monthly_breakdown': monthly_breakdown
         })
     
     return render_template('manage_staff.html', 
@@ -920,14 +935,24 @@ def all_staff_report_print():
             query_loan = query_loan.filter(LoanCollection.collection_date >= start, LoanCollection.collection_date <= end)
             query_saving = query_saving.filter(SavingCollection.collection_date >= start, SavingCollection.collection_date <= end)
         elif period == 'yearly':
-            year_start = datetime.now().replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-            query_loan = query_loan.filter(LoanCollection.collection_date >= year_start)
-            query_saving = query_saving.filter(SavingCollection.collection_date >= year_start)
+            selected_year = year if year else datetime.now().year
+            year_start = datetime(selected_year, 1, 1, 0, 0, 0)
+            year_end = datetime(selected_year, 12, 31, 23, 59, 59)
+            query_loan = query_loan.filter(LoanCollection.collection_date >= year_start, LoanCollection.collection_date <= year_end)
+            query_saving = query_saving.filter(SavingCollection.collection_date >= year_start, SavingCollection.collection_date <= year_end)
         
         loan_collections = query_loan.all()
         saving_collections = query_saving.all()
         total_loan = sum(lc.amount for lc in loan_collections)
         total_saving = sum(sc.amount for sc in saving_collections)
+        
+        # Monthly breakdown for yearly print
+        monthly_breakdown = {}
+        if period == 'yearly':
+            for m in range(1, 13):
+                month_loan = sum(lc.amount for lc in loan_collections if lc.collection_date.month == m)
+                month_saving = sum(sc.amount for sc in saving_collections if sc.collection_date.month == m)
+                monthly_breakdown[m] = {'loan': month_loan, 'saving': month_saving, 'total': month_loan + month_saving}
         
         customers = Customer.query.filter_by(staff_id=staff.id).count()
         remaining_loan = db.session.query(db.func.coalesce(db.func.sum(Customer.remaining_loan), 0)).filter_by(staff_id=staff.id).scalar() or 0
@@ -938,7 +963,8 @@ def all_staff_report_print():
             'total_loan': total_loan,
             'total_saving': total_saving,
             'total_collection': total_loan + total_saving,
-            'remaining_loan': remaining_loan
+            'remaining_loan': remaining_loan,
+            'monthly_breakdown': monthly_breakdown
         })
     
     return render_template('all_staff_report_print.html', 

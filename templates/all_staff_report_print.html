@@ -1,20 +1,62 @@
 ﻿<!doctype html>
 <html lang="bn">
+
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   <meta charset="utf-8">
   <title>সকল স্টাফ রিপোর্ট</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/print-watermark.css') }}">
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    h2 { text-align: center; margin-bottom: 20px; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-    th, td { border: 1px solid #000; padding: 8px; text-align: left; }
-    th { background-color: #f0f0f0; font-weight: bold; }
-    .summary { margin-top: 20px; font-weight: bold; }
-    .signature-section { margin-top: 60px; display: flex; justify-content: space-between; }
-    .signature-box { text-align: center; min-width: 200px; }
-    .signature-line { border-top: 1px solid #000; margin-top: 50px; padding-top: 5px; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+
+    th,
+    td {
+      border: 1px solid #000;
+      padding: 8px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f0f0f0;
+      font-weight: bold;
+    }
+
+    .summary {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+
+    .signature-section {
+      margin-top: 60px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .signature-box {
+      text-align: center;
+      min-width: 200px;
+    }
+
+    .signature-line {
+      border-top: 1px solid #000;
+      margin-top: 50px;
+      padding-top: 5px;
+    }
+
     @media print {
       body::before {
         content: "আল-ইনসাফ";
@@ -28,6 +70,7 @@
         opacity: 0.08;
         z-index: 1;
       }
+
       body::after {
         content: "";
         position: fixed;
@@ -43,26 +86,47 @@
         opacity: 0.25;
         z-index: 1;
       }
-      .no-print { display: none; }
-      table { page-break-inside: auto; }
-      thead { display: table-header-group; }
-      tbody { display: table-row-group; }
-      tr { page-break-inside: avoid; page-break-after: auto; }
+
+      .no-print {
+        display: none;
+      }
+
+      table {
+        page-break-inside: auto;
+      }
+
+      thead {
+        display: table-header-group;
+      }
+
+      tbody {
+        display: table-row-group;
+      }
+
+      tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+      }
     }
   </style>
 
   <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
 </head>
+
 <body>
-  <button onclick="window.print()" class="no-print" style="margin-bottom: 20px; padding: 10px 20px; cursor: pointer;">🖨️ প্রিন্ট করুন</button>
-  
+  <button onclick="window.print()" class="no-print"
+    style="margin-bottom: 20px; padding: 10px 20px; cursor: pointer;">🖨️ প্রিন্ট করুন</button>
+
   <h3 style="text-align: center;">আল-ইনসাফ ক্ষুদ্র ব্যবসায়ী সমবায় সমিতি লিঃ</h3>
   <h3 style="text-align: center;">সকল স্টাফ রিপোর্ট</h3>
   {% if from_date and to_date %}
-  <p style="text-align: center;">তারিখ: {{ from_date.split('-')[2] }}-{{ from_date.split('-')[1] }}-{{ from_date.split('-')[0] }} থেকে {{ to_date.split('-')[2] }}-{{ to_date.split('-')[1] }}-{{ to_date.split('-')[0] }}</p>
+  <p style="text-align: center;">তারিখ: {{ from_date.split('-')[2] }}-{{ from_date.split('-')[1] }}-{{
+    from_date.split('-')[0] }} থেকে {{ to_date.split('-')[2] }}-{{ to_date.split('-')[1] }}-{{ to_date.split('-')[0] }}
+  </p>
   {% elif month and year %}
   <p style="text-align: center; font-weight: bold;">
-    {% set month_names = ['', 'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'] %}
+    {% set month_names = ['', 'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট',
+    'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'] %}
     মাস: {{ month_names[month] }} {{ year }}
   </p>
   {% elif period == 'daily' %}
@@ -70,7 +134,7 @@
   {% elif period == 'monthly' %}
   <p style="text-align: center;">মাসিক রিপোর্ট - {{ now.strftime('%B %Y') }}</p>
   {% elif period == 'yearly' %}
-  <p style="text-align: center;">বার্ষিক রিপোর্ট - {{ now.strftime('%Y') }}</p>
+  <p style="text-align: center;">বার্ষিক রিপোর্ট - {{ year if year else now.strftime('%Y') }}</p>
   {% else %}
   <p style="text-align: center;">তারিখ: {{ now.strftime('%d-%m-%Y') }}</p>
   {% endif %}
@@ -103,7 +167,8 @@
         <td>৳{{ "%.2f"|format(data.total_saving) }}</td>
         <td>৳{{ "%.2f"|format(data.total_collection) }}</td>
         {% if period != 'daily' %}
-        <td><strong>{{ "%.1f"|format((data.total_collection / total_all * 100) if total_all > 0 else 0) }}%</strong></td>
+        <td><strong>{{ "%.1f"|format((data.total_collection / total_all * 100) if total_all > 0 else 0) }}%</strong>
+        </td>
         <td>৳{{ "%.2f"|format(data.remaining_loan) }}</td>
         {% endif %}
       </tr>
@@ -124,6 +189,57 @@
     </tfoot>
   </table>
 
+  {% if period == 'yearly' %}
+  <h4 style="text-align:center; margin-top:30px;">মাসওয়ারী সংগ্রহ বিবরণ - {{ year if year else now.year }} সাল</h4>
+  <table style="font-size:12px;">
+    <thead>
+      <tr>
+        <th>ক্রমিক</th>
+        <th>স্টাফের নাম</th>
+        {% set months_bn = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর',
+        'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'] %}
+        {% for mn in months_bn %}
+        <th style="text-align:center;">{{ mn }}</th>
+        {% endfor %}
+        <th style="text-align:center;">মোট</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for data in staff_data %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ data.staff.name }}</td>
+        {% for m in range(1, 13) %}
+        <td style="text-align:center;">
+          {% if data.monthly_breakdown and m in data.monthly_breakdown and data.monthly_breakdown[m].total > 0 %}
+          ৳{{ "{:,.0f}".format(data.monthly_breakdown[m].total) }}
+          {% else %}—{% endif %}
+        </td>
+        {% endfor %}
+        <td style="text-align:center; font-weight:bold;">৳{{ "{:,.0f}".format(data.total_collection) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr style="font-weight:bold; background:#f0f0f0;">
+        <td colspan="2">সর্বমোট</td>
+        {% for m in range(1, 13) %}
+        <td style="text-align:center;">
+          {% set col_t = namespace(value=0) %}
+          {% for data in staff_data %}
+          {% if data.monthly_breakdown and m in data.monthly_breakdown %}
+          {% set col_t.value = col_t.value + data.monthly_breakdown[m].total %}
+          {% endif %}
+          {% endfor %}
+          {% if col_t.value > 0 %}৳{{ "{:,.0f}".format(col_t.value) }}{% else %}—{% endif %}
+        </td>
+        {% endfor %}
+        <td style="text-align:center;">৳{{ "{:,.0f}".format(staff_data|sum(attribute='total_collection')) }}</td>
+      </tr>
+    </tfoot>
+  </table>
+  {% endif %}
+
   <div class="summary">
     <p>মোট স্টাফ সংখ্যা: {{ staff_data|length }} জন</p>
     <p>মোট গ্রাহক সংখ্যা: {{ staff_data|sum(attribute='customers') }} জন</p>
@@ -141,4 +257,5 @@
     </div>
   </div>
 </body>
+
 </html>
