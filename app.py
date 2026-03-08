@@ -38,7 +38,6 @@ from models.fee_model import FeeCollection
 from models.expense_model import Expense
 from models.message_model import Message
 from models.note_model import Note
-from models.note_model import Note
 from models.scheduled_expense_model import ScheduledExpense
 from models.collection_schedule_model import CollectionSchedule
 from models.otp_model import OTP
@@ -255,51 +254,20 @@ def dashboard():
                 total_remaining = db.session.query(db.func.coalesce(db.func.sum(Customer.remaining_loan), 0)).filter_by(staff_id=current_user.id).scalar() or 0
                 due_customers = Customer.query.filter_by(staff_id=current_user.id).filter(Customer.remaining_loan > 0).count()
             
-            # Today's collections count
             today_loan_count = LoanCollection.query.filter_by(staff_id=current_user.id).filter(LoanCollection.collection_date >= today_start).count()
             today_saving_count = SavingCollection.query.filter_by(staff_id=current_user.id).filter(SavingCollection.collection_date >= today_start).count()
             today_collections = today_loan_count + today_saving_count
             
-            # Check if office staff
-            is_office_staff = hasattr(current_user, 'is_office_staff') and current_user.is_office_staff
-            
-            # Get all staff for office staff
-            all_staff = User.query.filter(User.role != 'admin', User.id != current_user.id).all() if is_office_staff else []
-            
-            # Check logo
-            import os
-            logo_path = os.path.join('static', 'images', 'logo.jpg')
-            logo_exists = os.path.exists(logo_path)
-            
             resp = make_response(render_template('staff_dashboard.html',
                                  name=current_user.name or 'Staff',
-                                 role=current_user.role or 'staff',
-                                 total_customers=total_customers or 0,
-                                 total_loan=total_loan or 0,
-                                 total_savings=total_savings or 0,
-                                 cash_balance=cash_balance or 0,
-                                 today_loan=today_loan or 0,
-                                 today_saving=today_saving or 0,
-                                 unread_messages=unread_messages or 0,
                                  my_customers=my_customers or 0,
                                  total_remaining=total_remaining or 0,
                                  due_customers=due_customers or 0,
-                                 today_collections=today_collections or 0,
-                                 is_office_staff=is_office_staff,
-                                 all_staff=all_staff,
-                                 logo_exists=logo_exists,
-                                 today=today,
-                                 current_user=current_user))
+                                 today_collections=today_collections or 0))
             resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-            resp.headers['Pragma'] = 'no-cache'
-            resp.headers['Expires'] = '0'
             return resp
     except Exception as e:
-        import traceback
-        error_msg = traceback.format_exc()
-        print(f"Dashboard error: {e}")
-        print(error_msg)
-        return f"<h1>Dashboard Error</h1><pre>{error_msg}</pre>", 500
+        return f"Dashboard Error: {e}", 500
 
 @app.route('/manage_customers')
 @login_required
@@ -721,6 +689,9 @@ def customer_loan_sheet(id):
     loan_collections = LoanCollection.query.filter_by(customer_id=id).order_by(LoanCollection.collection_date).all()
     saving_collections = SavingCollection.query.filter_by(customer_id=id).order_by(SavingCollection.collection_date).all()
     
+    # Get withdrawals for this customer
+    withdrawals = Withdrawal.query.filter_by(customer_id=id).order_by(Withdrawal.date).all()
+    
     # Create combined collections data for template - Fixed to properly combine same-date collections
     collections_data = []
     
@@ -734,7 +705,8 @@ def customer_loan_sheet(id):
             collections_by_date[date_key] = {
                 'collection': lc,  # Use loan collection as primary
                 'loan_amount': 0,
-                'saving_amount': 0
+                'saving_amount': 0,
+                'withdrawal_amount': 0
             }
         collections_by_date[date_key]['loan_amount'] += lc.amount
     
@@ -745,9 +717,24 @@ def customer_loan_sheet(id):
             collections_by_date[date_key] = {
                 'collection': sc,  # Use saving collection as primary if no loan collection
                 'loan_amount': 0,
-                'saving_amount': 0
+                'saving_amount': 0,
+                'withdrawal_amount': 0
             }
         collections_by_date[date_key]['saving_amount'] += sc.amount
+    
+    # Add withdrawals
+    for w in withdrawals:
+        date_key = w.date.date()
+        if date_key not in collections_by_date:
+            # Create wrapper object with collection_date attribute for template compatibility
+            wrapper = type('obj', (object,), {'collection_date': w.date})()
+            collections_by_date[date_key] = {
+                'collection': wrapper,
+                'loan_amount': 0,
+                'saving_amount': 0,
+                'withdrawal_amount': 0
+            }
+        collections_by_date[date_key]['withdrawal_amount'] += w.amount
     
     # Convert to list and sort by date
     collections_data = list(collections_by_date.values())
@@ -1281,6 +1268,9 @@ def add_customer():
             admission_fee_str = request.form.get('admission_fee', '0').strip()
             admission_fee = float(admission_fee_str) if admission_fee_str else 0.0
             
+            created_date_str = request.form.get('created_date', '').strip()
+            created_date = datetime.strptime(created_date_str, '%Y-%m-%d') if created_date_str else datetime.now()
+            
             photo_filename = None
             if 'photo' in request.files:
                 photo = request.files['photo']
@@ -1317,7 +1307,8 @@ def add_customer():
                 application_fee=0.0,
                 address=request.form.get('address', ''),
                 photo=photo_filename,
-                staff_id=current_user.id
+                staff_id=current_user.id,
+                created_date=created_date
             )
             db.session.add(customer)
             db.session.flush()
@@ -2409,67 +2400,6 @@ def daily_income_expense_print():
                          total_expense=total_expense,
                          total_outflow=total_outflow,
                          now=datetime.now())
-@login_required
-def daily_report():
-    if current_user.role not in ['admin', 'office', 'staff']:
-        flash('Access denied!', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    from datetime import date
-    report_date_str = request.args.get('date', '')
-    if report_date_str:
-        try:
-            today = datetime.strptime(report_date_str, '%Y-%m-%d').date()
-        except:
-            today = date.today()
-    else:
-        today = date.today()
-    today_start = datetime.combine(today, datetime.min.time())
-    today_end = datetime.combine(today, datetime.max.time())
-    
-    loan_collections = LoanCollection.query.filter(LoanCollection.collection_date >= today_start, LoanCollection.collection_date <= today_end).all()
-    saving_collections = SavingCollection.query.filter(SavingCollection.collection_date >= today_start, SavingCollection.collection_date <= today_end).all()
-    loans_given = Loan.query.filter(Loan.loan_date >= today_start, Loan.loan_date <= today_end).all()
-    withdrawals = Withdrawal.query.filter(Withdrawal.date >= today_start, Withdrawal.date <= today_end).all()
-    expenses = Expense.query.filter(Expense.date >= today_start, Expense.date <= today_end).all()
-    customers_added_today = Customer.query.filter(Customer.created_date >= today_start, Customer.created_date <= today_end).all()
-    
-    total_installment = sum(lc.amount for lc in loan_collections)
-    total_saving = sum(sc.amount for sc in saving_collections)
-    total_loan_distributed = sum(l.amount for l in loans_given)
-    total_withdrawal = sum(w.amount for w in withdrawals)
-    total_expense = sum(e.amount for e in expenses)
-    
-    # Get fees from FeeCollection table
-    total_welfare_fee = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
-        FeeCollection.fee_type == 'welfare',
-        FeeCollection.collection_date >= today_start,
-        FeeCollection.collection_date <= today_end
-    ).scalar() or 0
-    
-    total_admission_fee = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
-        FeeCollection.fee_type == 'admission',
-        FeeCollection.collection_date >= today_start,
-        FeeCollection.collection_date <= today_end
-    ).scalar() or 0
-    
-    total_application_fee = db.session.query(db.func.coalesce(db.func.sum(FeeCollection.amount), 0)).filter(
-        FeeCollection.fee_type == 'application',
-        FeeCollection.collection_date >= today_start,
-        FeeCollection.collection_date <= today_end
-    ).scalar() or 0
-    
-    total_outflow = total_loan_distributed + total_withdrawal + total_expense
-    
-    # Only show customers who have collections on this date
-    collections = []
-    for customer in Customer.query.order_by(Customer.member_no).all():
-        loan_amount = sum(lc.amount for lc in loan_collections if lc.customer_id == customer.id)
-        saving_amount = sum(sc.amount for sc in saving_collections if sc.customer_id == customer.id)
-        if loan_amount > 0 or saving_amount > 0:
-            collections.append({'customer': customer, 'loan_amount': loan_amount, 'saving_amount': saving_amount})
-    
-    return render_template('daily_report.html', report_date=today.strftime('%d-%m-%Y'), selected_date=today.strftime('%Y-%m-%d'), total_installment=total_installment, total_saving=total_saving, total_welfare_fee=total_welfare_fee, total_admission_fee=total_admission_fee, total_application_fee=total_application_fee, total_expense=total_expense, collections=collections, total_loan_distributed=total_loan_distributed, total_withdrawal=total_withdrawal, total_outflow=total_outflow)
 
 @app.route('/monthly_report')
 @login_required
@@ -4019,11 +3949,6 @@ def admin_settings():
         flash('Access denied!', 'danger')
         return redirect(url_for('dashboard'))
     
-    if request.method == 'GET':
-        verified = request.args.get('verified', '')
-        if not verified:
-            return redirect(url_for('request_admin_otp'))
-    
     if request.method == 'POST':
         action = request.form.get('action')
         
@@ -4222,6 +4147,8 @@ def monthly_sheet():
         return redirect(url_for('dashboard'))
     
     import calendar
+    from sqlalchemy import extract
+    
     today = datetime.now()
     month = int(request.args.get('month', today.month))
     year = int(request.args.get('year', today.year))
@@ -4230,28 +4157,42 @@ def monthly_sheet():
     month_name = month_names[month]
     last_day = calendar.monthrange(year, month)[1]
     
-    customers = Customer.query.filter_by(is_active=True).order_by(Customer.member_no).all()
-    customer_data = {}
+    month_start = datetime(year, month, 1, 0, 0, 0)
+    month_end = datetime(year, month, last_day, 23, 59, 59)
     
+    customers = Customer.query.filter_by(is_active=True).order_by(Customer.member_no).all()
+    
+    # OPTIMIZED: Fetch all collections for the month in 2 queries instead of (customers * days * 2)
+    loan_collections = db.session.query(
+        LoanCollection.customer_id,
+        extract('day', LoanCollection.collection_date).label('day'),
+        db.func.sum(LoanCollection.amount).label('total')
+    ).filter(
+        LoanCollection.collection_date >= month_start,
+        LoanCollection.collection_date <= month_end
+    ).group_by(LoanCollection.customer_id, extract('day', LoanCollection.collection_date)).all()
+    
+    saving_collections = db.session.query(
+        SavingCollection.customer_id,
+        extract('day', SavingCollection.collection_date).label('day'),
+        db.func.sum(SavingCollection.amount).label('total')
+    ).filter(
+        SavingCollection.collection_date >= month_start,
+        SavingCollection.collection_date <= month_end
+    ).group_by(SavingCollection.customer_id, extract('day', SavingCollection.collection_date)).all()
+    
+    # Build customer_data from aggregated results
+    customer_data = {}
     for customer in customers:
-        customer_data[customer.id] = {}
-        for day in range(1, last_day + 1):
-            day_start = datetime(year, month, day)
-            day_end = datetime(year, month, day, 23, 59, 59)
-            
-            loan_amount = db.session.query(db.func.coalesce(db.func.sum(LoanCollection.amount), 0)).filter(
-                LoanCollection.customer_id == customer.id,
-                LoanCollection.collection_date >= day_start,
-                LoanCollection.collection_date <= day_end
-            ).scalar() or 0
-            
-            saving_amount = db.session.query(db.func.coalesce(db.func.sum(SavingCollection.amount), 0)).filter(
-                SavingCollection.customer_id == customer.id,
-                SavingCollection.collection_date >= day_start,
-                SavingCollection.collection_date <= day_end
-            ).scalar() or 0
-            
-            customer_data[customer.id][day] = {'loan': loan_amount, 'saving': saving_amount}
+        customer_data[customer.id] = {day: {'loan': 0, 'saving': 0} for day in range(1, last_day + 1)}
+    
+    for cust_id, day, total in loan_collections:
+        if cust_id in customer_data and int(day) in customer_data[cust_id]:
+            customer_data[cust_id][int(day)]['loan'] = float(total or 0)
+    
+    for cust_id, day, total in saving_collections:
+        if cust_id in customer_data and int(day) in customer_data[cust_id]:
+            customer_data[cust_id][int(day)]['saving'] = float(total or 0)
     
     return render_template('monthly_sheet.html', month=month, month_name=month_name, year=year, customers=customers, customer_data=customer_data, last_day=last_day)
 
@@ -4828,7 +4769,12 @@ def import_old_data():
     return render_template('import_old_data.html', customers=customers, staffs=staffs)
 
 @app.route('/fix_database_migration')
+@login_required
 def fix_database_migration():
+    if current_user.role != 'admin':
+        flash('Access denied!', 'danger')
+        return redirect(url_for('dashboard'))
+    
     try:
         from sqlalchemy import text, inspect
         

@@ -402,6 +402,7 @@
                         <th>মোট কিস্তি</th>
                         <th>মোট সঞ্চয়</th>
                         <th>বাকি ঋণ</th>
+                        <th>উত্তোলন</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -440,13 +441,14 @@
                                     <td></td>
                                     <td style="color: #c62828;">{{ "{:,.0f}".format(running_savings_balance.value) }}</td>
                                     <td style="font-weight: bold; color: #c62828;">{{ "{:,.0f}".format(running_loan_balance.value) }}</td>
+                                    <td></td>
                                 </tr>
                             {% else %}
                                 {# Collection in GREEN #}
                                 {% set running_total.value = running_total.value + trans.item.loan_amount %}
                                 {% set running_saving.value = running_saving.value + trans.item.saving_amount %}
                                 {% set running_loan_balance.value = running_loan_balance.value - trans.item.loan_amount %}
-                                {% set running_savings_balance.value = running_savings_balance.value + trans.item.saving_amount %}
+                                {% set running_savings_balance.value = running_savings_balance.value + trans.item.saving_amount - trans.item.withdrawal_amount %}
                                 <tr style="background-color: #e8f5e9; border-left: 4px solid #4caf50;">
                                     <td style="color: #2e7d32;">{{ trans.date.strftime('%d-%m-%y') }}</td>
                                     <td style="color: #2e7d32;">{{ "{:,.0f}".format(trans.item.loan_amount) if trans.item.loan_amount > 0 else '' }}</td>
@@ -454,6 +456,7 @@
                                     <td style="color: #2e7d32;">{{ "{:,.0f}".format(running_total.value) }}</td>
                                     <td style="color: #2e7d32;">{{ "{:,.0f}".format(running_savings_balance.value) }}</td>
                                     <td style="color: #2e7d32;">{{ "{:,.0f}".format(running_loan_balance.value) }}</td>
+                                    <td style="color: #2e7d32;">{{ "{:,.0f}".format(trans.item.withdrawal_amount) if trans.item.withdrawal_amount > 0 else '' }}</td>
                                 </tr>
                             {% endif %}
                         {% endfor %}
@@ -469,6 +472,7 @@
                                 <td></td>
                                 <td></td>
                                 <td></td>
+                                <td></td>
                             </tr>
                             {% endfor %}
                         {% endif %}
@@ -476,6 +480,7 @@
                         {% for i in range(10) %}
                         <tr>
                             <td style="height: 28px;">&nbsp;</td>
+                            <td></td>
                             <td></td>
                             <td></td>
                             <td></td>
