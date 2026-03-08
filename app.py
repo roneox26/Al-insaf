@@ -1853,7 +1853,12 @@ def profit_loss():
         else:
             start_date = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     else:  # yearly
-        start_date = today.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        if year:
+            start_date = datetime(year, 1, 1, 0, 0, 0)
+            display_year = year
+        else:
+            start_date = today.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+            display_year = today.year
     
     # Income: Loan Collections + Savings Collections + Fee Collections
     loan_collections = LoanCollection.query.filter(LoanCollection.collection_date >= start_date).all()
@@ -1899,7 +1904,6 @@ def profit_loss():
     
     # Get month name and year for display
     month_name = None
-    display_year = today.year
     if period == 'monthly':
         month_names = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
         if month and year:
@@ -1909,7 +1913,8 @@ def profit_loss():
             month_name = month_names[today.month]
             display_year = today.year
     elif period == 'yearly':
-        display_year = today.year
+        if not year:
+            display_year = today.year
     
     from markupsafe import escape
     return render_template('profit_loss.html', 
@@ -1952,8 +1957,13 @@ def profit_loss_print():
             start_date = datetime(year, month, 1, 0, 0, 0)
         else:
             start_date = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    else:
-        start_date = today.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+    else:  # yearly
+        if year:
+            start_date = datetime(year, 1, 1, 0, 0, 0)
+            display_year = year
+        else:
+            start_date = today.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+            display_year = today.year
     
     loan_collections = LoanCollection.query.filter(LoanCollection.collection_date >= start_date).all()
     saving_collections = SavingCollection.query.filter(SavingCollection.collection_date >= start_date).all()
@@ -1993,7 +2003,6 @@ def profit_loss_print():
     other_exp = sum(exp.amount for exp in expenses if exp.category == 'Other')
     
     month_name = None
-    display_year = today.year
     if period == 'monthly':
         month_names = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
         if month and year:
@@ -2003,7 +2012,8 @@ def profit_loss_print():
             month_name = month_names[today.month]
             display_year = today.year
     elif period == 'yearly':
-        display_year = today.year
+        if not year:
+            display_year = today.year
     
     return render_template('profit_loss_print.html', 
                          period=period,
