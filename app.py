@@ -808,12 +808,12 @@ def staff_collection_report():
         query_saving = query_saving.filter(SavingCollection.collection_date <= end_date)
     
     # Apply period filters
-    period_display = '???'
+    period_display = 'All'
     if period == 'daily':
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         query_loan = query_loan.filter(LoanCollection.collection_date >= today)
         query_saving = query_saving.filter(SavingCollection.collection_date >= today)
-        period_display = f'????? - {today.strftime("%d-%m-%Y")}'
+        period_display = f'Daily - {today.strftime("%d-%m-%Y")}'
     elif period == 'monthly':
         if month and year:
             import calendar
@@ -828,16 +828,16 @@ def staff_collection_report():
             end = today.replace(hour=23, minute=59, second=59, microsecond=999999)
         query_loan = query_loan.filter(LoanCollection.collection_date >= start, LoanCollection.collection_date <= end)
         query_saving = query_saving.filter(SavingCollection.collection_date >= start, SavingCollection.collection_date <= end)
-        month_names = ['?????????', '???????????', '?????', '??????', '??', '???', '?????', '?????', '??????????', '???????', '???????', '????????']
-        period_display = f'????? - {month_names[month-1]} {year}'
+        month_names = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+        period_display = f'Monthly - {month_names[month-1]} {year}'
     elif period == 'yearly':
         year_start = datetime.now().replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
         query_loan = query_loan.filter(LoanCollection.collection_date >= year_start)
         query_saving = query_saving.filter(SavingCollection.collection_date >= year_start)
-        period_display = f'??????? - {datetime.now().year}'
+        period_display = f'Yearly - {datetime.now().year}'
     
     if from_date and to_date:
-        period_display = f'{from_date} ???? {to_date}'
+        period_display = f'{from_date} to {to_date}'
     
     loan_collections = query_loan.all()
     saving_collections = query_saving.all()
@@ -969,7 +969,7 @@ def edit_customer(id):
 @login_required
 def add_loan():
     if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff ????????? ????? ?????, ??? ???? ????? ??!', 'danger')
+        flash('Monitor staff cannot distribute loans, only view access!', 'danger')
         return redirect(url_for('dashboard'))
     
     if request.method == 'POST':
@@ -994,11 +994,11 @@ def add_loan():
         if due_date_str:
             due_date = datetime.strptime(due_date_str, '%Y-%m-%d')
         else:
-            if installment_type in ['Daily', '?????']:
+            if installment_type in ['Daily', 'দৈনিক']:
                 due_date = loan_date + timedelta(days=installment_count)
-            elif installment_type in ['Weekly', '?????????']:
+            elif installment_type in ['Weekly', 'সাপ্তাহিক']:
                 due_date = loan_date + timedelta(weeks=installment_count)
-            else:
+            else:  # Monthly or মাসিক
                 due_date = loan_date + timedelta(days=installment_count * 30)
         
         loan = Loan(
@@ -1247,7 +1247,7 @@ def inactive_customers():
 @login_required
 def add_customer():
     if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff ????????? ????? ?????, ???? ???????? ??? ???? ????? ??!', 'danger')
+        flash('Monitor staff cannot add customers, only view access!', 'danger')
         return redirect(url_for('dashboard'))
     
     if request.method == 'POST':
@@ -1384,7 +1384,7 @@ def manage_collections():
             end_date = today.replace(hour=23, minute=59, second=59, microsecond=999999)
         query_loan = query_loan.filter(LoanCollection.collection_date >= start_date, LoanCollection.collection_date <= end_date)
         query_saving = query_saving.filter(SavingCollection.collection_date >= start_date, SavingCollection.collection_date <= end_date)
-        month_names = ['?????????', '???????????', '?????', '??????', '??', '???', '?????', '?????', '??????????', '???????', '???????', '????????']
+        month_names = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
         period_info['month'] = month_names[month - 1]
         period_info['year'] = year
     elif period == 'yearly':
@@ -1461,7 +1461,7 @@ def add_collection():
 @login_required
 def collection():
     if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff ????????? ????? ?????, ??????? ???? ????? ??!', 'danger')
+        flash('Monitor staff cannot collect money, only view access!', 'danger')
         return redirect(url_for('dashboard'))
     
     if request.method == 'POST':
@@ -2813,15 +2813,15 @@ def monthly_income_expense_print():
         for loan in customer_loans:
             loan_type = loan.installment_type.lower() if loan.installment_type else ''
             
-            if loan_type in ['daily', '?????']:
+            if loan_type in ['daily', 'দৈনিক']:
                 if month == today.month and year == today.year:
                     days = today.day
                 else:
                     days = last_day
                 expected_amount += loan.installment_amount * days
-            elif loan_type in ['weekly', '?????????']:
+            elif loan_type in ['weekly', 'সাপ্তাহিক']:
                 expected_amount += loan.installment_amount * 4
-            elif loan_type in ['monthly', '?????']:
+            elif loan_type in ['monthly', 'মাসিক']:
                 expected_amount += loan.installment_amount
         
         actual_amount = db.session.query(db.func.coalesce(db.func.sum(LoanCollection.amount), 0)).filter(
@@ -3069,7 +3069,7 @@ def monthly_report():
             # Support both English and Bengali installment types
             loan_type = loan.installment_type.lower() if loan.installment_type else ''
             
-            if loan_type in ['daily', '?????']:
+            if loan_type in ['daily', 'দৈনিক']:
                 # Count days in month (or till today for current month)
                 if month == today.month and year == today.year:
                     days = today.day
@@ -3078,12 +3078,12 @@ def monthly_report():
                 loan_expected = loan.installment_amount * days
                 print(f"    Daily: {loan.installment_amount} x {days} days = {loan_expected}")
                 
-            elif loan_type in ['weekly', '?????????']:
+            elif loan_type in ['weekly', 'সাপ্তাহিক']:
                 # 4 weeks per month
                 loan_expected = loan.installment_amount * 4
                 print(f"    Weekly: {loan.installment_amount} x 4 weeks = {loan_expected}")
                 
-            elif loan_type in ['monthly', '?????']:
+            elif loan_type in ['monthly', 'মাসিক']:
                 loan_expected = loan.installment_amount
                 print(f"    Monthly: {loan.installment_amount}")
             else:
@@ -3211,7 +3211,7 @@ def search_customers():
             'created_date': c.created_date.strftime('%d-%m-%Y') if c.created_date else 'N/A',
             'total_collected': float(total_collected),
             'last_collection_date': last_collection.collection_date.strftime('%d-%m-%Y') if last_collection else 'No collection',
-            'loan_status': '????????' if c.remaining_loan == 0 and c.total_loan > 0 else '?????' if c.remaining_loan > 0 else '????',
+            'loan_status': 'Paid' if c.remaining_loan == 0 and c.total_loan > 0 else 'Due' if c.remaining_loan > 0 else 'None',
             'payment_percentage': round((total_collected / c.total_loan * 100) if c.total_loan > 0 else 0, 1)
         })
     
@@ -3254,7 +3254,7 @@ def customer_search_advanced():
 @login_required
 def collect_fee(customer_id):
     if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff ????????? ????? ?????, ?? ??????? ???? ????? ??!', 'danger')
+        flash('Monitor staff cannot collect fees, only view access!', 'danger')
         return redirect(url_for('customer_details', id=customer_id))
     
     customer = Customer.query.get_or_404(customer_id)
@@ -3263,7 +3263,7 @@ def collect_fee(customer_id):
     note = request.form.get('note', '').strip()
     
     if not fee_type or amount <= 0:
-        flash('?? ???? ??? ?????? ????????!', 'danger')
+        flash('All fields are required!', 'danger')
         return redirect(url_for('customer_details', id=customer_id))
     
     if fee_type not in ['admission', 'welfare', 'application']:
@@ -3297,8 +3297,8 @@ def collect_fee(customer_id):
     db.session.add(fee_collection)
     db.session.commit()
     
-    fee_names = {'admission': '????? ??', 'welfare': '?????? ??', 'application': '????? ??'}
-    flash(f'{fee_names[fee_type]} ?{amount} ??????? ?????? ??? ??????!', 'success')
+    fee_names = {'admission': 'Admission Fee', 'welfare': 'Welfare Fee', 'application': 'Application Fee'}
+    flash(f'{fee_names[fee_type]} ৳{amount} collected successfully!', 'success')
     return redirect(url_for('customer_details', id=customer_id))
 
 @app.route('/fee_history/<fee_type>')
@@ -4086,7 +4086,7 @@ def toggle_scheduled_expense(id):
     scheduled_expense = ScheduledExpense.query.get_or_404(id)
     scheduled_expense.is_active = not scheduled_expense.is_active
     db.session.commit()
-    status = '???????' if scheduled_expense.is_active else '??????????'
+    status = 'activated' if scheduled_expense.is_active else 'deactivated'
     flash(f'Scheduled expense {status} successfully!', 'success')
     return redirect(url_for('manage_scheduled_expenses'))
 
@@ -4293,7 +4293,7 @@ def reschedule_collection(id):
 @login_required
 def application_forms():
     if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff ????????? ????? ?????, ???? ??????? ???? ????? ??!', 'danger')
+        flash('Monitor staff cannot access forms, only view access!', 'danger')
         return redirect(url_for('dashboard'))
     
     if current_user.role == 'field_staff':
@@ -4306,7 +4306,7 @@ def application_forms():
 @login_required
 def loan_application_form():
     if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff ????????? ????? ?????, ???? ??????? ???? ????? ??!', 'danger')
+        flash('Monitor staff cannot access forms, only view access!', 'danger')
         return redirect(url_for('dashboard'))
     
     customer_id_str = request.args.get('customer_id', '')
@@ -4323,7 +4323,7 @@ def loan_application_form():
 @login_required
 def commitment_form():
     if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff ????????? ????? ?????, ???? ??????? ???? ????? ??!', 'danger')
+        flash('Monitor staff cannot access forms, only view access!', 'danger')
         return redirect(url_for('dashboard'))
     
     customer_id_str = request.args.get('customer_id', '')
@@ -4340,7 +4340,7 @@ def commitment_form():
 @login_required
 def angikarnama_form():
     if hasattr(current_user, 'is_monitor') and current_user.is_monitor:
-        flash('Monitor staff ????????? ????? ?????, ???? ??????? ???? ????? ??!', 'danger')
+        flash('Monitor staff cannot access forms, only view access!', 'danger')
         return redirect(url_for('dashboard'))
     
     customer_id_str = request.args.get('customer_id', '')
