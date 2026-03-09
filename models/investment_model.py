@@ -7,5 +7,5 @@ class Investment(db.Model):
     investor_id = db.Column(db.Integer, db.ForeignKey('investors.id', ondelete='CASCADE'), nullable=False)
     investor_name = db.Column(db.String(100), nullable=False)
     amount = db.Column(db.Float, nullable=False)
-    date = db.Column(db.DateTime, default=datetime.utcnow)
+    date = db.Column(db.DateTime, default=datetime.now)
     note = db.Column(db.String(200))

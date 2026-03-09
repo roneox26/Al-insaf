@@ -152,6 +152,18 @@ run_migration.bat
 
 **বিস্তারিত নির্দেশনা:** [LOAN_SHEET_FIX.md](LOAN_SHEET_FIX.md) দেখুন
 
+### Collection Time Fix (টাইম ঠিক করা)
+**সমস্যা:** Collection করার সময় টাইম ঠিক দেখাচ্ছিল না (6 ঘন্টা পিছিয়ে)।
+
+**সমাধান:** এখন সব collection এ বাংলাদেশ সময় অনুযায়ী সঠিক টাইম সেভ হবে।
+
+**কোন কাজ করার দরকার নেই!** শুধু application চালান:
+```bash
+python run.py
+```
+
+**বিস্তারিত নির্দেশনা:** [TIMEZONE_FIX.md](TIMEZONE_FIX.md) দেখুন
+
 **Render.com এ Fix করতে:**
 1. Dashboard > Shell tab এ যাও
 2. Run: `python migrate_add_loan_id.py`

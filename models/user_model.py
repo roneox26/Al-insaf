@@ -17,7 +17,7 @@ class User(db.Model, UserMixin):
     phone = db.Column(db.String(20))
     address = db.Column(db.String(200))
     photo = db.Column(db.String(200))
-    join_date = db.Column(db.DateTime, default=datetime.utcnow)
+    join_date = db.Column(db.DateTime, default=datetime.now)
     salary = db.Column(db.Float, default=0.0)
     status = db.Column(db.String(20), default='active')  # active, inactive
     nid = db.Column(db.String(50))

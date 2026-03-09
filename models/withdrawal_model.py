@@ -8,7 +8,7 @@ class Withdrawal(db.Model):
     customer_id = db.Column(db.Integer, db.ForeignKey('customers.id', ondelete='SET NULL'))
     investor_name = db.Column(db.String(100))
     amount = db.Column(db.Float, nullable=False)
-    date = db.Column(db.DateTime, default=datetime.utcnow)
+    date = db.Column(db.DateTime, default=datetime.now)
     note = db.Column(db.String(200))
     withdrawal_type = db.Column(db.String(20), default='savings')
     customer = db.relationship('Customer', backref='withdrawals')

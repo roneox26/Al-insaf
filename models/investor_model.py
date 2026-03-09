@@ -11,7 +11,7 @@ class Investor(db.Model):
     total_investment = db.Column(db.Float, default=0)
     total_withdrawal = db.Column(db.Float, default=0)
     current_balance = db.Column(db.Float, default=0)
-    created_date = db.Column(db.DateTime, default=datetime.utcnow)
+    created_date = db.Column(db.DateTime, default=datetime.now)
     
     investments = db.relationship('Investment', backref='investor', lazy=True)
     withdrawals = db.relationship('Withdrawal', backref='investor', lazy=True)

@@ -10,6 +10,6 @@ class Note(db.Model):
     reminder_date = db.Column(db.DateTime, nullable=True)
     is_notified = db.Column(db.Boolean, default=False)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
-    created_date = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_date = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_date = db.Column(db.DateTime, default=datetime.now)
+    updated_date = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     creator = db.relationship('User', backref='notes')

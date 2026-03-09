@@ -10,7 +10,7 @@ class Message(db.Model):
     file_path = db.Column(db.String(500))
     file_type = db.Column(db.String(50))
     is_read = db.Column(db.Boolean, default=False)
-    created_date = db.Column(db.DateTime, default=datetime.utcnow)
+    created_date = db.Column(db.DateTime, default=datetime.now)
     
     sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_messages')
     receiver = db.relationship('User', foreign_keys=[receiver_id], backref='received_messages')

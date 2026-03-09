@@ -10,7 +10,7 @@ class Staff(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     phone = db.Column(db.String(20), nullable=True)
     position = db.Column(db.String(100), nullable=True)
-    join_date = db.Column(db.DateTime, default=datetime.utcnow)
+    join_date = db.Column(db.DateTime, default=datetime.now)
     salary = db.Column(db.Float, default=0.0)
 
     def __repr__(self):

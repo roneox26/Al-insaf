@@ -24,6 +24,6 @@ class Customer(db.Model):
     total_loan = db.Column(db.Float, default=0.0)
     remaining_loan = db.Column(db.Float, default=0.0)
     savings_balance = db.Column(db.Float, default=0.0)
-    created_date = db.Column(db.DateTime, default=datetime.utcnow)
+    created_date = db.Column(db.DateTime, default=datetime.now)
     is_active = db.Column(db.Boolean, default=True)
     staff = db.relationship('User', backref='customers')

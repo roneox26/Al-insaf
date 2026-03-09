@@ -7,7 +7,7 @@ class Loan(db.Model):
     customer_name = db.Column(db.String(100), nullable=False)
     amount = db.Column(db.Float, nullable=False)
     interest = db.Column(db.Float, default=0.0)
-    loan_date = db.Column(db.DateTime, default=datetime.utcnow)
+    loan_date = db.Column(db.DateTime, default=datetime.now)
     due_date = db.Column(db.DateTime, nullable=False)
     installment_count = db.Column(db.Integer, default=0)
     installment_amount = db.Column(db.Float, default=0.0)

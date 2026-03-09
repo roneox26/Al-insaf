@@ -6,7 +6,7 @@ class LoanCollection(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=True)
     amount = db.Column(db.Float, nullable=False)
-    collection_date = db.Column(db.DateTime, default=datetime.utcnow)
+    collection_date = db.Column(db.DateTime, default=datetime.now)
     staff_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     
     customer = db.relationship('Customer', backref='loan_collections')
