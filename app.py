@@ -263,7 +263,9 @@ def dashboard():
                                  my_customers=my_customers or 0,
                                  total_remaining=total_remaining or 0,
                                  due_customers=due_customers or 0,
-                                 today_collections=today_collections or 0))
+                                 today_collections=today_collections or 0,
+                                 unread_messages=unread_messages or 0,
+                                 today=datetime.now()))
             resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
             return resp
     except Exception as e:
