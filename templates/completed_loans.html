@@ -1,11 +1,10 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   <meta charset="utf-8">
-  <title>Manage Loans</title>
+  <title>Completed Loans</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
   <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
 </head>
 
@@ -18,25 +17,29 @@
     {% endif %}
   {% endwith %}
 
-  <h2 class="mb-4">💰 Manage Loans</h2>
+  <h2 class="mb-4">✅ Completed Loans (সম্পূর্ণ পরিশোধিত লোন)</h2>
   <div class="mb-3">
-    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">⬅️ Back</a>
-    <a href="{{ url_for('add_loan') }}" class="btn btn-success">➕ Add New Loan</a>
-    <a href="{{ url_for('completed_loans') }}" class="btn btn-info">✅ Completed Loans</a>
-    <a href="{{ url_for('loans_print') }}?filter_type={{ filter_type }}&month={{ month }}&year={{ year }}" class="btn btn-primary" target="_blank">🖨️ Print Report</a>
+    <a href="{{ url_for('manage_loans') }}" class="btn btn-secondary">⬅️ Back to Active Loans</a>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">🏠 Dashboard</a>
   </div>
 
   <div class="row mb-3">
     <div class="col-md-3">
       <div class="card shadow p-3">
-        <h6>💵 Total Loan Amount</h6>
+        <h6>💵 Total Completed Loan Amount</h6>
         <h4>৳{{ "{:,.2f}".format(total_amount) }}</h4>
       </div>
     </div>
     <div class="col-md-3">
       <div class="card shadow p-3">
-        <h6>📈 Total Interest</h6>
+        <h6>📈 Total Interest Earned</h6>
         <h4>৳{{ "{:,.2f}".format(total_interest) }}</h4>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow p-3">
+        <h6>📊 Total Completed Loans</h6>
+        <h4>{{ loans|length }}</h4>
       </div>
     </div>
   </div>
@@ -78,7 +81,7 @@
     <div class="col-md-3">
       <label class="form-label">&nbsp;</label>
       <button type="submit" class="btn btn-primary w-100">🔍 Filter</button>
-      <a href="{{ url_for('manage_loans') }}" class="btn btn-secondary w-100 mt-2">🔄 Reset</a>
+      <a href="{{ url_for('completed_loans') }}" class="btn btn-secondary w-100 mt-2">🔄 Reset</a>
     </div>
   </form>
   <script>
@@ -100,6 +103,7 @@
     }
   </script>
 
+  {% if loans %}
   <table class="table table-bordered">
     <thead>
       <tr>
@@ -124,24 +128,21 @@
         <td>{{ loan.loan_date.strftime('%Y-%m-%d') }}</td>
         <td>{{ loan.due_date.strftime('%Y-%m-%d') }}</td>
         <td>
-          {% if loan.status == 'Paid' %}
-          <span class="badge bg-success">Paid</span>
-          {% else %}
-          <span class="badge bg-warning">Pending</span>
-          {% endif %}
+          <span class="badge bg-success">✅ Completed</span>
         </td>
         <td>{{ loan.staff.name if loan.staff else 'N/A' }}</td>
         <td>
-          {% if loan.status == 'Paid' %}
           <a href="{{ url_for('loan_sheet', loan_id=loan.id) }}" class="btn btn-sm btn-success" target="_blank">📄 Loan Sheet</a>
-          {% else %}
-          <a href="{{ url_for('loan_sheet', loan_id=loan.id) }}" class="btn btn-sm btn-danger" target="_blank">📄 Loan Sheet</a>
-          {% endif %}
-          <a href="{{ url_for('edit_loan', id=loan.id) }}" class="btn btn-sm btn-warning">✏️ Edit</a>
         </td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
+  {% else %}
+  <div class="alert alert-info">
+    <h5>কোন সম্পূর্ণ পরিশোধিত লোন পাওয়া যায়নি!</h5>
+    <p>এখনো কোন লোন সম্পূর্ণভাবে পরিশোধ করা হয়নি।</p>
+  </div>
+  {% endif %}
 </body>
 </html>

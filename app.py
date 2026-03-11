@@ -513,6 +513,36 @@ def manage_loans():
     
     return render_template('manage_loans.html', loans=loans, filter_type=filter_type, month=month, year=year, total_amount=total_amount, total_interest=total_interest)
 
+@app.route('/completed_loans')
+@login_required
+def completed_loans():
+    if current_user.role != 'admin':
+        flash('Access denied!', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    filter_type = request.args.get('filter_type', 'all')
+    month = request.args.get('month', type=int)
+    year = request.args.get('year', type=int)
+    
+    query = db.session.query(Loan).join(Customer, Loan.customer_name == Customer.name).filter(Customer.remaining_loan == 0)
+    
+    if filter_type == 'month' and month and year:
+        import calendar
+        last_day = calendar.monthrange(year, month)[1]
+        start = datetime(year, month, 1)
+        end = datetime(year, month, last_day, 23, 59, 59)
+        query = query.filter(Loan.loan_date >= start, Loan.loan_date <= end)
+    elif filter_type == 'year' and year:
+        start = datetime(year, 1, 1)
+        end = datetime(year, 12, 31, 23, 59, 59)
+        query = query.filter(Loan.loan_date >= start, Loan.loan_date <= end)
+    
+    loans = query.order_by(Loan.loan_date.desc()).all()
+    total_amount = sum(l.amount for l in loans)
+    total_interest = sum((l.amount * l.interest / 100) for l in loans)
+    
+    return render_template('completed_loans.html', loans=loans, filter_type=filter_type, month=month, year=year, total_amount=total_amount, total_interest=total_interest)
+
 @app.route('/loans_print')
 @login_required
 def loans_print():
